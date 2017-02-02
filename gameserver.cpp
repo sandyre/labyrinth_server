@@ -8,14 +8,20 @@
 
 #include "gameserver.hpp"
 
+#include <algorithm>
 #include <iostream>
-#include "packet.hpp"
+#include "netpacket.hpp"
 #include <Poco/Checksum.h>
 
-GameServer::GameServer(unsigned int Port) :
-m_eState(GameServer::State::WAITING_PLAYERS)
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+
+GameServer::GameServer(uint32_t Port) :
+m_eState(GameServer::State::WAITING_PLAYERS),
+m_nPort(Port),
+m_nStartTime(high_resolution_clock::now())
 {
-    std::cout << "[GS" << Port << "] STARTED\n";
+    std::cout << "[GS" << Port << "] STARTED (WAITING PLAYERS)\n";
     
     Poco::Net::SocketAddress addr("localhost", Port);
     m_oSocket.bind(addr);
@@ -45,26 +51,66 @@ GameServer::EventLoop()
     Poco::Net::SocketAddress sender_addr;
     char buf[64];
     
+    while(m_eState == GameServer::State::WAITING_PLAYERS)
+    {
+        m_oSocket.receiveFrom(buf, 64, sender_addr);
+        
+        GamePacket * pack = reinterpret_cast<GamePacket*>(buf);
+        if(pack->eType == GamePacket::Type::CL_CONNECT)
+        {
+            auto iter =
+            std::find_if(m_aPlayers.begin(), m_aPlayers.end(),
+            [=](Player& player)
+            {
+                return player.sock_addr == sender_addr;
+            });
+            
+            if(iter != m_aPlayers.end() || m_aPlayers.size() == 0)
+            {
+                Player player;
+                player.nUID = 0;
+                player.nXCoord = 0;
+                player.nYCoord = 0;
+                player.sock_addr = sender_addr;
+                
+                m_aPlayers.push_back(player);
+                
+                GamePackets::SetPlayerUID set_uid;
+                set_uid.nUID = player.nUID;
+                
+                pack->eType = GamePacket::Type::SRV_PL_SET_UID;
+                std::memcpy(pack->aData, &set_uid, sizeof(set_uid));
+                
+                m_oSocket.sendTo(pack, sizeof(GamePacket),
+                                 sender_addr);
+                
+                std::cout << "[GS" << m_nPort << "] PLAYER ATTACHED WITH UID " << player.nUID << "\n";
+            }
+        }
+        
+        if(m_aPlayers.size() == 1)
+        {
+            m_eState = GameServer::State::GENERATING_WORLD;
+        }
+    }
+    
+    std::cout << "[GS" << m_nPort << "] GENERATING WORLD\n";
+    
+    while(m_eState == GameServer::State::GENERATING_WORLD)
+    {
+        break;
+    }
+    
     while(m_eState != GameServer::State::FINISHED)
     {
         m_oSocket.receiveFrom(buf, 64, sender_addr);
         
         GamePacket * pack = reinterpret_cast<GamePacket*>(buf);
         
-            // check that packet was not damaged
-        Poco::Checksum crc;
-        crc.update(buf, sizeof(GamePacket) - 4);
-        
-        if(pack->nCRC32 != crc.checksum())
-        {
-                // TODO: add external logic if packet was damaged
-            continue;
-        }
-        
             // update ADDR info
         for(auto& player : m_aPlayers)
         {
-            if(player.uid == pack->nPlayerUID)
+            if(player.nUID == pack->nUID)
             {
                 player.sock_addr = sender_addr;
             }
@@ -72,23 +118,44 @@ GameServer::EventLoop()
         
         switch(pack->eType)
         {
-            case GamePacket::Type::PING:
+            case GamePacket::Type::CL_MOVEMENT:
             {
-                Poco::Checksum crc;
-                GamePacket packet;
-                packet.eType = GamePacket::Type::PING;
-                packet.nPlayerUID = 0; // 0 = SERVER
-                std::memset(packet.aContent, 0, 16); // may be excessive
-                crc.update((char*)&packet, sizeof(packet)-4);
-                packet.nCRC32 = crc.checksum();
+                using namespace GamePackets;
+                Movement * mov = reinterpret_cast<Movement*>(pack->aData);
                 
-                m_oSocket.sendTo((char*)&packet, sizeof(packet), sender_addr);
+                for(auto& player : m_aPlayers)
+                {
+                    if(player.nUID == pack->nUID)
+                    {
+                        player.nXCoord = mov->nXCoord;
+                        player.nYCoord = mov->nYCoord;
+                        
+                        break;
+                    }
+                }
+                
+                pack->eType = GamePacket::Type::SRV_MOVEMENT;
+                
+                for(auto& player : m_aPlayers)
+                {
+                    m_oSocket.sendTo(pack,
+                                     sizeof(GamePacket),
+                                     player.sock_addr);
+                }
+                
+                std::cout << "[GS" << m_nPort << "] RECEIVED MOVEMENT PACKET FROM USER "
+                    << pack->nUID << " X: " << mov->nXCoord << " Y: " << mov->nYCoord << "\n";
+                
                 break;
             }
                 
             default:
-                std::cout << "Undefined packet.\n";
+                std::cout << "[GS" << m_nPort << "] Undefined packet.\n";
                 break;
         }
     }
+    
+    auto end_time = high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::seconds>(end_time - m_nStartTime).count();
+    std::cout << "[GS" << m_nPort << "] FINISHED IN " << duration << "\n";
 }

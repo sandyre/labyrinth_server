@@ -13,8 +13,10 @@
 
 struct Player
 {
-    unsigned int x, y;
-    int32_t uid;
+    uint16_t    nXCoord;
+    uint16_t    nYCoord;
+    uint32_t    nUID;
+    
     Poco::Net::SocketAddress sock_addr;
 };
 

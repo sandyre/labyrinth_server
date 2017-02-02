@@ -8,9 +8,10 @@
 
 #include "masterserver.hpp"
 
-#include "packet.hpp"
+#include "netpacket.hpp"
 
-MasterServer::MasterServer(unsigned int Port)
+MasterServer::MasterServer(uint32_t Port) :
+m_nCurrentGamePort(Port+1)
 {
     Poco::Net::SocketAddress sock_addr("localhost", Port);
     m_oSocket.bind(sock_addr);
@@ -35,25 +36,21 @@ MasterServer::run()
     {
         m_oSocket.receiveFrom(request, 64, sender_addr);
         
-        Packet packet = *reinterpret_cast<Packet*>(request);
+        MSPacket * packet = reinterpret_cast<MSPacket*>(request);
         
         std::cout << "Received packet from " << sender_addr.host().toString() << "\n";
         
-        switch(packet.eType)
+        switch(packet->eType)
         {
-            case Packet::Type::PING:
+            case MSPacket::Type::CL_FIND_GAME:
             {
-                m_oSocket.sendTo("pong", 4, sender_addr);
-                break;
-            }
+                m_aGameServers.push_back(new GameServer(m_nCurrentGamePort));
                 
-            case Packet::Type::SEARCH_GAME:
-            {
-                Player player;
-                player.x = player.y = 0;
-                player.uid = 0;
-                player.sock_addr = sender_addr;
-                m_aPlayersPool.push_back(player);
+                packet->eType = MSPacket::Type::MS_GAME_FOUND;
+                std::memcpy(packet->aData, &m_nCurrentGamePort, sizeof(m_nCurrentGamePort));
+                m_oSocket.sendTo(packet, sizeof(MSPacket), sender_addr);
+                
+                ++m_nCurrentGamePort;
                 break;
             }
             

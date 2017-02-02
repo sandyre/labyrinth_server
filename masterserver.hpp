@@ -21,7 +21,7 @@
 class MasterServer
 {
 public:
-    MasterServer(unsigned int Port);
+    MasterServer(uint32_t Port);
     ~MasterServer();
     
     void    run();
@@ -29,6 +29,8 @@ protected:
     std::vector<Player>       m_aPlayersPool;
     std::vector<GameServer*>  m_aGameServers;
     Poco::Net::DatagramSocket m_oSocket;
+    
+    uint32_t                  m_nCurrentGamePort;
 };
 
 #endif /* masterserver_hpp */

@@ -13,6 +13,9 @@
 #include "player.hpp"
 #include <thread>
 #include <vector>
+#include <chrono>
+
+using std::chrono::high_resolution_clock;
 
 class GameServer
 {
@@ -20,11 +23,12 @@ public:
     enum class State
     {
         WAITING_PLAYERS,
+        GENERATING_WORLD,
         RUNNING_GAME,
         FINISHED
     };
 public:
-    GameServer(unsigned int Port);
+    GameServer(uint32_t Port);
     ~GameServer();
     
     GameServer::State   GetState() const;
@@ -34,6 +38,8 @@ private:
     GameServer::State   m_eState;
     std::thread         m_oThread;
     Poco::Net::DatagramSocket m_oSocket;
+    int32_t m_nPort;
+    high_resolution_clock::time_point m_nStartTime;
     
     std::vector<Player> m_aPlayers;
 };
