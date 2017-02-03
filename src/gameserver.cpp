@@ -213,7 +213,7 @@ GameServer::SendToAll(GamePacket& pack)
 {
     std::for_each(m_aPlayers.cbegin(),
                   m_aPlayers.cend(),
-    [&](auto& player)
+    [&](const Player& player)
     {
         m_oSocket.sendTo(&pack, sizeof(pack),
                          player.sock_addr);

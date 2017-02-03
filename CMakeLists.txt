@@ -4,7 +4,7 @@ project(labyrinth_server)
 
 set(CMAKE_COLOR_MAKEFILE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -lPocoNet")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lPocoNet")
 
 set(SOURCES
 	src/main.cpp
