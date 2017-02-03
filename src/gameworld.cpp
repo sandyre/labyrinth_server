@@ -40,7 +40,7 @@ GameWorld::init()
     sp_item.nItemUID = item.nUID;
     sp_item.nXCoord = item.nXCoord;
     sp_item.nYCoord = item.nYCoord;
-    std::memcpy(item_spawn.aData, &sp_item, sizeof(sp_item));
+    memcpy(item_spawn.aData, &sp_item, sizeof(sp_item));
     
     m_aEvents.push(item_spawn);
     
@@ -57,7 +57,7 @@ GameWorld::init()
     sp_constr.eType = door.eType;
     sp_constr.nXCoord = door.nXCoord;
     sp_constr.nYCoord = door.nYCoord;
-    std::memcpy(item_spawn.aData, &sp_constr, sizeof(sp_constr));
+    memcpy(item_spawn.aData, &sp_constr, sizeof(sp_constr));
     
     m_aEvents.push(item_spawn);
 }

@@ -12,6 +12,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <cstring>
 #include "netpacket.hpp"
 #include "gamemap.hpp"
 #include "player.hpp"

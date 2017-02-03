@@ -151,7 +151,7 @@ GameServer::EventLoop()
                 srv_mov.nPlayerUID = rcv_pack.nUID;
                 srv_mov.nXCoord = mov->nXCoord;
                 srv_mov.nYCoord = mov->nYCoord;
-                std::memcpy(ans_pack.aData, &srv_mov, sizeof(srv_mov));
+                memcpy(ans_pack.aData, &srv_mov, sizeof(srv_mov));
                 
                 SendToAll(ans_pack);
                 
@@ -186,7 +186,7 @@ GameServer::EventLoop()
                     SRVTakeItem srv_take;
                     srv_take.nItemUID = take->nItemUID;
                     srv_take.nPlayerUID = rcv_pack.nUID;
-                    std::memcpy(ans_pack.aData, &srv_take, sizeof(srv_take));
+                    memcpy(ans_pack.aData, &srv_take, sizeof(srv_take));
                     
                     SendToAll(ans_pack);
                 }

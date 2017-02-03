@@ -16,6 +16,7 @@
 #include <vector>
 #include <chrono>
 #include <string>
+#include <cstring>
 
 using std::chrono::high_resolution_clock;
 

@@ -9,6 +9,8 @@
 #ifndef globals_h
 #define globals_h
 
+#include <cstdint>
+
 struct Vec2
 {
     Vec2() :
