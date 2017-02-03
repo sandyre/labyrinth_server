@@ -1,3 +1,0 @@
-/Users/aleksandr/gamedev/labyrinth_server/build/CMakeFiles/rebuild_cache.dir
-/Users/aleksandr/gamedev/labyrinth_server/build/CMakeFiles/edit_cache.dir
-/Users/aleksandr/gamedev/labyrinth_server/build/CMakeFiles/master_serv.dir
