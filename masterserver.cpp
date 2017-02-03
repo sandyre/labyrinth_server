@@ -31,7 +31,7 @@ MasterServer::run()
 {
     Poco::Net::SocketAddress sender_addr;
     char request[64];
-    
+
     while(true)
     {
         m_oSocket.receiveFrom(request, 64, sender_addr);

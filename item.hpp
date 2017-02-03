@@ -17,7 +17,11 @@ struct Item
         SWORD = 0x01
     };
     
-    Item::Type  eType;
+    Item::Type   eType;
+    uint16_t     nUID;
+    uint16_t     nXCoord;
+    uint16_t     nYCoord;
+    uint32_t     nCarrierID; // 0 means its not carried by any player
 };
 
 #endif /* item_hpp */

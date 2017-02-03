@@ -9,6 +9,7 @@
 #ifndef netpacket_hpp
 #define netpacket_hpp
 
+#include "construction.hpp"
 #include "item.hpp"
 
 struct MSPacket
@@ -63,7 +64,8 @@ struct GamePacket
         SRV_GEN_MAP,
         SRV_SPAWN_PLAYER,
         SRV_SPAWN_MONSTER,
-        SRV_SPAWN_ITEM
+        SRV_SPAWN_ITEM,
+        SRV_SPAWN_CONSTRUCTION
     };
     
     GamePacket::Type    eType;
@@ -74,14 +76,27 @@ struct GamePacket
 namespace GamePackets
 {
 
-struct Movement
+struct CLMovement
 {
     uint16_t    nXCoord;
     uint16_t    nYCoord;
 };
 
-struct Equip
+struct SRVMovement
 {
+    uint32_t    nPlayerUID;
+    uint16_t    nXCoord;
+    uint16_t    nYCoord;
+};
+    
+struct CLTakeItem
+{
+    uint16_t    nItemID;
+};
+    
+struct SRVTakeItem
+{
+    uint32_t    nPlayerUID;
     uint16_t    nItemID;
 };
     
@@ -98,8 +113,16 @@ struct PlayerAttack
 struct SpawnItem
 {
     Item::Type  eType;
+    uint16_t    nItemID;
     uint16_t    nXCoord;
     uint16_t    nYCoord;
+};
+    
+struct SpawnConstruction
+{
+    Construction::Type  eType;
+    uint16_t            nXCoord;
+    uint16_t            nYCoord;
 };
     
 struct SpawnPlayer

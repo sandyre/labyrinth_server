@@ -10,6 +10,8 @@
 #define player_hpp
 
 #include <Poco/Net/SocketAddress.h>
+#include <vector>
+#include "item.hpp"
 
 struct Player
 {

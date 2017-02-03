@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <iostream>
 #include "netpacket.hpp"
-#include <Poco/Checksum.h>
 
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
@@ -19,9 +18,14 @@ using std::chrono::duration_cast;
 GameServer::GameServer(uint32_t Port) :
 m_eState(GameServer::State::WAITING_PLAYERS),
 m_nPort(Port),
-m_nStartTime(high_resolution_clock::now())
+m_nStartTime(high_resolution_clock::now()),
+m_pGameWorld(nullptr)
 {
-    std::cout << "[GS" << Port << "] STARTED (WAITING PLAYERS)\n";
+    m_sServerName = "[GS";
+    m_sServerName += std::to_string(m_nPort);
+    m_sServerName += "]";
+    
+    std::cout << m_sServerName << " STARTED (WAITING PLAYERS)\n";
     
     Poco::Net::SocketAddress addr("localhost", Port);
     m_oSocket.bind(addr);
@@ -59,13 +63,13 @@ GameServer::EventLoop()
         if(pack->eType == GamePacket::Type::CL_CONNECT)
         {
             auto iter =
-            std::find_if(m_aPlayers.begin(), m_aPlayers.end(),
-            [=](Player& player)
+            std::find_if(m_mPlayers.begin(), m_mPlayers.end(),
+            [=](auto player)
             {
-                return player.sock_addr == sender_addr;
+                return player.second.sock_addr == sender_addr;
             });
             
-            if(iter != m_aPlayers.end() || m_aPlayers.size() == 0)
+            if(iter != m_mPlayers.end() || m_mPlayers.size() == 0)
             {
                 Player player;
                 player.nUID = 0;
@@ -73,7 +77,7 @@ GameServer::EventLoop()
                 player.nYCoord = 0;
                 player.sock_addr = sender_addr;
                 
-                m_aPlayers.push_back(player);
+                m_mPlayers.insert(std::make_pair(player.nUID, player));
                 
                 GamePackets::SetPlayerUID set_uid;
                 set_uid.nUID = player.nUID;
@@ -84,78 +88,159 @@ GameServer::EventLoop()
                 m_oSocket.sendTo(pack, sizeof(GamePacket),
                                  sender_addr);
                 
-                std::cout << "[GS" << m_nPort << "] PLAYER ATTACHED WITH UID " << player.nUID << "\n";
+                std::cout << m_sServerName << " PLAYER ATTACHED WITH UID " << player.nUID << "\n";
             }
         }
         
-        if(m_aPlayers.size() == 1)
+        if(m_mPlayers.size() == 1)
         {
             m_eState = GameServer::State::GENERATING_WORLD;
         }
     }
     
-    std::cout << "[GS" << m_nPort << "] GENERATING WORLD\n";
+    std::cout << m_sServerName << " GENERATING WORLD\n";
     
-    while(m_eState == GameServer::State::GENERATING_WORLD)
+    if(m_eState == GameServer::State::GENERATING_WORLD)
     {
-        break;
+        GameWorld::Settings sets;
+        sets.nSeed = 15; // FIXME: should be randomly selected
+        sets.stGMSettings.nChunks = 5;
+        sets.stGMSettings.nChunkWidth = 10;
+        sets.stGMSettings.nChunkHeight = 10;
+        m_pGameWorld = new GameWorld(sets, m_mPlayers);
+        m_pGameWorld->init();
+        
+        std::cout << m_sServerName << " GENERATED WORLD, GAME BEGINS\n";
+        
+//        GamePacket pack;
+//        GamePackets::GenMap gen_map;
+//        gen_map.nSeed = sets.nSeed;
+//        pack.eType = GamePacket::Type::SRV_GEN_MAP;
+//        std::memcpy(pack.aData, &gen_map, sizeof(gen_map));
+//        
+//        for(auto& player : m_aPlayers)
+//        {
+//            m_oSocket.sendTo(&pack, sizeof(pack),
+//                             player.sock_addr);
+//        }
+        
+        m_eState = GameServer::State::RUNNING_GAME;
+            // TODO: add waiting for players to generate levels!
     }
     
-    while(m_eState != GameServer::State::FINISHED)
+    while(m_eState == GameServer::State::RUNNING_GAME)
     {
-        m_oSocket.receiveFrom(buf, 64, sender_addr);
+            // m_pGameWorld->update();
         
-        GamePacket * pack = reinterpret_cast<GamePacket*>(buf);
-        
-            // update ADDR info
-        for(auto& player : m_aPlayers)
+            // send packets that GameWorld update produced
+        while(!m_pGameWorld->GetEvents().empty())
         {
-            if(player.nUID == pack->nUID)
-            {
-                player.sock_addr = sender_addr;
-            }
+            GamePacket& pack = m_pGameWorld->GetEvents().front();
+            SendToAll(pack);
+            m_pGameWorld->GetEvents().pop();
         }
         
-        switch(pack->eType)
+        m_oSocket.receiveFrom(buf, 64, sender_addr);
+        
+        GamePacket rcv_pack = *reinterpret_cast<GamePacket*>(buf);
+        
+            // update ADDR info
+        m_mPlayers[rcv_pack.nUID].sock_addr = sender_addr;
+        
+        switch(rcv_pack.eType)
         {
             case GamePacket::Type::CL_MOVEMENT:
             {
                 using namespace GamePackets;
-                Movement * mov = reinterpret_cast<Movement*>(pack->aData);
+                CLMovement * mov = reinterpret_cast<CLMovement*>(rcv_pack.aData);
                 
-                for(auto& player : m_aPlayers)
+                    // apply movement changes into gameworld
+                auto& player   = m_mPlayers[rcv_pack.nUID];
+                player.nXCoord = mov->nXCoord;
+                player.nYCoord = mov->nYCoord;
+                
+                    // forming answer (sending to all players)
+                GamePacket ans_pack;
+                SRVMovement srv_mov;
+                ans_pack.eType = GamePacket::Type::SRV_MOVEMENT;
+                srv_mov.nPlayerUID = rcv_pack.nUID;
+                srv_mov.nXCoord = mov->nXCoord;
+                srv_mov.nYCoord = mov->nYCoord;
+                std::memcpy(ans_pack.aData, &srv_mov, sizeof(srv_mov));
+                
+                SendToAll(ans_pack);
+                
+                std::cout << m_sServerName << " RECEIVED MOVEMENT PACKET FROM USER "
+                    << rcv_pack.nUID << " X: " << mov->nXCoord << " Y: " << mov->nYCoord << "\n";
+                
+                break;
+            }
+                
+            case GamePacket::Type::CL_TAKE_EQUIP:
+            {
+                using namespace GamePackets;
+                bool bPlayerTakesItem = false;
+                CLTakeItem * take = reinterpret_cast<CLTakeItem*>(rcv_pack.aData);
+                
+                    // check that player can take item
+                for(auto& item : m_pGameWorld->GetItems())
                 {
-                    if(player.nUID == pack->nUID)
+                    if(item.nUID == take->nItemID &&
+                       item.nCarrierID == 0)
                     {
-                        player.nXCoord = mov->nXCoord;
-                        player.nYCoord = mov->nYCoord;
-                        
-                        break;
+                        item.nCarrierID  = rcv_pack.nUID;
+                        bPlayerTakesItem = true;
                     }
                 }
                 
-                pack->eType = GamePacket::Type::SRV_MOVEMENT;
-                
-                for(auto& player : m_aPlayers)
+                    // form result
+                if(bPlayerTakesItem)
                 {
-                    m_oSocket.sendTo(pack,
-                                     sizeof(GamePacket),
-                                     player.sock_addr);
+                    GamePacket ans_pack;
+                    ans_pack.eType = GamePacket::Type::SRV_TOOK_EQUIP;
+                    SRVTakeItem srv_take;
+                    srv_take.nItemID = take->nItemID;
+                    srv_take.nPlayerUID = rcv_pack.nUID;
+                    std::memcpy(ans_pack.aData, &srv_take, sizeof(srv_take));
+                    
+                    SendToAll(ans_pack);
                 }
                 
-                std::cout << "[GS" << m_nPort << "] RECEIVED MOVEMENT PACKET FROM USER "
-                    << pack->nUID << " X: " << mov->nXCoord << " Y: " << mov->nYCoord << "\n";
+                std::cout << m_sServerName << " RECEIVED ITEM TAKE FROM USER " << rcv_pack.nUID
+                    << " ITEM ID " << take->nItemID << "\n";
                 
                 break;
             }
                 
             default:
-                std::cout << "[GS" << m_nPort << "] Undefined packet.\n";
+                std::cout << m_sServerName << " Undefined packet.\n";
                 break;
         }
     }
     
     auto end_time = high_resolution_clock::now();
     auto duration = duration_cast<std::chrono::seconds>(end_time - m_nStartTime).count();
-    std::cout << "[GS" << m_nPort << "] FINISHED IN " << duration << "\n";
+    std::cout << m_sServerName << " FINISHED IN " << duration << "\n";
+}
+
+void
+GameServer::SendToAll(GamePacket& pack)
+{
+    std::for_each(m_mPlayers.cbegin(),
+                  m_mPlayers.cend(),
+    [&](auto& player)
+    {
+        m_oSocket.sendTo(&pack, sizeof(pack),
+                         player.second.sock_addr);
+    });
+}
+
+void
+GameServer::SendToOne(uint32_t player_id,
+                      GamePacket& pack)
+{
+    auto& player = m_mPlayers[player_id];
+    
+    m_oSocket.sendTo(&pack, sizeof(pack),
+                     player.sock_addr);
 }
