@@ -49,6 +49,8 @@ chrono
 -
 string
 -
+cstring
+-
 
 /Users/aleksandr/gamedev/labyrinth_server/src/gameworld.cpp
 gameworld.hpp
@@ -63,6 +65,8 @@ queue
 -
 map
 -
+cstring
+-
 netpacket.hpp
 /Users/aleksandr/gamedev/labyrinth_server/src/netpacket.hpp
 gamemap.hpp
@@ -75,6 +79,8 @@ construction.hpp
 /Users/aleksandr/gamedev/labyrinth_server/src/construction.hpp
 
 /Users/aleksandr/gamedev/labyrinth_server/src/globals.h
+cstdint
+-
 
 /Users/aleksandr/gamedev/labyrinth_server/src/item.hpp
 

@@ -194,6 +194,8 @@ master_serv: CMakeFiles/master_serv.dir/src/gameserver.cpp.o
 master_serv: CMakeFiles/master_serv.dir/src/gameworld.cpp.o
 master_serv: CMakeFiles/master_serv.dir/src/masterserver.cpp.o
 master_serv: CMakeFiles/master_serv.dir/build.make
+master_serv: /usr/local/lib/libPocoNet.a
+master_serv: /usr/local/lib/libPocoFoundation.a
 master_serv: CMakeFiles/master_serv.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/aleksandr/gamedev/labyrinth_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable master_serv"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/master_serv.dir/link.txt --verbose=$(VERBOSE)
