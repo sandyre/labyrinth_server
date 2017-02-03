@@ -12,6 +12,11 @@
 #include "construction.hpp"
 #include "item.hpp"
 
+    //typedefs
+using PlayerUID = int32_t;
+using ItemUID   = int16_t;
+using MonsterUID = int16_t;
+
 struct MSPacket
 {
     enum class Type : unsigned char
@@ -24,7 +29,7 @@ struct MSPacket
     };
     
     MSPacket::Type  eType;
-    uint32_t        nUID;
+    PlayerUID       nUID;
     char            aData[50];
 };
 
@@ -69,7 +74,7 @@ struct GamePacket
     };
     
     GamePacket::Type    eType;
-    uint32_t            nUID;
+    PlayerUID           nUID;
     char                aData[50];
 };
 
@@ -84,74 +89,85 @@ struct CLMovement
 
 struct SRVMovement
 {
-    uint32_t    nPlayerUID;
+    PlayerUID   nPlayerUID;
     uint16_t    nXCoord;
     uint16_t    nYCoord;
 };
     
 struct CLTakeItem
 {
-    uint16_t    nItemID;
+    ItemUID     nItemUID;
 };
     
 struct SRVTakeItem
 {
-    uint32_t    nPlayerUID;
-    uint16_t    nItemID;
+    PlayerUID   nPlayerUID;
+    ItemUID     nItemUID;
 };
-    
-struct MonsterAttack
+
+struct CLAttackMonster
 {
-    uint16_t    nMonsterID;
+    MonsterUID   nMonsterUID;
 };
     
-struct PlayerAttack
+struct SRVMonsterAttack
 {
-    uint16_t    nPlayerID;
+    PlayerUID    nPlayerUID;
+    MonsterUID   nMonsterUID;
 };
     
-struct SpawnItem
+struct CLPlayerAttack
+{
+    PlayerUID   nPlayerUID;
+};
+
+struct SRVPlayerAttack
+{
+    PlayerUID    nAttackerID;
+    PlayerUID    nAttackedID;
+};
+    
+struct SRVSpawnItem
 {
     Item::Type  eType;
-    uint16_t    nItemID;
+    ItemUID     nItemUID;
     uint16_t    nXCoord;
     uint16_t    nYCoord;
 };
     
-struct SpawnConstruction
+struct SRVSpawnConstruction
 {
     Construction::Type  eType;
     uint16_t            nXCoord;
     uint16_t            nYCoord;
 };
     
-struct SpawnPlayer
+struct SRVSpawnPlayer
 {
-    uint32_t nPlayerUID;
+    PlayerUID nPlayerUID;
     int16_t  nXCoord;
     int16_t  nYCoord;
 };
     
-struct SpawnMonster
+struct SRVSpawnMonster
 {
-    uint16_t nMonsterID;
+    MonsterUID nMonsterUID;
     int16_t  nXCoord;
     int16_t  nYCoord;
 };
     
-struct GenMap
+struct SRVGenMap
 {
+    uint16_t    nChunkN;
+    uint16_t    nChunkW;
+    uint16_t    nChunkH;
     uint32_t    nSeed;
 };
     
-struct PlayerConnect
+struct CLPlayerConnect
 {
+    uint32_t    nPlayerUID;
         // to be implemented
-};
-    
-struct SetPlayerUID
-{
-    uint32_t nUID;
 };
     
 }

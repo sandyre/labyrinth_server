@@ -11,7 +11,7 @@
 #include <random>
 
 GameWorld::GameWorld(GameWorld::Settings& sets,
-                     std::map<uint32_t, Player>& players) :
+                     std::vector<Player>& players) :
 m_stSettings(sets),
 m_aPlayers(players)
 {
@@ -35,9 +35,9 @@ GameWorld::init()
     GamePacket item_spawn;
     item_spawn.eType = GamePacket::Type::SRV_SPAWN_ITEM;
     
-    GamePackets::SpawnItem sp_item;
+    GamePackets::SRVSpawnItem sp_item;
     sp_item.eType   = item.eType;
-    sp_item.nItemID = item.nUID;
+    sp_item.nItemUID = item.nUID;
     sp_item.nXCoord = item.nXCoord;
     sp_item.nYCoord = item.nYCoord;
     std::memcpy(item_spawn.aData, &sp_item, sizeof(sp_item));
@@ -53,7 +53,7 @@ GameWorld::init()
     door.nYCoord = random_pos.y;
     m_aConstructions.push_back(door);
     
-    GamePackets::SpawnConstruction sp_constr;
+    GamePackets::SRVSpawnConstruction sp_constr;
     sp_constr.eType = door.eType;
     sp_constr.nXCoord = door.nXCoord;
     sp_constr.nYCoord = door.nYCoord;
@@ -105,8 +105,8 @@ GameWorld::GetRandomPosition()
         
         for(auto& player : m_aPlayers)
         {
-            if(player.second.nXCoord == position.x &&
-               player.second.nYCoord == position.y)
+            if(player.nXCoord == position.x &&
+               player.nYCoord == position.y)
             {
                 bIsEngaged = true;
                 break;

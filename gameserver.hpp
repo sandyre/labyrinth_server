@@ -12,7 +12,6 @@
 #include <Poco/Net/DatagramSocket.h>
 #include "player.hpp"
 #include "gameworld.hpp"
-#include <map>
 #include <thread>
 #include <vector>
 #include <chrono>
@@ -39,6 +38,8 @@ private:
     void    EventLoop();
     void    SendToOne(uint32_t, GamePacket&);
     void    SendToAll(GamePacket&);
+    
+    inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
 private:
     GameServer::State   m_eState;
     std::string         m_sServerName;
@@ -48,7 +49,7 @@ private:
     high_resolution_clock::time_point m_nStartTime;
     
     GameWorld * m_pGameWorld;
-    std::map<uint32_t, Player> m_mPlayers;
+    std::vector<Player> m_aPlayers;
 };
 
 #endif /* gameserver_hpp */

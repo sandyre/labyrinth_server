@@ -62,37 +62,26 @@ GameServer::EventLoop()
         GamePacket * pack = reinterpret_cast<GamePacket*>(buf);
         if(pack->eType == GamePacket::Type::CL_CONNECT)
         {
-            auto iter =
-            std::find_if(m_mPlayers.begin(), m_mPlayers.end(),
-            [=](auto player)
-            {
-                return player.second.sock_addr == sender_addr;
-            });
+            using namespace GamePackets;
+            CLPlayerConnect * con = reinterpret_cast<CLPlayerConnect*>(pack);
             
-            if(iter != m_mPlayers.end() || m_mPlayers.size() == 0)
+                // check that player doesnt exist
+            auto player = FindPlayerByUID(con->nPlayerUID);
+            if(player == m_aPlayers.end())
             {
-                Player player;
-                player.nUID = 0;
-                player.nXCoord = 0;
-                player.nYCoord = 0;
-                player.sock_addr = sender_addr;
+                    // add player
+                Player new_player;
+                new_player.nUID = con->nPlayerUID;
+                new_player.sock_addr = sender_addr;
                 
-                m_mPlayers.insert(std::make_pair(player.nUID, player));
+                m_aPlayers.emplace_back(new_player);
                 
-                GamePackets::SetPlayerUID set_uid;
-                set_uid.nUID = player.nUID;
-                
-                pack->eType = GamePacket::Type::SRV_PL_SET_UID;
-                std::memcpy(pack->aData, &set_uid, sizeof(set_uid));
-                
-                m_oSocket.sendTo(pack, sizeof(GamePacket),
-                                 sender_addr);
-                
-                std::cout << m_sServerName << " PLAYER ATTACHED WITH UID " << player.nUID << "\n";
+                std::cout << m_sServerName << " PLAYER ATTACHED WITH UID "
+                    << new_player.nUID << "\n";
             }
         }
         
-        if(m_mPlayers.size() == 1)
+        if(m_aPlayers.size() == 1)
         {
             m_eState = GameServer::State::GENERATING_WORLD;
         }
@@ -107,22 +96,10 @@ GameServer::EventLoop()
         sets.stGMSettings.nChunks = 5;
         sets.stGMSettings.nChunkWidth = 10;
         sets.stGMSettings.nChunkHeight = 10;
-        m_pGameWorld = new GameWorld(sets, m_mPlayers);
+        m_pGameWorld = new GameWorld(sets, m_aPlayers);
         m_pGameWorld->init();
         
         std::cout << m_sServerName << " GENERATED WORLD, GAME BEGINS\n";
-        
-//        GamePacket pack;
-//        GamePackets::GenMap gen_map;
-//        gen_map.nSeed = sets.nSeed;
-//        pack.eType = GamePacket::Type::SRV_GEN_MAP;
-//        std::memcpy(pack.aData, &gen_map, sizeof(gen_map));
-//        
-//        for(auto& player : m_aPlayers)
-//        {
-//            m_oSocket.sendTo(&pack, sizeof(pack),
-//                             player.sock_addr);
-//        }
         
         m_eState = GameServer::State::RUNNING_GAME;
             // TODO: add waiting for players to generate levels!
@@ -145,7 +122,15 @@ GameServer::EventLoop()
         GamePacket rcv_pack = *reinterpret_cast<GamePacket*>(buf);
         
             // update ADDR info
-        m_mPlayers[rcv_pack.nUID].sock_addr = sender_addr;
+        auto player = FindPlayerByUID(rcv_pack.nUID);
+        if(player != m_aPlayers.end())
+        {
+            player->sock_addr = sender_addr;
+        }
+        else
+        {
+            continue;
+        }
         
         switch(rcv_pack.eType)
         {
@@ -155,9 +140,9 @@ GameServer::EventLoop()
                 CLMovement * mov = reinterpret_cast<CLMovement*>(rcv_pack.aData);
                 
                     // apply movement changes into gameworld
-                auto& player   = m_mPlayers[rcv_pack.nUID];
-                player.nXCoord = mov->nXCoord;
-                player.nYCoord = mov->nYCoord;
+                auto player     = FindPlayerByUID(rcv_pack.nUID);
+                player->nXCoord = mov->nXCoord;
+                player->nYCoord = mov->nYCoord;
                 
                     // forming answer (sending to all players)
                 GamePacket ans_pack;
@@ -185,7 +170,7 @@ GameServer::EventLoop()
                     // check that player can take item
                 for(auto& item : m_pGameWorld->GetItems())
                 {
-                    if(item.nUID == take->nItemID &&
+                    if(item.nUID == take->nItemUID &&
                        item.nCarrierID == 0)
                     {
                         item.nCarrierID  = rcv_pack.nUID;
@@ -199,7 +184,7 @@ GameServer::EventLoop()
                     GamePacket ans_pack;
                     ans_pack.eType = GamePacket::Type::SRV_TOOK_EQUIP;
                     SRVTakeItem srv_take;
-                    srv_take.nItemID = take->nItemID;
+                    srv_take.nItemUID = take->nItemUID;
                     srv_take.nPlayerUID = rcv_pack.nUID;
                     std::memcpy(ans_pack.aData, &srv_take, sizeof(srv_take));
                     
@@ -207,7 +192,7 @@ GameServer::EventLoop()
                 }
                 
                 std::cout << m_sServerName << " RECEIVED ITEM TAKE FROM USER " << rcv_pack.nUID
-                    << " ITEM ID " << take->nItemID << "\n";
+                    << " ITEM ID " << take->nItemUID << "\n";
                 
                 break;
             }
@@ -226,12 +211,12 @@ GameServer::EventLoop()
 void
 GameServer::SendToAll(GamePacket& pack)
 {
-    std::for_each(m_mPlayers.cbegin(),
-                  m_mPlayers.cend(),
+    std::for_each(m_aPlayers.cbegin(),
+                  m_aPlayers.cend(),
     [&](auto& player)
     {
         m_oSocket.sendTo(&pack, sizeof(pack),
-                         player.second.sock_addr);
+                         player.sock_addr);
     });
 }
 
@@ -239,8 +224,24 @@ void
 GameServer::SendToOne(uint32_t player_id,
                       GamePacket& pack)
 {
-    auto& player = m_mPlayers[player_id];
+    auto player = FindPlayerByUID(player_id);
     
     m_oSocket.sendTo(&pack, sizeof(pack),
-                     player.sock_addr);
+                     player->sock_addr);
+}
+
+std::vector<Player>::iterator
+GameServer::FindPlayerByUID(PlayerUID uid)
+{
+    for(auto iter = m_aPlayers.begin();
+        iter != m_aPlayers.end();
+        ++iter)
+    {
+        if((*iter).nUID == uid)
+        {
+            return iter;
+        }
+    }
+    
+    return m_aPlayers.end();
 }

@@ -28,7 +28,7 @@ public:
         GameMap::Settings stGMSettings;
     };
 public:
-    GameWorld(GameWorld::Settings&, std::map<uint32_t, Player>&);
+    GameWorld(GameWorld::Settings&, std::vector<Player>&);
     
     virtual void init();
     virtual void update();
@@ -43,7 +43,7 @@ protected:
 protected:
     GameWorld::Settings    m_stSettings;
     std::queue<GamePacket> m_aEvents;
-    std::map<uint32_t, Player>& m_aPlayers;
+    std::vector<Player>&   m_aPlayers;
     std::vector<Item>    m_aItems;
     std::vector<Construction> m_aConstructions;
     GameMap              m_oGameMap;
