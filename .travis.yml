@@ -11,9 +11,7 @@ before_install:
 - echo $LC_ALL
 script:
 - cd third-party/poco-1.7.7
-- sudo ./configure --static
-- make -s -j4
-- sudo make install
+- ./configure --everyting --static --omit=Data/ODBC,Data/MySQL,Data/PostgreSQL && make -s -j2 && sudo make install
 - cd ../../
 - mkdir build
 - cd build
