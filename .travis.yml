@@ -11,7 +11,7 @@ before_install:
 - echo $LC_ALL
 script:
 - cd third-party/poco-1.7.7
-- ./configure --static
+- sudo ./configure --static
 - make -s -j4
 - sudo make install
 - cd ../../
