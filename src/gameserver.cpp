@@ -228,6 +228,57 @@ GameServer::EventLoop()
                 break;
             }
                 
+            case GamePacket::Type::CL_CHECK_WIN:
+            {
+                using namespace GamePackets;
+                auto player = FindPlayerByUID(rcv_pack.nUID);
+                if(player != m_aPlayers.end())
+                {
+                        // check that player has a key, and his position is at the door
+                    bool bHasKey = false;
+                    bool bAtTheDoor = false;
+                    
+                    for(auto& item : m_pGameWorld->GetItems())
+                    {
+                            // check that player has key
+                        if(item.eType == Item::Type::KEY &&
+                           item.nCarrierID == player->nUID)
+                        {
+                            bHasKey = true;
+                        }
+                    }
+                    
+                    auto& constructions = m_pGameWorld->GetConstructions();
+                    auto door = std::find_if(constructions.cbegin(),
+                                             constructions.cend(),
+                    [&](const Construction& costr)
+                    {
+                        return costr.eType == Construction::Type::DOOR;
+                    });
+                    
+                    if(door->nXCoord == player->nXCoord &&
+                       door->nXCoord == player->nYCoord)
+                    {
+                        bAtTheDoor = true;
+                    }
+                    
+                    if(bHasKey && bAtTheDoor)
+                    {
+                            // player wins
+                        GamePacket pack;
+                        SRVPlayerWin win;
+                        win.nPlayerUID = player->nUID;
+                        memcpy(pack.aData, &win, sizeof(win));
+                        
+                        SendToAll(pack);
+                        
+                        m_eState = GameServer::State::FINISHED;
+                    }
+                }
+                
+                break;
+            }
+                
             default:
                 std::cout << m_sServerName << " Undefined packet.\n";
                 break;

@@ -76,6 +76,8 @@ struct GamePacket
         
         CL_CONNECT,
         CL_GEN_MAP_OK,
+        CL_CHECK_WIN,
+        SRV_PLAYER_WIN,
         SRV_GEN_MAP,
         SRV_GAME_START,
         SRV_SPAWN_PLAYER,
@@ -172,6 +174,15 @@ struct SRVGenMap
 {
     uint16_t    nChunkN;
     uint32_t    nSeed;
+};
+
+struct CLCheckWin
+{
+};
+    
+struct SRVPlayerWin
+{
+    PlayerUID   nPlayerUID;
 };
     
 struct SRVGenMapOk

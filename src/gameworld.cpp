@@ -23,6 +23,26 @@ GameWorld::init()
 {
     m_oGameMap = GameMap(m_stSettings.stGMSettings);
     
+        // spawn players
+    for(auto& player : m_aPlayers)
+    {
+        Vec2 spawn_point = GetRandomPosition();
+        player.nXCoord = spawn_point.x;
+        player.nYCoord = spawn_point.y;
+        
+        GamePacket pack;
+        pack.eType = GamePacket::Type::SRV_SPAWN_PLAYER;
+        
+        GamePackets::SRVSpawnPlayer sp_player;
+        sp_player.nPlayerUID = player.nUID;
+        sp_player.nXCoord = player.nXCoord;
+        sp_player.nYCoord = player.nYCoord;
+        strncpy(sp_player.sNickname, player.sNickname, 16);
+        memcpy(pack.aData, &sp_player, sizeof(sp_player));
+        
+        m_aEvents.push(pack);
+    }
+    
         // spawn key
     Vec2 random_pos = GetRandomPosition();
     Item item;
