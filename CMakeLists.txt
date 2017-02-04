@@ -4,6 +4,7 @@ project(labyrinth_server)
 
 find_library(LIBPOCONET_LOCATION libPocoNet.a)
 find_library(LIBPOCOFOUND_LOCATION libPocoFoundation.a)
+
 set(CMAKE_COLOR_MAKEFILE ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

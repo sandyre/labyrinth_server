@@ -12,7 +12,7 @@
 #include "construction.hpp"
 #include "item.hpp"
 
-    //typedefs
+// typedefs
 using PlayerUID = int32_t;
 using ItemUID   = int16_t;
 using MonsterUID = int16_t;
@@ -35,6 +35,16 @@ struct MSPacket
 
 namespace MSPackets
 {
+    
+struct CLPing
+{
+    
+};
+    
+struct MSPing
+{
+    
+};
     
 struct CLFindGame
 {
@@ -65,8 +75,9 @@ struct GamePacket
         SRV_ATTACK_MONSTER,
         
         CL_CONNECT,
-        SRV_PL_SET_UID,
+        CL_GEN_MAP_OK,
         SRV_GEN_MAP,
+        SRV_GAME_START,
         SRV_SPAWN_PLAYER,
         SRV_SPAWN_MONSTER,
         SRV_SPAWN_ITEM,
@@ -145,6 +156,7 @@ struct SRVSpawnConstruction
 struct SRVSpawnPlayer
 {
     PlayerUID nPlayerUID;
+    char     sNickname[16];
     int16_t  nXCoord;
     int16_t  nYCoord;
 };
@@ -159,14 +171,18 @@ struct SRVSpawnMonster
 struct SRVGenMap
 {
     uint16_t    nChunkN;
-    uint16_t    nChunkW;
-    uint16_t    nChunkH;
     uint32_t    nSeed;
+};
+    
+struct SRVGenMapOk
+{
+    
 };
     
 struct CLPlayerConnect
 {
     uint32_t    nPlayerUID;
+    char        sNickname[16];
         // to be implemented
 };
     

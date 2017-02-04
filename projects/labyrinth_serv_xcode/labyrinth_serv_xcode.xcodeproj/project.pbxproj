@@ -12,6 +12,8 @@
 		1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144A1E450ED5004EC380 /* gamemap.cpp */; };
 		1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144C1E450ED5004EC380 /* masterserver.cpp */; };
 		1FEC14561E450ED5004EC380 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14501E450ED5004EC380 /* main.cpp */; };
+		1FEC145E1E452966004EC380 /* libPocoNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FEC145C1E452966004EC380 /* libPocoNet.a */; };
+		1FEC145F1E452966004EC380 /* libPocoFoundation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FEC145D1E452966004EC380 /* libPocoFoundation.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,6 +45,10 @@
 		1FEC144F1E450ED5004EC380 /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/monster.hpp; sourceTree = "<group>"; };
 		1FEC14501E450ED5004EC380 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../../src/main.cpp; sourceTree = "<group>"; };
 		1FEC14511E450ED5004EC380 /* masterserver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = masterserver.hpp; path = ../../../src/masterserver.hpp; sourceTree = "<group>"; };
+		1FEC14581E4527E9004EC380 /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = "../../third-party/poco-1.7.7/lib/Darwin/x86_64/libPocoNet.a"; sourceTree = "<group>"; };
+		1FEC14591E4527E9004EC380 /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = "../../third-party/poco-1.7.7/lib/Darwin/x86_64/libPocoFoundation.a"; sourceTree = "<group>"; };
+		1FEC145C1E452966004EC380 /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = labyrinth_serv_xcode.xcodeproj/libPocoNet.a; sourceTree = "<group>"; };
+		1FEC145D1E452966004EC380 /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = labyrinth_serv_xcode.xcodeproj/libPocoFoundation.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +56,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1FEC145E1E452966004EC380 /* libPocoNet.a in Frameworks */,
+				1FEC145F1E452966004EC380 /* libPocoFoundation.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,6 +69,7 @@
 			children = (
 				1FEC14271E450E9A004EC380 /* labyrinth_serv_xcode */,
 				1FEC14261E450E9A004EC380 /* Products */,
+				1FEC14571E4527E9004EC380 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -75,23 +84,34 @@
 		1FEC14271E450E9A004EC380 /* labyrinth_serv_xcode */ = {
 			isa = PBXGroup;
 			children = (
-				1FEC14431E450ED5004EC380 /* gameserver.cpp */,
-				1FEC14441E450ED5004EC380 /* netpacket.hpp */,
-				1FEC14451E450ED5004EC380 /* gameworld.cpp */,
-				1FEC14461E450ED5004EC380 /* gameworld.hpp */,
-				1FEC14471E450ED5004EC380 /* gameserver.hpp */,
-				1FEC14481E450ED5004EC380 /* item.hpp */,
-				1FEC14491E450ED5004EC380 /* player.hpp */,
+				1FEC144D1E450ED5004EC380 /* construction.hpp */,
 				1FEC144A1E450ED5004EC380 /* gamemap.cpp */,
 				1FEC144B1E450ED5004EC380 /* gamemap.hpp */,
-				1FEC144C1E450ED5004EC380 /* masterserver.cpp */,
-				1FEC144D1E450ED5004EC380 /* construction.hpp */,
+				1FEC14431E450ED5004EC380 /* gameserver.cpp */,
+				1FEC14471E450ED5004EC380 /* gameserver.hpp */,
+				1FEC14451E450ED5004EC380 /* gameworld.cpp */,
+				1FEC14461E450ED5004EC380 /* gameworld.hpp */,
 				1FEC144E1E450ED5004EC380 /* globals.h */,
-				1FEC144F1E450ED5004EC380 /* monster.hpp */,
+				1FEC14481E450ED5004EC380 /* item.hpp */,
 				1FEC14501E450ED5004EC380 /* main.cpp */,
+				1FEC144C1E450ED5004EC380 /* masterserver.cpp */,
 				1FEC14511E450ED5004EC380 /* masterserver.hpp */,
+				1FEC144F1E450ED5004EC380 /* monster.hpp */,
+				1FEC14441E450ED5004EC380 /* netpacket.hpp */,
+				1FEC14491E450ED5004EC380 /* player.hpp */,
 			);
 			path = labyrinth_serv_xcode;
+			sourceTree = "<group>";
+		};
+		1FEC14571E4527E9004EC380 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1FEC145C1E452966004EC380 /* libPocoNet.a */,
+				1FEC145D1E452966004EC380 /* libPocoFoundation.a */,
+				1FEC14581E4527E9004EC380 /* libPocoNet.a */,
+				1FEC14591E4527E9004EC380 /* libPocoFoundation.a */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -203,6 +223,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -244,6 +268,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
@@ -254,6 +282,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = D7DS4Q75JC;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/labyrinth_serv_xcode.xcodeproj",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -262,6 +294,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = D7DS4Q75JC;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/labyrinth_serv_xcode.xcodeproj",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

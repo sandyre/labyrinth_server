@@ -38,10 +38,16 @@ MasterServer::run()
         
         MSPacket * packet = reinterpret_cast<MSPacket*>(request);
         
-        std::cout << "Received packet from " << sender_addr.host().toString() << "\n";
-        
         switch(packet->eType)
         {
+            case MSPacket::Type::CL_PING:
+            {
+                packet->eType = MSPacket::Type::MS_PING;
+                m_oSocket.sendTo(packet, sizeof(MSPacket),
+                                 sender_addr);
+                break;
+            }
+                
             case MSPacket::Type::CL_FIND_GAME:
             {
                 m_aGameServers.push_back(new GameServer(m_nCurrentGamePort));

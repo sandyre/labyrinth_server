@@ -18,6 +18,7 @@ struct Player
     uint16_t    nXCoord;
     uint16_t    nYCoord;
     uint32_t    nUID;
+    char        sNickname[16];
     
     Poco::Net::SocketAddress sock_addr;
 };

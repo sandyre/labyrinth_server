@@ -73,10 +73,11 @@ GameServer::EventLoop()
                 Player new_player;
                 new_player.nUID = con->nPlayerUID;
                 new_player.sock_addr = sender_addr;
+                strncpy(new_player.sNickname, con->sNickname, 16);
                 
                 m_aPlayers.emplace_back(new_player);
                 
-                std::cout << m_sServerName << " PLAYER ATTACHED WITH UID "
+                std::cout << m_sServerName << " PLAYER \'" << new_player.sNickname << "\' ATTACHED WITH UID "
                     << new_player.nUID << "\n";
             }
         }
@@ -99,10 +100,40 @@ GameServer::EventLoop()
         m_pGameWorld = new GameWorld(sets, m_aPlayers);
         m_pGameWorld->init();
         
+        GamePacket pack;
+        pack.eType = GamePacket::Type::SRV_GEN_MAP;
+        GamePackets::SRVGenMap gen_map;
+        gen_map.nChunkN = sets.stGMSettings.nChunks;
+        gen_map.nSeed   = sets.nSeed;
+        memcpy(pack.aData, &gen_map, sizeof(gen_map));
+        
+        SendToAll(pack);
+        auto players_notconnected = m_aPlayers.size();
+        while(players_notconnected)
+        {
+            m_oSocket.receiveFrom(buf, 64, sender_addr);
+            
+            GamePacket * rcv_pack = reinterpret_cast<GamePacket*>(buf);
+            
+            if(rcv_pack->eType == GamePacket::Type::CL_GEN_MAP_OK)
+            {
+                std::cout << m_sServerName << " USER ID " << rcv_pack->nUID
+                    << " READY TO START\n";
+                --players_notconnected;
+            }
+        }
+        
         std::cout << m_sServerName << " GENERATED WORLD, GAME BEGINS\n";
         
         m_eState = GameServer::State::RUNNING_GAME;
-            // TODO: add waiting for players to generate levels!
+    }
+    
+        // notify players that game starts!
+    {
+        GamePacket pack;
+        pack.eType = GamePacket::Type::SRV_GAME_START;
+        
+        SendToAll(pack);
     }
     
     while(m_eState == GameServer::State::RUNNING_GAME)
