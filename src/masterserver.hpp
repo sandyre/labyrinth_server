@@ -13,6 +13,7 @@
 #include <fstream>
 #include <thread>
 #include <vector>
+#include <queue>
 #include <Poco/Net/DatagramSocket.h>
 
 #include "player.hpp"
@@ -26,7 +27,7 @@ public:
     
     void    run();
 protected:
-    std::vector<Player>       m_aPlayersPool;
+    std::deque<Player>        m_aPlayersPool;
     std::vector<GameServer*>  m_aGameServers;
     Poco::Net::DatagramSocket m_oSocket;
     

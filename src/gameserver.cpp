@@ -63,7 +63,7 @@ GameServer::EventLoop()
         if(pack->eType == GamePacket::Type::CL_CONNECT)
         {
             using namespace GamePackets;
-            CLPlayerConnect * con = reinterpret_cast<CLPlayerConnect*>(pack);
+            CLPlayerConnect * con = reinterpret_cast<CLPlayerConnect*>(pack->aData);
             
                 // check that player doesnt exist
             auto player = FindPlayerByUID(con->nPlayerUID);
@@ -82,7 +82,7 @@ GameServer::EventLoop()
             }
         }
         
-        if(m_aPlayers.size() == 1)
+        if(m_aPlayers.size() == 2)
         {
             m_eState = GameServer::State::GENERATING_WORLD;
         }

@@ -34,6 +34,23 @@ MasterServer::run()
 
     while(true)
     {
+            // create lobby for ready players
+        if(m_aPlayersPool.size() == 2)
+        {
+            m_aGameServers.push_back(new GameServer(m_nCurrentGamePort));
+            
+            MSPacket pack;
+            pack.eType = MSPacket::Type::MS_GAME_FOUND;
+            std::memcpy(pack.aData, &m_nCurrentGamePort, sizeof(m_nCurrentGamePort));
+            for(auto& player : m_aPlayersPool)
+            {
+                m_oSocket.sendTo(&pack, sizeof(MSPacket), player.sock_addr);
+            }
+            m_aPlayersPool.clear();
+            
+            ++m_nCurrentGamePort;
+        }
+        
         m_oSocket.receiveFrom(request, 64, sender_addr);
         
         MSPacket * packet = reinterpret_cast<MSPacket*>(request);
@@ -50,13 +67,26 @@ MasterServer::run()
                 
             case MSPacket::Type::CL_FIND_GAME:
             {
-                m_aGameServers.push_back(new GameServer(m_nCurrentGamePort));
+                    // check that player isnt already in pool
+                auto iter = std::find_if(m_aPlayersPool.begin(),
+                                         m_aPlayersPool.end(),
+                [&](Player& player)
+                {
+                    return player.nUID == packet->nUID;
+                });
                 
-                packet->eType = MSPacket::Type::MS_GAME_FOUND;
-                std::memcpy(packet->aData, &m_nCurrentGamePort, sizeof(m_nCurrentGamePort));
-                m_oSocket.sendTo(packet, sizeof(MSPacket), sender_addr);
+                    // player is not in pool already, add him
+                if(iter == m_aPlayersPool.end())
+                {
+                    Player player;
+                    player.nUID = packet->nUID;
+                    player.sock_addr = sender_addr;
+                    
+                    m_aPlayersPool.push_back(player);
+                    
+                    std::cout << "[MS] PLAYER ADDED UID: " << packet->nUID << "\n";
+                }
                 
-                ++m_nCurrentGamePort;
                 break;
             }
             

@@ -123,6 +123,15 @@ GameMap::GameMap(const GameMap::Settings& settings)
     m_oMap = GameMap::Map(m_stSettings.nChunkWidth * 3, std::vector<MapBlockType>(m_stSettings.nChunkHeight*3,
                                                                                   MapBlockType::NOBLOCK));
     
+        // make BORDER
+    for(auto i = 0; i < m_oMap.size(); ++i)
+    {
+        m_oMap[0][i] = MapBlockType::WALL;
+        m_oMap[i][0] = MapBlockType::WALL;
+        m_oMap[i][m_oMap.size()-1] = MapBlockType::WALL;
+        m_oMap[m_oMap.size()-1][i] = MapBlockType::WALL;
+    }
+    
     for(auto i = 0; i < labyrinth.size(); ++i)
     {
         for(auto j = 0; j < labyrinth[i].size(); ++j)
