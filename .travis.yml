@@ -11,7 +11,7 @@ before_install:
 - echo $LC_ALL
 script:
 - cd third-party/poco-1.7.7
-- ./configure --everyting --static --omit=Data/ODBC,Data/MySQL,Data/PostgreSQL && make -s -j2 && sudo make install
+- ./configure --static --omit=Data/ODBC,Data/MySQL,Data/PostgreSQL && make -s -j2 && sudo make install
 - cd ../../
 - mkdir build
 - cd build
@@ -21,7 +21,7 @@ branches:
   only:
   - master
 notifications:
-  email: 191980@niuitmo.ru
+  slack: 0xdeadc0de:UbFdkI7oDi0RkuMZFTQXil9u
 env:
   global:
   - LANG="en_US.UTF-8"
