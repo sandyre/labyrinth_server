@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include "netpacket.hpp"
 
 using std::chrono::high_resolution_clock;

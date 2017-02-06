@@ -8,6 +8,7 @@
 
 #include "masterserver.hpp"
 #include <limits>
+#include <memory>
 
 #include "netpacket.hpp"
 

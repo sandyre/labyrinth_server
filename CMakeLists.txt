@@ -7,7 +7,7 @@ find_library(LIBPOCOFOUND_LOCATION libPocoFoundation.a)
 
 set(CMAKE_COLOR_MAKEFILE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 set(SOURCES
 	src/main.cpp

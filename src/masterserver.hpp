@@ -14,6 +14,7 @@
 #include <vector>
 #include <deque>
 #include <random>
+#include <memory>
 #include <Poco/Net/DatagramSocket.h>
 
 #include "player.hpp"

@@ -17,6 +17,7 @@
 #include <chrono>
 #include <string>
 #include <cstring>
+#include <memory>
 
 using std::chrono::high_resolution_clock;
 using std::chrono::steady_clock;
