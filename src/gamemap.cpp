@@ -43,7 +43,7 @@ GameMap::GameMap(const GameMap::Settings& settings)
                                              std::vector<Cell>(m_stSettings.nChunkHeight));
     
     m_oRandGen = std::mt19937(settings.nSeed);
-    m_oRandDistr = std::uniform_int_distribution<>(0, m_stSettings.nChunkWidth);
+    m_oRandDistr = std::uniform_int_distribution<>(0, 100);
     
     int16_t start_x = m_oRandDistr(m_oRandGen) % m_stSettings.nChunkWidth;
     int16_t start_y = m_oRandDistr(m_oRandGen) % m_stSettings.nChunkHeight;

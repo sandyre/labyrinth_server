@@ -32,7 +32,7 @@ public:
     GameWorld(GameWorld::Settings&, std::vector<Player>&);
     
     virtual void init();
-    virtual void update();
+    virtual void update(std::chrono::milliseconds);
     
     const GameMap&          GetGameMap();
     std::vector<Item>&      GetItems();
@@ -42,6 +42,9 @@ public:
 protected:
     Vec2    GetRandomPosition();
 protected:
+    const int   m_nItemSpawnRate = 3000; // 3 seconds
+    int         m_nItemSpawnTimer = 0;
+    
     GameWorld::Settings    m_stSettings;
     std::queue<GamePacket> m_aEvents;
     std::vector<Player>&   m_aPlayers;

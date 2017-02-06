@@ -15,7 +15,6 @@ GameWorld::GameWorld(GameWorld::Settings& sets,
 m_stSettings(sets),
 m_aPlayers(players)
 {
-    sets.stGMSettings.nSeed = sets.nSeed;
 }
 
 void
@@ -83,9 +82,21 @@ GameWorld::init()
 }
 
 void
-GameWorld::update()
+GameWorld::update(std::chrono::milliseconds ms)
 {
-        // Monsters logic, Items spawning, etc.
+    m_nItemSpawnTimer += ms.count();
+    if(m_nItemSpawnTimer > m_nItemSpawnRate)
+    {
+        m_nItemSpawnTimer = 0;
+        
+        Vec2 random_pos = GetRandomPosition();
+        Item item;
+        item.eType = Item::Type::KEY;
+        item.nUID    = 0;
+        item.nXCoord = random_pos.x;
+        item.nYCoord = random_pos.y;
+        m_aItems.push_back(item);
+    }
 }
 
 const GameMap&

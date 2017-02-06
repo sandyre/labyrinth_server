@@ -15,19 +15,20 @@
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 
-GameServer::GameServer(uint32_t Port) :
+GameServer::GameServer(const Configuration& config) :
 m_eState(GameServer::State::WAITING_PLAYERS),
-m_nPort(Port),
+m_stConfig(config),
 m_nStartTime(high_resolution_clock::now()),
-m_pGameWorld(nullptr)
+m_msPerUpdate(0)
 {
     m_sServerName = "[GS";
-    m_sServerName += std::to_string(m_nPort);
+    m_sServerName += std::to_string(m_stConfig.nPort);
     m_sServerName += "]";
     
-    std::cout << m_sServerName << " STARTED (WAITING PLAYERS)\n";
+    std::cout << m_sServerName << " STARTED. CONFIG {SEED: "
+        << m_stConfig.nRandomSeed << "; PLAYERS: " << m_stConfig.nPlayers << "}\n";
     
-    Poco::Net::SocketAddress addr("localhost", Port);
+    Poco::Net::SocketAddress addr("localhost", m_stConfig.nPort);
     m_oSocket.bind(addr);
     
     m_oThread = std::thread(
@@ -47,6 +48,12 @@ GameServer::State
 GameServer::GetState() const
 {
     return m_eState;
+}
+
+GameServer::Configuration
+GameServer::GetConfig() const
+{
+    return m_stConfig;
 }
 
 void
@@ -82,7 +89,7 @@ GameServer::EventLoop()
             }
         }
         
-        if(m_aPlayers.size() == 2)
+        if(m_aPlayers.size() == m_stConfig.nPlayers)
         {
             m_eState = GameServer::State::GENERATING_WORLD;
         }
@@ -93,11 +100,12 @@ GameServer::EventLoop()
     if(m_eState == GameServer::State::GENERATING_WORLD)
     {
         GameWorld::Settings sets;
-        sets.nSeed = 15; // FIXME: should be randomly selected
+        sets.nSeed = m_stConfig.nRandomSeed;
+        sets.stGMSettings.nSeed = m_stConfig.nRandomSeed;
         sets.stGMSettings.nChunks = 5;
         sets.stGMSettings.nChunkWidth = 10;
         sets.stGMSettings.nChunkHeight = 10;
-        m_pGameWorld = new GameWorld(sets, m_aPlayers);
+        m_pGameWorld = std::make_unique<GameWorld>(sets, m_aPlayers);
         m_pGameWorld->init();
         
         GamePacket pack;
@@ -138,7 +146,7 @@ GameServer::EventLoop()
     
     while(m_eState == GameServer::State::RUNNING_GAME)
     {
-            // m_pGameWorld->update();
+//        m_pGameWorld->update(m_msPerUpdate);
         
             // send packets that GameWorld update produced
         while(!m_pGameWorld->GetEvents().empty())
@@ -147,6 +155,10 @@ GameServer::EventLoop()
             SendToAll(pack);
             m_pGameWorld->GetEvents().pop();
         }
+        
+        /*
+         * Players GamePackets parsing
+         */
         
         m_oSocket.receiveFrom(buf, 64, sender_addr);
         
@@ -257,7 +269,7 @@ GameServer::EventLoop()
                     });
                     
                     if(door->nXCoord == player->nXCoord &&
-                       door->nXCoord == player->nYCoord)
+                       door->nYCoord == player->nYCoord)
                     {
                         bAtTheDoor = true;
                     }
@@ -266,6 +278,7 @@ GameServer::EventLoop()
                     {
                             // player wins
                         GamePacket pack;
+                        pack.eType = GamePacket::Type::SRV_PLAYER_WIN;
                         SRVPlayerWin win;
                         win.nPlayerUID = player->nUID;
                         memcpy(pack.aData, &win, sizeof(win));
@@ -287,7 +300,7 @@ GameServer::EventLoop()
     
     auto end_time = high_resolution_clock::now();
     auto duration = duration_cast<std::chrono::seconds>(end_time - m_nStartTime).count();
-    std::cout << m_sServerName << " FINISHED IN " << duration << "\n";
+    std::cout << m_sServerName << " FINISHED IN " << duration << " SECONDS\n";
 }
 
 void

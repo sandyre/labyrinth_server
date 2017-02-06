@@ -10,10 +10,10 @@
 #define masterserver_hpp
 
 #include <iostream>
-#include <fstream>
 #include <thread>
 #include <vector>
-#include <queue>
+#include <deque>
+#include <random>
 #include <Poco/Net/DatagramSocket.h>
 
 #include "player.hpp"
@@ -25,13 +25,16 @@ public:
     MasterServer(uint32_t Port);
     ~MasterServer();
     
+    void    init();
     void    run();
 protected:
-    std::deque<Player>        m_aPlayersPool;
-    std::vector<GameServer*>  m_aGameServers;
-    Poco::Net::DatagramSocket m_oSocket;
+    std::mt19937                    m_oGenerator;
+    std::uniform_int_distribution<> m_oDistr;
     
-    uint32_t                  m_nCurrentGamePort;
+    std::queue<uint32_t>      m_qAvailablePorts;
+    std::deque<Player>        m_aPlayersPool;
+    std::vector<std::unique_ptr<GameServer>>  m_aGameServers;
+    Poco::Net::DatagramSocket m_oSocket;
 };
 
 #endif /* masterserver_hpp */
