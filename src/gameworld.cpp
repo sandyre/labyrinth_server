@@ -25,60 +25,60 @@ GameWorld::init()
         // spawn players
     for(auto& player : m_aPlayers)
     {
-        Vec2 spawn_point = GetRandomPosition();
-        player.nXCoord = spawn_point.x;
-        player.nYCoord = spawn_point.y;
-        
-        GamePacket pack;
-        pack.eType = GamePacket::Type::SRV_SPAWN_PLAYER;
-        
-        GamePackets::SRVSpawnPlayer sp_player;
-        sp_player.nPlayerUID = player.nUID;
-        sp_player.nXCoord = player.nXCoord;
-        sp_player.nYCoord = player.nYCoord;
-        strncpy(sp_player.sNickname, player.sNickname, 16);
-        memcpy(pack.aData, &sp_player, sizeof(sp_player));
-        
-        m_aEvents.push(pack);
+//        Vec2 spawn_point = GetRandomPosition();
+//        player.nXCoord = spawn_point.x;
+//        player.nYCoord = spawn_point.y;
+//        
+//        GamePacket pack;
+//        pack.eType = GamePacket::Type::SRV_SPAWN_PLAYER;
+//        
+//        GamePackets::SRVSpawnPlayer sp_player;
+//        sp_player.nPlayerUID = player.nUID;
+//        sp_player.nXCoord = player.nXCoord;
+//        sp_player.nYCoord = player.nYCoord;
+//        strncpy(sp_player.sNickname, player.sNickname, 16);
+//        memcpy(pack.aData, &sp_player, sizeof(sp_player));
+//        
+//        m_aEvents.push(pack);
     }
     
         // spawn key
-    Vec2 random_pos = GetRandomPosition();
-    Item item;
-    item.eType = Item::Type::KEY;
-    item.nUID    = 0;
-    item.nXCoord = random_pos.x;
-    item.nYCoord = random_pos.y;
-    m_aItems.push_back(item);
-    
-    GamePacket item_spawn;
-    item_spawn.eType = GamePacket::Type::SRV_SPAWN_ITEM;
-    
-    GamePackets::SRVSpawnItem sp_item;
-    sp_item.eType   = item.eType;
-    sp_item.nItemUID = item.nUID;
-    sp_item.nXCoord = item.nXCoord;
-    sp_item.nYCoord = item.nYCoord;
-    memcpy(item_spawn.aData, &sp_item, sizeof(sp_item));
-    
-    m_aEvents.push(item_spawn);
-    
-        // spawn door
-    item_spawn.eType = GamePacket::Type::SRV_SPAWN_CONSTRUCTION;
-    random_pos = GetRandomPosition();
-    Construction door;
-    door.eType = Construction::Type::DOOR;
-    door.nXCoord = random_pos.x;
-    door.nYCoord = random_pos.y;
-    m_aConstructions.push_back(door);
-    
-    GamePackets::SRVSpawnConstruction sp_constr;
-    sp_constr.eType = door.eType;
-    sp_constr.nXCoord = door.nXCoord;
-    sp_constr.nYCoord = door.nYCoord;
-    memcpy(item_spawn.aData, &sp_constr, sizeof(sp_constr));
-    
-    m_aEvents.push(item_spawn);
+//    Vec2 random_pos = GetRandomPosition();
+//    Item item;
+//    item.eType = Item::Type::KEY;
+//    item.nUID    = 0;
+//    item.nXCoord = random_pos.x;
+//    item.nYCoord = random_pos.y;
+//    m_aItems.push_back(item);
+//    
+//    GamePacket item_spawn;
+//    item_spawn.eType = GamePacket::Type::SRV_SPAWN_ITEM;
+//    
+//    GamePackets::SRVSpawnItem sp_item;
+//    sp_item.eType   = item.eType;
+//    sp_item.nItemUID = item.nUID;
+//    sp_item.nXCoord = item.nXCoord;
+//    sp_item.nYCoord = item.nYCoord;
+//    memcpy(item_spawn.aData, &sp_item, sizeof(sp_item));
+//    
+//    m_aEvents.push(item_spawn);
+//    
+//        // spawn door
+//    item_spawn.eType = GamePacket::Type::SRV_SPAWN_CONSTRUCTION;
+//    random_pos = GetRandomPosition();
+//    Construction door;
+//    door.eType = Construction::Type::DOOR;
+//    door.nXCoord = random_pos.x;
+//    door.nYCoord = random_pos.y;
+//    m_aConstructions.push_back(door);
+//    
+//    GamePackets::SRVSpawnConstruction sp_constr;
+//    sp_constr.eType = door.eType;
+//    sp_constr.nXCoord = door.nXCoord;
+//    sp_constr.nYCoord = door.nYCoord;
+//    memcpy(item_spawn.aData, &sp_constr, sizeof(sp_constr));
+//    
+//    m_aEvents.push(item_spawn);
 }
 
 void
@@ -89,7 +89,7 @@ GameWorld::update(std::chrono::milliseconds ms)
     {
         m_nItemSpawnTimer = 0;
         
-        Vec2 random_pos = GetRandomPosition();
+        Point2 random_pos = GetRandomPosition();
         Item item;
         item.eType = Item::Type::KEY;
         item.nUID    = 0;
@@ -117,16 +117,16 @@ GameWorld::GetConstructions()
     return m_aConstructions;
 }
 
-std::queue<GamePacket>&
+std::queue<GamePackets::GamePacket>&
 GameWorld::GetEvents()
 {
     return m_aEvents;
 }
 
-Vec2
+Point2
 GameWorld::GetRandomPosition()
 {
-    Vec2 position;
+    Point2 position;
 
     bool  bIsEngaged = false;
     do

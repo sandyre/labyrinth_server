@@ -11,16 +11,16 @@
 
 #include <cstdint>
 
-struct Vec2
+struct Point2
 {
-    Vec2() :
+    Point2() :
     x(0),
     y(0)
     {
         
     }
     
-    Vec2(int16_t x_, int16_t y_) :
+    Point2(int16_t x_, int16_t y_) :
     x(x_),
     y(y_)
     {

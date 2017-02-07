@@ -11,6 +11,7 @@
 
 #include "construction.hpp"
 #include "item.hpp"
+#include "globals.h"
 
 // typedefs
 using PlayerUID = int32_t;
@@ -58,143 +59,228 @@ struct MSGameFound
     
 }
 
-struct GamePacket
-{
-    enum class Type : unsigned char
-    {
-        CL_MOVEMENT,
-        SRV_MOVEMENT,
-        
-        CL_TAKE_EQUIP,
-        SRV_TOOK_EQUIP,
-        
-        CL_ATTACK_PLAYER,
-        SRV_ATTACK_PLAYER,
-        
-        CL_ATTACK_MONSTER,
-        SRV_ATTACK_MONSTER,
-        
-        CL_CONNECT,
-        CL_GEN_MAP_OK,
-        CL_CHECK_WIN,
-        SRV_PLAYER_WIN,
-        SRV_GEN_MAP,
-        SRV_GAME_START,
-        SRV_SPAWN_PLAYER,
-        SRV_SPAWN_MONSTER,
-        SRV_SPAWN_ITEM,
-        SRV_SPAWN_CONSTRUCTION
-    };
-    
-    GamePacket::Type    eType;
-    PlayerUID           nUID;
-    char                aData[50];
-};
-
 namespace GamePackets
 {
 
+enum Type : unsigned char
+{
+        // GENERAL PART (can be sent/received in any server state)
+    CL_PING,
+    SRV_PING,
+    
+        // PREGAMING PART (only pregaming state)
+    CL_CONNECT, // user connects {uid, name}
+    SRV_ACCEPT_CONNECT, // accepts
+    SRV_REFUSE_CONNECT, // refuses
+    SRV_PLAYER_CONNECTED, // {uid, name} of a new player (if connection is accepted
+        // is sent to all players
+    CL_PLAYER_READY, // when client hit 'ready' button
+    SRV_GEN_MAP, // lobby formed, start generation
+    CL_GEN_MAP_OK, // player is ready
+    SRV_GAME_START, // game begins
+    
+        // IN-GAME (verifiable)
+    CL_MOVEMENT,
+    SRV_MOVEMENT,
+    
+    CL_TAKE_EQUIP,
+    SRV_TAKE_EQUIP,
+    
+    CL_ATTACK_PLAYER,
+    SRV_ATTACK_PLAYER,
+    
+    CL_ATTACK_MONSTER,
+    SRV_ATTACK_MONSTER,
+    
+    CL_CHECK_WIN,
+    SRV_PLAYER_WIN,
+    
+        // IN-GAME (server only actions)
+    SRV_SPAWN_PLAYER,
+    SRV_SPAWN_MONSTER,
+    SRV_SPAWN_ITEM,
+    SRV_SPAWN_CONSTRUCTION,
+};
+    
+/*************************************************
+ * GENERAL PACKETS
+ *************************************************/
+
+struct CLPing
+{
+    Type    eType = Type::CL_PING;
+};
+    
+struct SRVPing
+{
+    Type    eType = Type::SRV_PING;
+};
+    
+/*************************************************
+ * PRE-GAME PACKETS
+ *************************************************/
+    
+struct CLConnect
+{
+    Type        eType = Type::CL_CONNECT;
+    PlayerUID   nPlayerUID;
+    char        sNickname[16];
+};
+    
+struct SRVAcceptConnect
+{
+    Type        eType = Type::SRV_ACCEPT_CONNECT;
+    PlayerUID   nPlayerUID;
+};
+    
+struct SRVRefuseConnect
+{
+    Type        eType = Type::SRV_REFUSE_CONNECT;
+    PlayerUID   nPlayerUID;
+};
+    
+struct SRVPlayerConnected
+{
+    Type        eType = Type::SRV_PLAYER_CONNECTED;
+    PlayerUID   nPlayerUID;
+    char        sNickname[16];
+};
+    
+struct CLPlayerReady
+{
+    Type        eType = Type::CL_PLAYER_READY;
+    PlayerUID   nPlayerUID;
+};
+    
+struct SRVGenMap
+{
+    Type        eType = Type::SRV_GEN_MAP;
+    uint16_t    nChunkN;
+    uint32_t    nSeed;
+};
+    
+struct CLGenMapOk
+{
+    Type        eType = Type::CL_GEN_MAP_OK;
+    PlayerUID   nPlayerUID;
+};
+    
+struct SRVGameStart
+{
+    Type        eType = Type::SRV_GAME_START;
+};
+    
+/*************************************************
+ * IN-GAME PACKETS (verifiable)
+ *************************************************/
+
 struct CLMovement
 {
-    uint16_t    nXCoord;
-    uint16_t    nYCoord;
+    Type        eType = Type::CL_MOVEMENT;
+    Point2        stPosition;
 };
 
 struct SRVMovement
 {
+    Type        eType = Type::SRV_MOVEMENT;
     PlayerUID   nPlayerUID;
-    uint16_t    nXCoord;
-    uint16_t    nYCoord;
+    Point2        stPosition;
 };
     
 struct CLTakeItem
 {
+    Type        eType = Type::CL_TAKE_EQUIP;
+    PlayerUID   nPlayerUID;
     ItemUID     nItemUID;
 };
     
 struct SRVTakeItem
 {
+    Type        eType = Type::SRV_TAKE_EQUIP;
     PlayerUID   nPlayerUID;
     ItemUID     nItemUID;
 };
-
-struct CLAttackMonster
-{
-    MonsterUID   nMonsterUID;
-};
     
-struct SRVMonsterAttack
+struct CLAttackPlayer
 {
-    PlayerUID    nPlayerUID;
-    MonsterUID   nMonsterUID;
-};
-    
-struct CLPlayerAttack
-{
+    Type        eType = Type::CL_ATTACK_PLAYER;
     PlayerUID   nPlayerUID;
-};
-
-struct SRVPlayerAttack
-{
-    PlayerUID    nAttackerID;
-    PlayerUID    nAttackedID;
+    PlayerUID   nAttackedUID;
 };
     
-struct SRVSpawnItem
+struct SRVAttackPlayer
 {
-    Item::Type  eType;
-    ItemUID     nItemUID;
-    uint16_t    nXCoord;
-    uint16_t    nYCoord;
+    Type        eType = Type::SRV_ATTACK_PLAYER;
+    PlayerUID   nPlayerUID;
+    PlayerUID   nAttackedUID;
+        // attack value, etc
 };
     
-struct SRVSpawnConstruction
-{
-    Construction::Type  eType;
-    uint16_t            nXCoord;
-    uint16_t            nYCoord;
-};
-    
-struct SRVSpawnPlayer
-{
-    PlayerUID nPlayerUID;
-    char     sNickname[16];
-    int16_t  nXCoord;
-    int16_t  nYCoord;
-};
-    
-struct SRVSpawnMonster
-{
-    MonsterUID nMonsterUID;
-    int16_t  nXCoord;
-    int16_t  nYCoord;
-};
-    
-struct SRVGenMap
-{
-    uint16_t    nChunkN;
-    uint32_t    nSeed;
-};
-
 struct CLCheckWin
 {
+    Type        eType = Type::CL_CHECK_WIN;
+    PlayerUID   nPlayerUID;
 };
     
 struct SRVPlayerWin
 {
+    Type        eType = Type::SRV_PLAYER_WIN;
     PlayerUID   nPlayerUID;
 };
+
+/*************************************************
+ * IN-GAME PACKETS (server-only actions)
+ *************************************************/
     
-struct SRVGenMapOk
+struct SRVSpawnPlayer
 {
-    
+    Type        eType = Type::SRV_SPAWN_PLAYER;
+    PlayerUID   nPlayerUID;
+    Point2        stPosition;
+};
+
+struct SRVSpawnItem
+{
+    Type        eType = Type::SRV_SPAWN_ITEM;
+    Item::Type  eItemType;
+    ItemUID     nItemUID;
+    Point2        stPosition;
 };
     
-struct CLPlayerConnect
+struct SRVSpawnConstruction
 {
-    uint32_t    nPlayerUID;
-    char        sNickname[16];
-        // to be implemented
+    Type               eType = Type::SRV_SPAWN_CONSTRUCTION;
+    Construction::Type eConstrType;
+    Point2               stPosition;
+};
+    
+struct SRVSpawnMonster
+{
+    Type        eType = Type::SRV_SPAWN_MONSTER;
+    MonsterUID  nMonsterUID;
+    Point2        stPosition;
+};
+
+union GamePacket
+{
+    GamePacket() {}
+    struct CLPing  mCLPing;
+    struct SRVPing mSRVPing;
+    struct CLConnect mCLConnect;
+    struct SRVAcceptConnect mSRVAccCon;
+    struct SRVRefuseConnect mSRVRefCon;
+    struct SRVPlayerConnected mSRVPlCon;
+    struct CLPlayerReady mCLPlReady;
+    struct SRVGenMap mSRVGenMap;
+    struct CLGenMapOk mCLGenMapOk;
+    struct SRVGameStart mSRVGameStart;
+    
+    struct CLMovement mCLMov;
+    struct SRVMovement mSRVMov;
+    struct CLTakeItem mCLTakeItem;
+    struct SRVTakeItem mSRVTakeItem;
+    struct CLCheckWin mCLCheckWin;
+    struct SRVPlayerWin mSRVPlWin;
 };
     
 }

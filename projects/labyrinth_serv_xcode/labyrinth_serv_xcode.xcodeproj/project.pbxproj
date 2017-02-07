@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14431E450ED5004EC380 /* gameserver.cpp */; };
 		1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14451E450ED5004EC380 /* gameworld.cpp */; };
 		1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144A1E450ED5004EC380 /* gamemap.cpp */; };
@@ -29,6 +30,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1F40F9691E49E13C003861AF /* libflatbuffers.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflatbuffers.a; path = labyrinth_serv_xcode.xcodeproj/libflatbuffers.a; sourceTree = "<group>"; };
+		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
 		1FEC14251E450E9A004EC380 /* labyrinth_serv_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = labyrinth_serv_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FEC14431E450ED5004EC380 /* gameserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameserver.cpp; path = ../../../src/gameserver.cpp; sourceTree = "<group>"; };
 		1FEC14441E450ED5004EC380 /* netpacket.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = netpacket.hpp; path = ../../../src/netpacket.hpp; sourceTree = "<group>"; };
@@ -56,6 +59,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */,
 				1FEC145E1E452966004EC380 /* libPocoNet.a in Frameworks */,
 				1FEC145F1E452966004EC380 /* libPocoFoundation.a in Frameworks */,
 			);
@@ -84,6 +88,7 @@
 		1FEC14271E450E9A004EC380 /* labyrinth_serv_xcode */ = {
 			isa = PBXGroup;
 			children = (
+				1F40F96D1E49F2A7003861AF /* msnet_generated.h */,
 				1FEC144D1E450ED5004EC380 /* construction.hpp */,
 				1FEC144A1E450ED5004EC380 /* gamemap.cpp */,
 				1FEC144B1E450ED5004EC380 /* gamemap.hpp */,
@@ -106,6 +111,7 @@
 		1FEC14571E4527E9004EC380 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1F40F9691E49E13C003861AF /* libflatbuffers.a */,
 				1FEC145C1E452966004EC380 /* libPocoNet.a */,
 				1FEC145D1E452966004EC380 /* libPocoFoundation.a */,
 				1FEC14581E4527E9004EC380 /* libPocoNet.a */,
@@ -226,6 +232,7 @@
 				HEADER_SEARCH_PATHS = (
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -271,6 +278,7 @@
 				HEADER_SEARCH_PATHS = (
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -321,6 +329,7 @@
 				1FEC142E1E450E9A004EC380 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

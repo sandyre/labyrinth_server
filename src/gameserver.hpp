@@ -10,6 +10,7 @@
 #define gameserver_hpp
 
 #include <Poco/Net/DatagramSocket.h>
+#include "netpacket.hpp"
 #include "player.hpp"
 #include "gameworld.hpp"
 #include <thread>
@@ -19,6 +20,7 @@
 #include <cstring>
 #include <memory>
 
+using namespace GamePackets;
 using std::chrono::high_resolution_clock;
 using std::chrono::steady_clock;
 
@@ -27,7 +29,8 @@ class GameServer
 public:
     enum class State
     {
-        WAITING_PLAYERS,
+        REQUESTING_PLAYERS,
+        WAITING_PLAYERS_READY_SIGNAL,
         GENERATING_WORLD,
         RUNNING_GAME,
         FINISHED

@@ -43,7 +43,7 @@ public:
     
     const Map&          GetMap() const;
     
-    Vec2                GetRandomPosition();
+    Point2              GetRandomPosition();
 private:
     GameMap::Settings   m_stSettings;
     Map                 m_oMap;

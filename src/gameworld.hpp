@@ -36,17 +36,17 @@ public:
     
     const GameMap&          GetGameMap();
     std::vector<Item>&      GetItems();
-    std::queue<GamePacket>& GetEvents();
+    std::queue<GamePackets::GamePacket>& GetEvents();
     std::vector<Construction>& GetConstructions();
     
 protected:
-    Vec2    GetRandomPosition();
+    Point2    GetRandomPosition();
 protected:
     const int   m_nItemSpawnRate = 3000; // 3 seconds
     int         m_nItemSpawnTimer = 0;
     
     GameWorld::Settings    m_stSettings;
-    std::queue<GamePacket> m_aEvents;
+    std::queue<GamePackets::GamePacket> m_aEvents;
     std::vector<Player>&   m_aPlayers;
     std::vector<Item>    m_aItems;
     std::vector<Construction> m_aConstructions;

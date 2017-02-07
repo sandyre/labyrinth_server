@@ -162,10 +162,10 @@ GameMap::GetMap() const
     return m_oMap;
 }
 
-Vec2
+Point2
 GameMap::GetRandomPosition()
 {
-    Vec2 position;
+    Point2 position;
 
     do
     {

@@ -1,0 +1,45 @@
+namespace MSNet;
+
+enum Type : byte
+{
+  CL_PING,
+  MS_PING,
+
+  CL_FIND_GAME,
+  MS_GAME_FOUND
+}
+
+table CLPing
+{
+
+}
+
+table MSPing
+{
+
+}
+
+table CLFindGame
+{
+  player_uid:uint;
+}
+
+table MSGameFound
+{
+  gs_port:uint;
+}
+
+union MSEvents
+{
+  CLPing,
+  MSPing,
+  CLFindGame,
+  MSGameFound
+}
+
+table MSEvent
+{
+  event:MSEvents;
+}
+
+root_type MSEvent;

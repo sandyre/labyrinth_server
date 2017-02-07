@@ -11,9 +11,10 @@
 #include <memory>
 
 #include "netpacket.hpp"
+#include "msnet_generated.h"
 
 MasterServer::MasterServer(uint32_t Port) :
-m_oGenerator(228), // FIXME: random should be always random!
+m_oGenerator(228), // FIXME: random should always be random!
 m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
                                          std::numeric_limits<int32_t>::max()))
 {
@@ -33,7 +34,7 @@ MasterServer::~MasterServer()
 void
 MasterServer::init()
 {
-    for(uint32_t i = 1931; i < 1931 + 2000; ++i)
+    for(uint32_t i = 1931; i < (1931 + 2000); ++i)
     {
         Poco::Net::DatagramSocket socket;
         Poco::Net::SocketAddress addr("localhost", i);
@@ -53,45 +54,50 @@ MasterServer::init()
 void
 MasterServer::run()
 {
+    flatbuffers::FlatBufferBuilder builder; // is needed to build output data
     Poco::Net::SocketAddress sender_addr;
-    char request[64];
+    char request[256];
     
     while(true)
     {
-        m_oSocket.receiveFrom(request, 64, sender_addr);
+        m_oSocket.receiveFrom(request, 256, sender_addr);
         
-        MSPacket * packet = reinterpret_cast<MSPacket*>(request);
+        auto event = MSNet::GetMSEvent(request);
         
-        switch(packet->eType)
+        switch(event->event_type())
         {
-            case MSPacket::Type::CL_PING:
+            case MSNet::MSEvents_CLPing:
             {
-                packet->eType = MSPacket::Type::MS_PING;
-                m_oSocket.sendTo(packet, sizeof(MSPacket),
+                auto pong = MSNet::CreateMSPing(builder);
+                builder.Finish(pong);
+                m_oSocket.sendTo(builder.GetBufferPointer(),
+                                 builder.GetSize(),
                                  sender_addr);
+                builder.Clear();
                 break;
             }
                 
-            case MSPacket::Type::CL_FIND_GAME:
+            case MSNet::MSEvents_CLFindGame:
             {
+                auto finder = static_cast<const MSNet::CLFindGame*>(event->event());
                     // check that player isnt already in pool
                 auto iter = std::find_if(m_aPlayersPool.begin(),
                                          m_aPlayersPool.end(),
-                [&](Player& player)
+                [finder](Player& player)
                 {
-                    return player.nUID == packet->nUID;
+                    return player.nUID == finder->player_uid();
                 });
                 
                     // player is not in pool already, add him
                 if(iter == m_aPlayersPool.end())
                 {
                     Player player;
-                    player.nUID = packet->nUID;
+                    player.nUID = finder->player_uid();
                     player.sock_addr = sender_addr;
                     
                     m_aPlayersPool.push_back(player);
                     
-                    std::cout << "[MS] PLAYER ADDED UID: " << packet->nUID << "\n";
+                    std::cout << "[MS] PLAYER ADDED UID: " << finder->player_uid() << "\n";
                 }
                 
                 break;
@@ -102,27 +108,51 @@ MasterServer::run()
                 break;
         }
         
-            // create lobby for ready players
-        if(m_aPlayersPool.size() == 2)
+            // if there are some players, check that there is a server for them
+        if(m_aPlayersPool.size() != 0)
         {
-            uint32_t nGSPort = m_qAvailablePorts.front();
-            m_qAvailablePorts.pop();
+            auto servers_available = std::count_if(m_aGameServers.begin(),
+                                                   m_aGameServers.end(),
+                                                   [this](std::unique_ptr<GameServer> const& gs)
+                                                   {
+                                                       return gs->GetState() == GameServer::State::REQUESTING_PLAYERS;
+                                                   });
             
-            GameServer::Configuration config;
-            config.nPlayers = 2;
-            config.nRandomSeed = m_oDistr(m_oGenerator);
-            config.nPort = nGSPort;
-            
-            m_aGameServers.push_back(std::make_unique<GameServer>(config));
-            
-            MSPacket pack;
-            pack.eType = MSPacket::Type::MS_GAME_FOUND;
-            std::memcpy(pack.aData, &nGSPort, sizeof(nGSPort));
-            for(auto& player : m_aPlayersPool)
+                // no servers? start a new
+            if(servers_available == 0)
             {
-                m_oSocket.sendTo(&pack, sizeof(MSPacket), player.sock_addr);
+                uint32_t nGSPort = m_qAvailablePorts.front();
+                m_qAvailablePorts.pop();
+                
+                GameServer::Configuration config;
+                config.nPlayers = 2; // +-
+                config.nRandomSeed = m_oDistr(m_oGenerator);
+                config.nPort = nGSPort;
+                
+                m_aGameServers.push_back(std::make_unique<GameServer>(config));
             }
-            m_aPlayersPool.clear();
+        }
+        
+            // FIXME: on a big amount of gameservers, may not run correctly
+        for(auto& gs : m_aGameServers)
+        {
+            if(m_aPlayersPool.size() == 0) // optimization (no need to loop more through gss)
+                break;
+            
+            if(gs->GetState() == GameServer::State::REQUESTING_PLAYERS)
+            {
+                auto serv_config = gs->GetConfig();
+                    // transfer player to GS
+                auto game_found = MSNet::CreateMSGameFound(builder, serv_config.nPort);
+                builder.Finish(game_found);
+                
+                auto& player = m_aPlayersPool.front();
+
+                m_oSocket.sendTo(builder.GetBufferPointer(),
+                                 builder.GetSize(),
+                                 player.sock_addr);
+                m_aPlayersPool.pop_front(); // remove a player from queue
+            }
         }
         
             // do something with finished servers
