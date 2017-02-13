@@ -236,7 +236,7 @@ struct SRVSpawnPlayer
 {
     Type        eType = Type::SRV_SPAWN_PLAYER;
     PlayerUID   nPlayerUID;
-    Point2        stPosition;
+    Point2      stPosition;
 };
 
 struct SRVSpawnItem
@@ -244,7 +244,7 @@ struct SRVSpawnItem
     Type        eType = Type::SRV_SPAWN_ITEM;
     Item::Type  eItemType;
     ItemUID     nItemUID;
-    Point2        stPosition;
+    Point2      stPosition;
 };
     
 struct SRVSpawnConstruction
@@ -260,7 +260,7 @@ struct SRVSpawnMonster
     MonsterUID  nMonsterUID;
     Point2        stPosition;
 };
-
+    
 union GamePacket
 {
     GamePacket() {}

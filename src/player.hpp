@@ -12,11 +12,20 @@
 #include <Poco/Net/SocketAddress.h>
 #include <vector>
 #include "item.hpp"
+#include "globals.h"
 
 struct Player
 {
-    uint16_t    nXCoord;
-    uint16_t    nYCoord;
+    enum State : unsigned char
+    {
+        WALKING,
+        DUEL,
+        DROWNING,
+        INVULNERABLE
+    };
+    
+    State       eState;
+    Point2      stPosition;
     uint32_t    nUID;
     char        sNickname[16];
     

@@ -60,7 +60,7 @@ MasterServer::run()
     
     while(true)
     {
-        m_oSocket.receiveFrom(request, 256, sender_addr);
+        auto size = m_oSocket.receiveFrom(request, 256, sender_addr);
         
         auto event = MSNet::GetMSEvent(request);
         
@@ -125,7 +125,7 @@ MasterServer::run()
                 m_qAvailablePorts.pop();
                 
                 GameServer::Configuration config;
-                config.nPlayers = 2; // +-
+                config.nPlayers = 1; // +-
                 config.nRandomSeed = m_oDistr(m_oGenerator);
                 config.nPort = nGSPort;
                 
@@ -144,7 +144,8 @@ MasterServer::run()
                 auto serv_config = gs->GetConfig();
                     // transfer player to GS
                 auto game_found = MSNet::CreateMSGameFound(builder, serv_config.nPort);
-                builder.Finish(game_found);
+                auto ms_event = MSNet::CreateMSEvent(builder, MSNet::MSEvents_MSGameFound, game_found.Union());
+                builder.Finish(ms_event);
                 
                 auto& player = m_aPlayersPool.front();
 

@@ -9,9 +9,11 @@
 #ifndef item_hpp
 #define item_hpp
 
+#include "globals.h"
+
 struct Item
 {
-    enum class Type : unsigned char
+    enum Type : unsigned char
     {
         KEY = 0x00,
         SWORD = 0x01
@@ -19,8 +21,7 @@ struct Item
     
     Item::Type   eType;
     uint16_t     nUID;
-    uint16_t     nXCoord;
-    uint16_t     nYCoord;
+    Point2       stPosition;
     uint32_t     nCarrierID; // 0 means its not carried by any player
 };
 

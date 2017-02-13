@@ -9,17 +9,20 @@
 #ifndef construction_hpp
 #define construction_hpp
 
+#include "globals.h"
+
 struct Construction
 {
-    enum class Type
+    enum Type : unsigned char
     {
         DOOR = 0x00,
-        GRAVEYARD
+        GRAVEYARD = 0x01,
+        SWAMP = 0x02
     };
     
     Construction::Type  eType;
-    uint16_t            nXCoord;
-    uint16_t            nYCoord;
+    uint16_t            nUID;
+    Point2              stPosition;
 };
 
 #endif /* construction_hpp */

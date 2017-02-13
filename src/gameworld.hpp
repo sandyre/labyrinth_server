@@ -18,38 +18,43 @@
 #include "player.hpp"
 #include "item.hpp"
 #include "construction.hpp"
+#include "monster.hpp"
+#include "gsnet_generated.h"
 
 class GameWorld
 {
 public:
     struct Settings
     {
-            // to be implemented
         uint32_t nSeed; // also passed to GameMap generator
         GameMap::Settings stGMSettings;
     };
 public:
     GameWorld(GameWorld::Settings&, std::vector<Player>&);
     
-    virtual void init();
+    virtual void generate_map();
+    virtual void initial_spawn();
     virtual void update(std::chrono::milliseconds);
     
     const GameMap&          GetGameMap();
     std::vector<Item>&      GetItems();
-    std::queue<GamePackets::GamePacket>& GetEvents();
+    
+    std::queue<std::vector<uint8_t>>& GetOutEvents();
+    std::queue<std::vector<uint8_t>>& GetInEvents();
     std::vector<Construction>& GetConstructions();
     
 protected:
     Point2    GetRandomPosition();
+    std::vector<Player>::iterator GetPlayerByUID(PlayerUID);
 protected:
-    const int   m_nItemSpawnRate = 3000; // 3 seconds
-    int         m_nItemSpawnTimer = 0;
-    
+    flatbuffers::FlatBufferBuilder m_oBuilder;
     GameWorld::Settings    m_stSettings;
-    std::queue<GamePackets::GamePacket> m_aEvents;
+    std::queue<std::vector<uint8_t>> m_aInEvents;
+    std::queue<std::vector<uint8_t>> m_aOutEvents;
     std::vector<Player>&   m_aPlayers;
     std::vector<Item>    m_aItems;
     std::vector<Construction> m_aConstructions;
+    std::vector<Monster> m_aMonsters;
     GameMap              m_oGameMap;
 };
 

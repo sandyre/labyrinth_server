@@ -50,8 +50,8 @@ public:
     GameServer::Configuration GetConfig() const;
 private:
     void    EventLoop();
-    void    SendToOne(uint32_t, GamePacket&);
-    void    SendToAll(GamePacket&);
+    void    SendToOne(uint32_t, uint8_t *, size_t);
+    void    SendToAll(uint8_t *, size_t);
     
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
 private:

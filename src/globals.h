@@ -27,8 +27,13 @@ struct Point2
         
     }
     
-    int16_t x;
-    int16_t y;
+    bool operator==(const Point2& b)
+    {
+        return (x == b.x) & (y == b.y);
+    }
+    
+    uint16_t x;
+    uint16_t y;
 };
 
 #endif /* globals_h */

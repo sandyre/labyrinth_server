@@ -1,0 +1,217 @@
+namespace GSNet;
+
+enum Type : byte
+{
+    // GENERAL PART (can be sent/received in any server state)
+    CL_PING,
+    SRV_PING,
+
+    // PREGAMING PART (only pregaming state)
+    CL_CONNECT, // user connects {uid, name}
+    SRV_ACCEPT_CONNECT, // accepts
+    SRV_REFUSE_CONNECT, // refuses
+    SRV_PLAYER_CONNECTED, // {uid, name} of a new player (if connection is accepted
+    // is sent to all players
+    CL_PLAYER_READY, // when client hit 'ready' button
+    SRV_GEN_MAP, // lobby formed, start generation
+    CL_GEN_MAP_OK, // player is ready
+    SRV_GAME_START, // game begins
+
+    // IN-GAME (verifiable)
+    CL_MOVEMENT,
+    SRV_MOVEMENT,
+
+    CL_TAKE_EQUIP,
+    SRV_TAKE_EQUIP,
+
+    CL_ATTACK_PLAYER,
+    SRV_ATTACK_PLAYER,
+
+    CL_ATTACK_MONSTER,
+    SRV_ATTACK_MONSTER,
+
+    CL_CHECK_WIN,
+    SRV_GAME_END,
+
+    // IN-GAME (server only actions)
+    SRV_MONSTER_MOVE,
+    SRV_SPAWN_PLAYER,
+    SRV_SPAWN_MONSTER,
+    SRV_SPAWN_ITEM,
+    SRV_SPAWN_CONSTRUCTION
+}
+
+table CLConnect
+{
+player_uid:uint;
+nickname:string; // 7 ascii only
+}
+
+table GSAcceptConnect
+{
+player_uid:uint;
+}
+
+table GSRefuseConnect
+{
+player_uid:uint;
+}
+
+table GSPlayerConnected
+{
+player_uid:uint;
+nickname:string;
+}
+
+table CLPlayerReady
+{
+player_uid:uint;
+}
+
+table GSGenMap
+{
+chunkn:ushort;
+seed:uint;
+}
+
+table CLGenMapDone
+{
+player_uid:uint;
+}
+
+table GSGameStart
+{
+}
+
+table CLMovement
+{
+player_uid:uint;
+x:ushort;
+y:ushort;
+}
+
+table GSMovement
+{
+player_uid:uint;
+x:ushort;
+y:ushort;
+}
+
+table CLTakeItem
+{
+player_uid:uint;
+item_uid:ushort;
+}
+
+table GSTakeItem
+{
+player_uid:uint;
+item_uid:ushort;
+}
+
+table CLCheckWin
+{
+player_uid:uint;
+}
+
+table GSGameEnd
+{
+player_uid:uint; // winner
+}
+
+// server only
+table GSSpawnPlayer
+{
+player_uid:uint;
+x:ushort;
+y:ushort;
+}
+
+table GSSpawnItem
+{
+item_type:ubyte;
+item_uid:ushort;
+x:ushort;
+y:ushort;
+}
+
+table GSSpawnConstruction
+{
+constr_type:ubyte;
+constr_uid:ushort;
+x:ushort;
+y:ushort;
+}
+
+table GSSpawnMonster
+{
+monster_uid:ushort;
+x:ushort;
+y:ushort;
+}
+
+table GSMoveMonster
+{
+monster_uid:ushort;
+x:ushort;
+y:ushort;
+}
+
+table CLPlayerEscapeDrown
+{
+player_uid:uint;
+}
+
+table GSPlayerEscapeDrown
+{
+player_uid:uint;
+}
+
+table GSPlayerDrown
+{
+player_uid:uint;
+}
+
+table GSPlayerJoinDuel
+{
+player_uid:uint;
+duel_player_uid:uint;
+}
+
+union GSEvents
+{
+// pre-game
+CLConnect,
+GSAcceptConnect,
+GSRefuseConnect,
+GSPlayerConnected,
+CLPlayerReady,
+GSGenMap,
+CLGenMapDone,
+GSGameStart,
+// in-game
+CLMovement,
+GSMovement,
+CLTakeItem,
+GSTakeItem,
+CLCheckWin,
+GSGameEnd,
+GSPlayerDrown,
+CLPlayerEscapeDrown,
+GSPlayerEscapeDrown,
+GSPlayerJoinDuel,
+
+// in-game server events
+GSSpawnPlayer,
+GSSpawnItem,
+GSSpawnConstruction,
+GSSpawnMonster,
+GSMoveMonster
+}
+
+table GSEvent
+{
+event:GSEvents;
+}
+
+root_type GSEvent;
