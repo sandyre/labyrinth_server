@@ -31,9 +31,8 @@ public:
     
     struct Settings
     {
-        int16_t nChunks;
-        int16_t nChunkWidth;
-        int16_t nChunkHeight;
+        uint16_t nMapSize;
+        uint16_t nRoomSize;
         uint32_t nSeed;
     };
     

@@ -20,13 +20,15 @@ struct Player
     {
         WALKING,
         DUEL,
-        DROWNING,
-        INVULNERABLE
+        SWAMP,
+        INVULNERABLE,
+        DEAD
     };
     
-    State       eState;
+    State       eState = WALKING;
     Point2      stPosition;
-    uint32_t    nUID;
+    uint32_t    nTimer = 0;
+    uint32_t    nUID = 0;
     char        sNickname[16];
     
     Poco::Net::SocketAddress sock_addr;

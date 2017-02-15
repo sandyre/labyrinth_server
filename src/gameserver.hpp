@@ -10,7 +10,6 @@
 #define gameserver_hpp
 
 #include <Poco/Net/DatagramSocket.h>
-#include "netpacket.hpp"
 #include "player.hpp"
 #include "gameworld.hpp"
 #include <thread>
@@ -20,7 +19,6 @@
 #include <cstring>
 #include <memory>
 
-using namespace GamePackets;
 using std::chrono::high_resolution_clock;
 using std::chrono::steady_clock;
 
@@ -60,7 +58,7 @@ private:
     std::string         m_sServerName;
     std::thread         m_oThread;
     Poco::Net::DatagramSocket m_oSocket;
-    high_resolution_clock::time_point m_nStartTime;
+    steady_clock::time_point          m_nStartTime;
     std::chrono::milliseconds         m_msPerUpdate;
     
     std::unique_ptr<GameWorld>  m_pGameWorld;

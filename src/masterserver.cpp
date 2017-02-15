@@ -125,7 +125,7 @@ MasterServer::run()
                 m_qAvailablePorts.pop();
                 
                 GameServer::Configuration config;
-                config.nPlayers = 1; // +-
+                config.nPlayers = 2; // +-
                 config.nRandomSeed = m_oDistr(m_oGenerator);
                 config.nPort = nGSPort;
                 

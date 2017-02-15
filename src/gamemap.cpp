@@ -24,135 +24,181 @@ GameMap::~GameMap()
 GameMap::GameMap(const GameMap::Settings& settings)
 {
     m_stSettings = settings;
+    m_oRandGen = std::mt19937(m_stSettings.nSeed);
+    m_oRandDistr = std::uniform_int_distribution<>(0, 1000);
+    m_oMap.resize(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2,
+                  std::vector<MapBlockType>(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2, MapBlockType::NOBLOCK));
     
-    struct Cell
-    {
-        int16_t x = 0, y = 0;
-        bool  bVisited = false;
-        bool  bRightOpen = false;
-        bool  bLeftOpen = false;
-        bool  bUpOpen = false;
-        bool  bBotOpen = false;
+    struct Cell {
+        Cell(uint16_t _x, uint16_t _y, MapBlockType _type) {
+            x = _x;
+            y = _y;
+            type = _type;
+        }
+        
+        uint16_t x;
+        uint16_t y;
+        MapBlockType type;
     };
     
-    /*
-     Labyrinth generation algorithm taken from:
-     http://ru.stackoverflow.com/questions/482663/Простой-алгоритм-генерации-лабиринта-на-c-c
-     */
-    std::vector<std::vector<Cell>> labyrinth(m_stSettings.nChunkWidth,
-                                             std::vector<Cell>(m_stSettings.nChunkHeight));
+    struct Room {
+        Point2 coord;
+        std::vector<std::vector<MapBlockType>> cells;
+    };
     
-    m_oRandGen = std::mt19937(settings.nSeed);
-    m_oRandDistr = std::uniform_int_distribution<>(0, 100);
+    std::vector<std::vector<Room>> rooms(m_stSettings.nMapSize, std::vector<Room>(m_stSettings.nMapSize));
     
-    int16_t start_x = m_oRandDistr(m_oRandGen) % m_stSettings.nChunkWidth;
-    int16_t start_y = m_oRandDistr(m_oRandGen) % m_stSettings.nChunkHeight;
+    bool red = false;
+    int n = m_stSettings.nRoomSize;
     
-    labyrinth[start_x][start_y].bVisited = true;
-    
-    for(auto i = 0; i < labyrinth.size(); ++i)
+    for (size_t i = 0; i < m_stSettings.nMapSize; i++)
     {
-        for(auto j = 0; j < labyrinth[i].size(); ++j)
-        {
-            labyrinth[i][j].x = i;
-            labyrinth[i][j].y = j;
+        if (m_stSettings.nMapSize % 2 != 1) {
+            red = !red;
         }
-    }
-    
-    std::stack<Cell> path;
-    path.push(labyrinth[start_x][start_y]);
-    
-    while(!path.empty())
-    {
-        Cell _cell = path.top();
-        std::vector<Cell> nextStep;
         
-        if (_cell.x > 0 && (labyrinth[_cell.x - 1][_cell.y].bVisited == false))
-            nextStep.push_back(labyrinth[_cell.x - 1][_cell.y]);
-        if (_cell.x < m_stSettings.nChunkWidth - 1 && (labyrinth[_cell.x + 1][_cell.y].bVisited == false))
-            nextStep.push_back(labyrinth[_cell.x + 1][_cell.y]);
-        if (_cell.y > 0 && (labyrinth[_cell.x][_cell.y - 1].bVisited == false))
-            nextStep.push_back(labyrinth[_cell.x][_cell.y - 1]);
-        if (_cell.y < m_stSettings.nChunkHeight - 1 && (labyrinth[_cell.x][_cell.y + 1].bVisited == false))
-            nextStep.push_back(labyrinth[_cell.x][_cell.y + 1]);
-        
-        if (!nextStep.empty())
+        for (size_t j = 0; j < m_stSettings.nMapSize; j++)
         {
-                //выбираем сторону из возможных вариантов
-            Cell next = nextStep[m_oRandDistr(m_oRandGen) % nextStep.size()];
+            rooms[i][j].cells.resize(n, std::vector<MapBlockType>(n, MapBlockType::WALL));
             
-                //Открываем сторону, в которую пошли на ячейках
-            if (next.x != _cell.x)
+                // PRIM GENERATION
+            std::vector<Cell> list;
+            uint16_t x, y;
+            
+            x = m_oRandDistr(m_oRandGen) % n;
+            y = m_oRandDistr(m_oRandGen) % n;
+            
+            rooms[i][j].cells[x][y] = MapBlockType::NOBLOCK;
+            if (x > 0)
             {
-                if (_cell.x - next.x > 0)
-                {
-                    labyrinth[_cell.x][_cell.y].bLeftOpen = true;
-                    labyrinth[next.x][next.y].bRightOpen = true;
-                }
-                else
-                {
-                    labyrinth[_cell.x][_cell.y].bRightOpen = true;
-                    labyrinth[next.x][next.y].bLeftOpen = true;
-                }
+                rooms[i][j].cells[x - 1][y] = MapBlockType::BORDER;
+                list.push_back(Cell(x - 1, y, MapBlockType::BORDER));
             }
-            if (next.y != _cell.y)
+            if (x < n - 1)
             {
-                if (_cell.y - next.y > 0)
-                {
-                    labyrinth[_cell.x][_cell.y].bUpOpen = true;
-                    labyrinth[next.x][next.y].bBotOpen = true;
-                }
-                else
-                {
-                    labyrinth[_cell.x][_cell.y].bBotOpen = true;
-                    labyrinth[next.x][next.y].bUpOpen = true;
-                }
+                rooms[i][j].cells[x + 1][y] = MapBlockType::BORDER;
+                list.push_back(Cell(x + 1, y, MapBlockType::BORDER));
+            }
+            if (y > 0)
+            {
+                rooms[i][j].cells[x][y - 1] = MapBlockType::BORDER;
+                list.push_back(Cell(x, y - 1, MapBlockType::BORDER));
+            }
+            if (y < n - 1)
+            {
+                rooms[i][j].cells[x][y + 1] = MapBlockType::BORDER;
+                list.push_back(Cell(x, y + 1, MapBlockType::BORDER));
             }
             
-            labyrinth[next.x][next.y].bVisited = true;
-            path.push(next);
+            while (list.size())
+            {
+                int rand = m_oRandDistr(m_oRandGen) % list.size();
+                Cell cell = list[rand];
+                std::vector<Cell> neighbours;
+                int count = 0;
+                x = cell.x;
+                y = cell.y;
+                
+                if (x > 0)
+                {
+                    if (rooms[i][j].cells[x - 1][y] == MapBlockType::NOBLOCK)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        neighbours.push_back(Cell(x - 1, y, rooms[i][j].cells[x - 1][y]));
+                    }
+                }
+                if (x < n - 1)
+                {
+                    if (rooms[i][j].cells[x + 1][y] == MapBlockType::NOBLOCK)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        neighbours.push_back(Cell(x + 1, y, rooms[i][j].cells[x + 1][y]));
+                    }
+                }
+                if (y < n - 1)
+                {
+                    if (rooms[i][j].cells[x][y + 1] == MapBlockType::NOBLOCK)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        neighbours.push_back(Cell(x, y + 1, rooms[i][j].cells[x][y + 1]));
+                    }
+                }
+                if (y > 0)
+                {
+                    if (rooms[i][j].cells[x][y - 1] == MapBlockType::NOBLOCK)
+                    {
+                        count++;
+                    }
+                    else
+                    {
+                        neighbours.push_back(Cell(x, y - 1, rooms[i][j].cells[x][y - 1]));
+                    }
+                }
+                if (count != 1)
+                {
+                    list.erase(list.begin() + rand);
+                    rooms[i][j].cells[x][y] = MapBlockType::WALL;
+                    continue;
+                }
+                rooms[i][j].cells[x][y] = MapBlockType::NOBLOCK;
+                list.erase(list.begin() + rand);
+                for (auto& c : neighbours) {
+                    if (c.type == MapBlockType::WALL) {
+                        list.push_back(c);
+                    }
+                }
+            }
             
-        }
-        else
-        {
-                //если пойти никуда нельзя, возвращаемся к предыдущему узлу
-            path.pop();
+            for (size_t k = 0; k < n; k++)
+            {
+                for (size_t p = 0; p < n; p++)
+                {
+                    if (rooms[i][j].cells[k][p] != MapBlockType::NOBLOCK)
+                    {
+                        if (m_oRandDistr(m_oRandGen) > 900)
+                        {
+                            rooms[i][j].cells[k][p] = MapBlockType::NOBLOCK;
+                        }
+                    }
+                }
+            }
+            
+            if (red) {
+                for (size_t k = 0; k < n; k++)
+                {
+                    rooms[i][j].cells[k][0] = MapBlockType::NOBLOCK;
+                    rooms[i][j].cells[k][n - 1] = MapBlockType::NOBLOCK;
+                    rooms[i][j].cells[0][k] = MapBlockType::NOBLOCK;
+                    rooms[i][j].cells[n - 1][k] = MapBlockType::NOBLOCK;
+                }
+            }
+            red = !red;
+            
+            for (size_t k = 0; k < n; k++)
+            {
+                for (size_t p = 0; p < n; p++)
+                {
+                    m_oMap[i* n + k + 1][j * n + p + 1] = rooms[i][j].cells[p][k];
+                }
+            }
         }
     }
-    
-    m_oMap = GameMap::Map(m_stSettings.nChunkWidth * 3, std::vector<MapBlockType>(m_stSettings.nChunkHeight*3,
-                                                                                  MapBlockType::NOBLOCK));
-    
-        // make BORDER
-    for(auto i = 0; i < m_oMap.size(); ++i)
+    int size = m_stSettings.nMapSize * m_stSettings.nRoomSize + 2;
+    for (size_t i = 0; i < size; i++)
     {
-        m_oMap[0][i] = MapBlockType::WALL;
-        m_oMap[i][0] = MapBlockType::WALL;
-        m_oMap[i][m_oMap.size()-1] = MapBlockType::WALL;
-        m_oMap[m_oMap.size()-1][i] = MapBlockType::WALL;
-    }
-    
-    for(auto i = 0; i < labyrinth.size(); ++i)
-    {
-        for(auto j = 0; j < labyrinth[i].size(); ++j)
-        {
-            if(!labyrinth[i][j].bUpOpen)
-            {
-                m_oMap[3 * i][3 * j + 1] = MapBlockType::WALL;
-            }
-            if(!labyrinth[i][j].bLeftOpen)
-            {
-                m_oMap[3 * i + 1][3 * j] = MapBlockType::WALL;
-            }
-            if(!labyrinth[i][j].bRightOpen)
-            {
-                m_oMap[3 * i + 1][3 * j + 2] = MapBlockType::WALL;
-            }
-            if(!labyrinth[i][j].bBotOpen)
-            {
-                m_oMap[3 * i + 2][3 * j + 1] = MapBlockType::WALL;
-            }
-        }
+        m_oMap[i][0] = MapBlockType::BORDER;
+        m_oMap[i][size - 1] = MapBlockType::BORDER;
+        m_oMap[0][i] = MapBlockType::BORDER;
+        m_oMap[size - 1][i] = MapBlockType::BORDER;
     }
 }
 
@@ -166,7 +212,7 @@ Point2
 GameMap::GetRandomPosition()
 {
     Point2 position;
-
+    
     do
     {
         position.x = m_oRandDistr(m_oRandGen) % m_oMap.size();
