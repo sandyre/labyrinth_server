@@ -25,4 +25,26 @@ struct Construction
     Point2              stPosition;
 };
 
+class ConstructionFactory
+{
+public:
+    ConstructionFactory() :
+    m_nCurrentID(0)
+    {
+        
+    }
+    
+    Construction createConstruction(Construction::Type type)
+    {
+        Construction constr;
+        constr.eType = type;
+        constr.nUID = m_nCurrentID;
+        
+        ++m_nCurrentID;
+        return constr;
+    }
+private:
+    uint16_t    m_nCurrentID;
+};
+
 #endif /* construction_hpp */

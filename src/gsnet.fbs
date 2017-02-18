@@ -96,6 +96,27 @@ x:ushort;
 y:ushort;
 }
 
+enum ActionItemType : byte
+{
+TAKE,
+DROP,
+USE
+}
+
+table CLActionItem
+{
+player_uid:uint;
+item_uid:ushort;
+act_type:ActionItemType;
+}
+
+table SVActionItem
+{
+player_uid:uint;
+item_uid:ushort;
+act_type:ActionItemType;
+}
+
 enum ActionSwampStatus : byte
 {
 STARTED,
@@ -158,6 +179,11 @@ x:ushort;
 y:ushort;
 }
 
+table SVGameEnd
+{
+player_uid:uint;
+}
+
 union Events
 {
 CLConnection,
@@ -170,13 +196,17 @@ SVGameStart,
 CLActionMove,
 SVActionMove,
 
+CLActionItem,
+SVActionItem,
+
 CLActionSwamp,
 SVActionSwamp,
 
 SVSpawnPlayer,
 SVRespawnPlayer,
 SVSpawnItem,
-SVSpawnConstr
+SVSpawnConstr,
+SVGameEnd
 }
 
 table Event

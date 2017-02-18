@@ -1,10 +1,10 @@
-    //
-    //  gameworld.cpp
-    //  labyrinth_server
-    //
-    //  Created by Aleksandr Borzikh on 02.02.17.
-    //  Copyright © 2017 sandyre. All rights reserved.
-    //
+//
+//  gameworld.cpp
+//  labyrinth_server
+//
+//  Created by Aleksandr Borzikh on 02.02.17.
+//  Copyright © 2017 sandyre. All rights reserved.
+//
 
 #include "gameworld.hpp"
 
@@ -15,6 +15,7 @@ using namespace GameEvent;
 
 GameWorld::GameWorld(GameWorld::Settings& sets,
                      std::vector<Player>& players) :
+m_eState(State::RUNNING),
 m_stSettings(sets),
 m_aPlayers(players)
 {
@@ -24,6 +25,12 @@ void
 GameWorld::generate_map()
 {
     m_oGameMap = GameMap(m_stSettings.stGMSettings);
+}
+
+GameWorld::State
+GameWorld::GetState()
+{
+    return m_eState;
 }
 
 void
@@ -55,18 +62,15 @@ GameWorld::initial_spawn()
     
         // make a key
     auto pos = GetRandomPosition();
-    Item item;
-    item.eType = Item::Type::KEY;
-    item.nUID = 0;
-    item.stPosition.x = pos.x;
-    item.stPosition.y = pos.y;
-    m_aItems.push_back(item);
+    Item key = m_oItemFactory.createItem(Item::Type::KEY);
+    key.stPosition = pos;
+    m_aItems.push_back(key);
     
     auto gs_item = CreateSVSpawnItem(m_oBuilder,
-                                     item.nUID,
+                                     key.nUID,
                                      ItemType_KEY,
-                                     item.stPosition.x,
-                                     item.stPosition.y);
+                                     key.stPosition.x,
+                                     key.stPosition.y);
     auto gs_event = CreateEvent(m_oBuilder,
                                 Events_SVSpawnItem,
                                 gs_item.Union());
@@ -77,20 +81,80 @@ GameWorld::initial_spawn()
     m_aOutEvents.emplace(data);
     m_oBuilder.Clear();
     
-        // make swamp
+        // make a door
     pos = GetRandomPosition();
-    Construction constr;
-    constr.eType = Construction::Type::SWAMP;
-    constr.nUID = 0;
-    constr.stPosition.x = pos.x;
-    constr.stPosition.y = pos.y;
-    m_aConstructions.push_back(constr);
+    Construction door = m_oConstrFactory.createConstruction(Construction::Type::DOOR);
+    door.stPosition = pos;
+    m_aConstructions.push_back(door);
     
     auto gs_constr = CreateSVSpawnConstr(m_oBuilder,
-                                         constr.nUID,
-                                         ConstrType_SWAMP,
-                                         constr.stPosition.x,
-                                         constr.stPosition.y);
+                                         door.nUID,
+                                         ConstrType_DOOR,
+                                         door.stPosition.x,
+                                         door.stPosition.y);
+    gs_event = CreateEvent(m_oBuilder,
+                           Events_SVSpawnConstr,
+                           gs_constr.Union());
+    m_oBuilder.Finish(gs_event);
+    
+    data.assign(m_oBuilder.GetBufferPointer(),
+                m_oBuilder.GetBufferPointer() + m_oBuilder.GetSize());
+    m_aOutEvents.emplace(data);
+    m_oBuilder.Clear();
+    
+        // make a sword
+    pos = GetRandomPosition();
+    Item sword = m_oItemFactory.createItem(Item::Type::SWORD);
+    sword.stPosition = pos;
+    m_aItems.push_back(sword);
+    
+    gs_item = CreateSVSpawnItem(m_oBuilder,
+                                sword.nUID,
+                                ItemType_SWORD,
+                                sword.stPosition.x,
+                                sword.stPosition.y);
+    gs_event = CreateEvent(m_oBuilder,
+                                Events_SVSpawnItem,
+                                gs_item.Union());
+    m_oBuilder.Finish(gs_event);
+    
+    data.assign(m_oBuilder.GetBufferPointer(),
+                m_oBuilder.GetBufferPointer() + m_oBuilder.GetSize());
+    m_aOutEvents.emplace(data);
+    m_oBuilder.Clear();
+    
+        // make graveyard
+    pos = GetRandomPosition();
+    Construction grave = m_oConstrFactory.createConstruction(Construction::Type::GRAVEYARD);
+    grave.stPosition = pos;
+    m_aConstructions.push_back(grave);
+    
+    gs_constr = CreateSVSpawnConstr(m_oBuilder,
+                                    grave.nUID,
+                                    ConstrType_GRAVEYARD,
+                                    grave.stPosition.x,
+                                    grave.stPosition.y);
+    gs_event = CreateEvent(m_oBuilder,
+                           Events_SVSpawnConstr,
+                           gs_constr.Union());
+    m_oBuilder.Finish(gs_event);
+    
+    data.assign(m_oBuilder.GetBufferPointer(),
+                m_oBuilder.GetBufferPointer() + m_oBuilder.GetSize());
+    m_aOutEvents.emplace(data);
+    m_oBuilder.Clear();
+    
+        // make swamp
+    pos = GetRandomPosition();
+    Construction swamp = m_oConstrFactory.createConstruction(Construction::Type::SWAMP);
+    swamp.stPosition = pos;
+    m_aConstructions.push_back(swamp);
+    
+    gs_constr = CreateSVSpawnConstr(m_oBuilder,
+                                    swamp.nUID,
+                                    ConstrType_SWAMP,
+                                    swamp.stPosition.x,
+                                    swamp.stPosition.y);
     gs_event = CreateEvent(m_oBuilder,
                            Events_SVSpawnConstr,
                            gs_constr.Union());
@@ -143,6 +207,81 @@ GameWorld::update(std::chrono::milliseconds ms)
                 break;
             }
                 
+            case Events_CLActionItem:
+            {
+                auto cl_item = static_cast<const CLActionItem*>(gs_event->event());
+                auto player = GetPlayerByUID(cl_item->player_uid());
+                auto item = std::find_if(m_aItems.begin(),
+                                         m_aItems.end(),
+                                         [cl_item](Item& it)
+                                         {
+                                             return it.nUID == cl_item->item_uid();
+                                         });
+                
+                    // invalid item, skip event
+                if(item == m_aItems.end())
+                    continue;
+                
+                switch (cl_item->act_type())
+                {
+                    case ActionItemType_TAKE:
+                    {
+                        if(item->nCarrierID == 0) // player takes item
+                        {
+                            item->nCarrierID = player->nUID;
+                            
+                            auto gs_take = CreateSVActionItem(m_oBuilder,
+                                                              player->nUID,
+                                                              item->nUID,
+                                                              ActionItemType_TAKE);
+                            auto gs_event = CreateEvent(m_oBuilder,
+                                                        Events_SVActionItem,
+                                                        gs_take.Union());
+                            m_oBuilder.Finish(gs_event);
+                            
+                            std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                        m_oBuilder.GetBufferPointer() +
+                                                        m_oBuilder.GetSize());
+                            m_aOutEvents.emplace(packet);
+                            
+                            m_oBuilder.Clear();
+                        }
+                        
+                        break;
+                    }
+                        
+                    case ActionItemType_DROP:
+                    {
+                        item->nCarrierID = 0;
+                        item->stPosition = player->stPosition;
+                        
+                        auto gs_drop = CreateSVActionItem(m_oBuilder,
+                                                          player->nUID,
+                                                          item->nUID,
+                                                          ActionItemType_DROP);
+                        auto gs_event = CreateEvent(m_oBuilder,
+                                                    Events_SVActionItem,
+                                                    gs_drop.Union());
+                        m_oBuilder.Finish(gs_event);
+                        
+                        std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                    m_oBuilder.GetBufferPointer() +
+                                                    m_oBuilder.GetSize());
+                        m_aOutEvents.emplace(packet);
+                        
+                        m_oBuilder.Clear();
+                        
+                        break;
+                    }
+                        
+                    default:
+                        assert(false);
+                        break;
+                }
+                
+                break;
+            }
+                
             case Events_CLActionSwamp:
             {
                 auto cl_swamp = static_cast<const CLActionSwamp*>(gs_event->event());
@@ -151,6 +290,23 @@ GameWorld::update(std::chrono::milliseconds ms)
                 if(cl_swamp->status() == GameEvent::ActionSwampStatus_ESCAPED)
                 {
                     player->eState = Player::State::WALKING;
+                    player->nTimer = 0;
+                    
+                        // notify that player escaped
+                    auto sv_esc = CreateSVActionSwamp(m_oBuilder,
+                                                      player->nUID,
+                                                      ActionSwampStatus_ESCAPED);
+                    auto sv_event = CreateEvent(m_oBuilder,
+                                                Events_SVActionSwamp,
+                                                sv_esc.Union());
+                    m_oBuilder.Finish(sv_event);
+                    
+                    std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                m_oBuilder.GetBufferPointer() +
+                                                m_oBuilder.GetSize());
+                    m_aOutEvents.emplace(packet);
+                    
+                    m_oBuilder.Clear();
                     
                         // move player away from swamp
                     auto& map = m_oGameMap.GetMap();
@@ -179,18 +335,20 @@ GameWorld::update(std::chrono::milliseconds ms)
                                                       player->nUID,
                                                       player->stPosition.x,
                                                       player->stPosition.y);
-                    auto sv_event = CreateEvent(m_oBuilder,
-                                                Events_SVActionMove,
-                                                sv_move.Union());
+                    sv_event = CreateEvent(m_oBuilder,
+                                           Events_SVActionMove,
+                                           sv_move.Union());
                     m_oBuilder.Finish(sv_event);
                     
-                    std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
-                                                m_oBuilder.GetBufferPointer() +
-                                                m_oBuilder.GetSize());
+                    packet.assign(m_oBuilder.GetBufferPointer(),
+                                  m_oBuilder.GetBufferPointer() +
+                                  m_oBuilder.GetSize());
                     m_aOutEvents.emplace(packet);
                     
                     m_oBuilder.Clear();
                 }
+                
+                break;
             }
                 
             default:
@@ -208,7 +366,7 @@ GameWorld::update(std::chrono::milliseconds ms)
         {
             player.nTimer += ms.count();
             
-            if(player.nTimer > 5000)
+            if(player.nTimer > 8000)
             {
                 player.nTimer = 0;
                 player.eState = Player::State::DEAD;
@@ -275,9 +433,14 @@ GameWorld::update(std::chrono::milliseconds ms)
                 
                 player.eState = Player::State::WALKING;
                 
-                auto new_pos = GetRandomPosition();
+                auto grave = std::find_if(m_aConstructions.begin(),
+                                          m_aConstructions.end(),
+                                          [](Construction constr)
+                                          {
+                                              return constr.eType == Construction::Type::GRAVEYARD;
+                                          });
                 
-                player.stPosition = new_pos;
+                player.stPosition = grave->stPosition;
                 
                 auto gs_resp = CreateSVRespawnPlayer(m_oBuilder,
                                                      player.nUID,
@@ -295,6 +458,43 @@ GameWorld::update(std::chrono::milliseconds ms)
                 
                 m_oBuilder.Clear();
             }
+        }
+    }
+    
+        // check that game is over
+    auto key = std::find_if(m_aItems.begin(),
+                            m_aItems.end(),
+                            [](Item& it)
+                            {
+                                return it.eType == Item::Type::KEY;
+                            });
+    auto door = std::find_if(m_aConstructions.begin(),
+                             m_aConstructions.end(),
+                             [](Construction& constr)
+                             {
+                                 return constr.eType == Construction::Type::DOOR;
+                             });
+    for(auto& player : m_aPlayers)
+    {
+        if(player.nUID == key->nCarrierID &&
+           player.stPosition == door->stPosition)
+        {
+                // game is over
+            m_eState = GameWorld::State::FINISHED;
+            
+            auto gs_go = CreateSVGameEnd(m_oBuilder,
+                                         player.nUID);
+            auto gs_event = CreateEvent(m_oBuilder,
+                                        Events_SVGameEnd,
+                                        gs_go.Union());
+            m_oBuilder.Finish(gs_event);
+            
+            std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                        m_oBuilder.GetBufferPointer() +
+                                        m_oBuilder.GetSize());
+            m_aOutEvents.emplace(packet);
+            
+            m_oBuilder.Clear();
         }
     }
 }

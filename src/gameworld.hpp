@@ -24,6 +24,13 @@
 class GameWorld
 {
 public:
+    enum State
+    {
+        RUNNING,
+        PAUSE,
+        FINISHED
+    };
+    
     struct Settings
     {
         uint32_t nSeed; // also passed to GameMap generator
@@ -36,6 +43,8 @@ public:
     virtual void initial_spawn();
     virtual void update(std::chrono::milliseconds);
     
+    
+    GameWorld::State        GetState();
     const GameMap&          GetGameMap();
     std::vector<Item>&      GetItems();
     
@@ -47,6 +56,8 @@ protected:
     Point2    GetRandomPosition();
     std::vector<Player>::iterator GetPlayerByUID(PlayerUID);
 protected:
+    GameWorld::State               m_eState;
+    
     flatbuffers::FlatBufferBuilder m_oBuilder;
     GameWorld::Settings    m_stSettings;
     std::queue<std::vector<uint8_t>> m_aInEvents;
@@ -56,6 +67,9 @@ protected:
     std::vector<Construction> m_aConstructions;
     std::vector<Monster> m_aMonsters;
     GameMap              m_oGameMap;
+    
+    ItemFactory          m_oItemFactory;
+    ConstructionFactory  m_oConstrFactory;
 };
 
 #endif /* gameworld_hpp */

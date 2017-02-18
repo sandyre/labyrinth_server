@@ -25,4 +25,27 @@ struct Item
     uint32_t     nCarrierID; // 0 means its not carried by any player
 };
 
+class ItemFactory
+{
+public:
+    ItemFactory() :
+    m_nCurrentID(0)
+    {
+        
+    }
+    
+    Item    createItem(Item::Type type)
+    {
+        Item item;
+        item.eType = type;
+        item.nUID = m_nCurrentID;
+        item.nCarrierID = 0;
+        
+        ++m_nCurrentID;
+        return item;
+    }
+protected:
+    uint16_t m_nCurrentID;
+};
+
 #endif /* item_hpp */

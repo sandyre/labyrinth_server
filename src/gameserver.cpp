@@ -201,10 +201,12 @@ GameServer::EventLoop()
         std::cout << m_sServerName << " GAME BEGINS\n";
     }
     
+    int times_skipped = 0;
     while(m_eState == GameServer::State::RUNNING_GAME)
     {
         auto frame_start = steady_clock::now();
         
+        bool event_received = false;
         bool is_event_valid = false;
         size_t bytes_read = 0;
         
@@ -216,58 +218,99 @@ GameServer::EventLoop()
             out_events.pop();
         }
         
-        bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
-        
-        auto gs_event = GetEvent(buf);
-        
-        switch(gs_event->event_type())
+            // if game ended
+        if(m_pGameWorld->GetState() == GameWorld::State::FINISHED)
         {
-            case Events_CLActionMove:
-            {
-                auto cl_mov = static_cast<const CLActionMove*>(gs_event->event());
-                auto player = FindPlayerByUID(cl_mov->player_uid());
-                
-                if(player != m_aPlayers.end() &&
-                   (*player).sock_addr != sender_addr)
-                {
-                    (*player).sock_addr = sender_addr;
-                }
-                
-                is_event_valid = true;
-                break;
-            }
-                
-            case Events_CLActionSwamp:
-            {
-                auto cl_swamp = static_cast<const CLActionSwamp*>(gs_event->event());
-                auto player = FindPlayerByUID(cl_swamp->player_uid());
-                
-                if(player != m_aPlayers.end() &&
-                   (*player).sock_addr != sender_addr)
-                {
-                    (*player).sock_addr = sender_addr;
-                }
-                
-                is_event_valid = true;
-                break;
-            }
-                
-            default:
-                assert(false);
-                break;
+            m_eState = GameServer::State::FINISHED;
         }
         
-        if(is_event_valid) // add received event to the gameworld
+            // if event received, process it
+        if(m_oSocket.available())
         {
-            auto& in_events = m_pGameWorld->GetInEvents();
-            std::vector<uint8_t> event(buf,
-                                       buf + bytes_read);
-            in_events.emplace(event);
+            bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
+            event_received = true;
+            times_skipped = 0;
+        }
+        else // sleep and update gameworld overwise (10 updates ps)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            event_received = false;
+            times_skipped++;
+        }
+        
+        if(event_received)
+        {
+            auto gs_event = GetEvent(buf);
+            
+            switch(gs_event->event_type())
+            {
+                case Events_CLActionMove:
+                {
+                    auto cl_mov = static_cast<const CLActionMove*>(gs_event->event());
+                    auto player = FindPlayerByUID(cl_mov->player_uid());
+                    
+                    if(player != m_aPlayers.end() &&
+                       player->sock_addr != sender_addr)
+                    {
+                        player->sock_addr = sender_addr;
+                    }
+                    
+                    is_event_valid = true;
+                    break;
+                }
+                    
+                case Events_CLActionItem:
+                {
+                    auto cl_item = static_cast<const CLActionItem*>(gs_event->event());
+                    auto player = FindPlayerByUID(cl_item->player_uid());
+                    
+                    if(player != m_aPlayers.end() &&
+                       player->sock_addr != sender_addr)
+                    {
+                        player->sock_addr = sender_addr;
+                    }
+                    
+                    is_event_valid = true;
+                    break;
+                }
+                    
+                case Events_CLActionSwamp:
+                {
+                    auto cl_swamp = static_cast<const CLActionSwamp*>(gs_event->event());
+                    auto player = FindPlayerByUID(cl_swamp->player_uid());
+                    
+                    if(player != m_aPlayers.end() &&
+                       player->sock_addr != sender_addr)
+                    {
+                        player->sock_addr = sender_addr;
+                    }
+                    
+                    is_event_valid = true;
+                    break;
+                }
+                    
+                default:
+                    assert(false);
+                    break;
+            }
+            
+            if(is_event_valid) // add received event to the gameworld
+            {
+                auto& in_events = m_pGameWorld->GetInEvents();
+                std::vector<uint8_t> event(buf,
+                                           buf + bytes_read);
+                in_events.emplace(event);
+            }
         }
         
         auto frame_end = steady_clock::now();
         
         m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
+        
+        if(times_skipped > 200)
+        {
+            m_eState = GameServer::State::FINISHED;
+        }
     }
     
     auto end_time = steady_clock::now();
