@@ -9,7 +9,6 @@
 #ifndef masterserver_hpp
 #define masterserver_hpp
 
-#include <iostream>
 #include <thread>
 #include <vector>
 #include <deque>

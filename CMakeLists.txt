@@ -4,6 +4,7 @@ project(labyrinth_server)
 
 find_library(LIBPOCONET_LOCATION libPocoNet.a)
 find_library(LIBPOCOFOUND_LOCATION libPocoFoundation.a)
+find_library(LIBFLAT_LOCATION libflatbuffers.a)
 
 set(CMAKE_COLOR_MAKEFILE ON)
 
@@ -18,7 +19,6 @@ set(SOURCES
 	)
 
 set(HEADERS
-	src/netpacket.hpp
 	src/gameworld.hpp
 	src/item.hpp
 	src/masterserver.hpp
@@ -27,7 +27,10 @@ set(HEADERS
 	src/gameserver.hpp
 	src/gamemap.hpp
 	src/construction.hpp
+	src/msnet_generated.h
+	src/gsnet_generated.h
+	src/player.hpp
 	)
 
 add_executable(master_serv ${SOURCES})
-target_link_libraries(master_serv ${LIBPOCONET_LOCATION} ${LIBPOCOFOUND_LOCATION})
+target_link_libraries(master_serv ${LIBPOCONET_LOCATION} ${LIBPOCOFOUND_LOCATION} ${LIBFLAT_LOCATION})

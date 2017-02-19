@@ -18,7 +18,6 @@
 #include "player.hpp"
 #include "item.hpp"
 #include "construction.hpp"
-#include "monster.hpp"
 #include "gsnet_generated.h"
 
 class GameWorld
@@ -65,7 +64,7 @@ protected:
     std::vector<Player>&   m_aPlayers;
     std::vector<Item>    m_aItems;
     std::vector<Construction> m_aConstructions;
-    std::vector<Monster> m_aMonsters;
+//    std::vector<Monster> m_aMonsters;
     GameMap              m_oGameMap;
     
     ItemFactory          m_oItemFactory;

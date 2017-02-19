@@ -6,7 +6,6 @@
 //  Copyright © 2017 sandyre. All rights reserved.
 //
 
-#include <iostream>
 #include "masterserver.hpp"
 
 int main(int argc, const char * argv[])

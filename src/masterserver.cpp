@@ -7,6 +7,7 @@
 //
 
 #include "masterserver.hpp"
+#include <iostream>
 #include <limits>
 #include <memory>
 

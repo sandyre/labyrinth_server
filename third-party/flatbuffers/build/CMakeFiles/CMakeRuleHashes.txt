@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+cfaab1567e8af4ca4b0ac91c80bb701b samples/monster_generated.h
+43553062fc4ee7b8b50ebcee725924fd tests/monster_test_generated.h

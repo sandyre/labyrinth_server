@@ -1,0 +1,11 @@
+/usr/local/include/flatbuffers/code_generators.h
+/usr/local/include/flatbuffers/flatbuffers.h
+/usr/local/include/flatbuffers/flatc.h
+/usr/local/include/flatbuffers/grpc.h
+/usr/local/include/flatbuffers/hash.h
+/usr/local/include/flatbuffers/idl.h
+/usr/local/include/flatbuffers/reflection.h
+/usr/local/include/flatbuffers/reflection_generated.h
+/usr/local/include/flatbuffers/util.h
+/usr/local/lib/libflatbuffers.a
+/usr/local/bin/flatc
