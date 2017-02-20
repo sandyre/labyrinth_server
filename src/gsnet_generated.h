@@ -32,6 +32,10 @@ struct CLActionSwamp;
 
 struct SVActionSwamp;
 
+struct CLActionDuel;
+
+struct SVActionDuel;
+
 struct SVSpawnPlayer;
 
 struct SVRespawnPlayer;
@@ -43,73 +47,6 @@ struct SVSpawnConstr;
 struct SVGameEnd;
 
 struct Event;
-
-enum Type {
-  Type_CL_PING = 0,
-  Type_SRV_PING = 1,
-  Type_CL_CONNECT = 2,
-  Type_SRV_ACCEPT_CONNECT = 3,
-  Type_SRV_REFUSE_CONNECT = 4,
-  Type_SRV_PLAYER_CONNECTED = 5,
-  Type_CL_PLAYER_READY = 6,
-  Type_SRV_GEN_MAP = 7,
-  Type_CL_GEN_MAP_OK = 8,
-  Type_SRV_GAME_START = 9,
-  Type_CL_MOVEMENT = 10,
-  Type_SRV_MOVEMENT = 11,
-  Type_CL_TAKE_EQUIP = 12,
-  Type_SRV_TAKE_EQUIP = 13,
-  Type_CL_ATTACK_PLAYER = 14,
-  Type_SRV_ATTACK_PLAYER = 15,
-  Type_CL_ATTACK_MONSTER = 16,
-  Type_SRV_ATTACK_MONSTER = 17,
-  Type_CL_CHECK_WIN = 18,
-  Type_SRV_GAME_END = 19,
-  Type_SRV_MONSTER_MOVE = 20,
-  Type_SRV_SPAWN_PLAYER = 21,
-  Type_SRV_SPAWN_MONSTER = 22,
-  Type_SRV_SPAWN_ITEM = 23,
-  Type_SRV_SPAWN_CONSTRUCTION = 24,
-  Type_MIN = Type_CL_PING,
-  Type_MAX = Type_SRV_SPAWN_CONSTRUCTION
-};
-
-inline const char **EnumNamesType() {
-  static const char *names[] = {
-    "CL_PING",
-    "SRV_PING",
-    "CL_CONNECT",
-    "SRV_ACCEPT_CONNECT",
-    "SRV_REFUSE_CONNECT",
-    "SRV_PLAYER_CONNECTED",
-    "CL_PLAYER_READY",
-    "SRV_GEN_MAP",
-    "CL_GEN_MAP_OK",
-    "SRV_GAME_START",
-    "CL_MOVEMENT",
-    "SRV_MOVEMENT",
-    "CL_TAKE_EQUIP",
-    "SRV_TAKE_EQUIP",
-    "CL_ATTACK_PLAYER",
-    "SRV_ATTACK_PLAYER",
-    "CL_ATTACK_MONSTER",
-    "SRV_ATTACK_MONSTER",
-    "CL_CHECK_WIN",
-    "SRV_GAME_END",
-    "SRV_MONSTER_MOVE",
-    "SRV_SPAWN_PLAYER",
-    "SRV_SPAWN_MONSTER",
-    "SRV_SPAWN_ITEM",
-    "SRV_SPAWN_CONSTRUCTION",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameType(Type e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesType()[index];
-}
 
 enum ConnectionStatus {
   ConnectionStatus_ACCEPTED = 0,
@@ -178,6 +115,31 @@ inline const char *EnumNameActionSwampStatus(ActionSwampStatus e) {
   return EnumNamesActionSwampStatus()[index];
 }
 
+enum ActionDuelType {
+  ActionDuelType_STARTED = 0,
+  ActionDuelType_ATTACK = 1,
+  ActionDuelType_ESCAPE = 2,
+  ActionDuelType_KILL = 3,
+  ActionDuelType_MIN = ActionDuelType_STARTED,
+  ActionDuelType_MAX = ActionDuelType_KILL
+};
+
+inline const char **EnumNamesActionDuelType() {
+  static const char *names[] = {
+    "STARTED",
+    "ATTACK",
+    "ESCAPE",
+    "KILL",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameActionDuelType(ActionDuelType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesActionDuelType()[index];
+}
+
 enum ItemType {
   ItemType_KEY = 0,
   ItemType_SWORD = 1,
@@ -236,11 +198,13 @@ enum Events {
   Events_SVActionItem = 10,
   Events_CLActionSwamp = 11,
   Events_SVActionSwamp = 12,
-  Events_SVSpawnPlayer = 13,
-  Events_SVRespawnPlayer = 14,
-  Events_SVSpawnItem = 15,
-  Events_SVSpawnConstr = 16,
-  Events_SVGameEnd = 17,
+  Events_CLActionDuel = 13,
+  Events_SVActionDuel = 14,
+  Events_SVSpawnPlayer = 15,
+  Events_SVRespawnPlayer = 16,
+  Events_SVSpawnItem = 17,
+  Events_SVSpawnConstr = 18,
+  Events_SVGameEnd = 19,
   Events_MIN = Events_NONE,
   Events_MAX = Events_SVGameEnd
 };
@@ -260,6 +224,8 @@ inline const char **EnumNamesEvents() {
     "SVActionItem",
     "CLActionSwamp",
     "SVActionSwamp",
+    "CLActionDuel",
+    "SVActionDuel",
     "SVSpawnPlayer",
     "SVRespawnPlayer",
     "SVSpawnItem",
@@ -325,6 +291,14 @@ template<> struct EventsTraits<CLActionSwamp> {
 
 template<> struct EventsTraits<SVActionSwamp> {
   static const Events enum_value = Events_SVActionSwamp;
+};
+
+template<> struct EventsTraits<CLActionDuel> {
+  static const Events enum_value = Events_CLActionDuel;
+};
+
+template<> struct EventsTraits<SVActionDuel> {
+  static const Events enum_value = Events_SVActionDuel;
 };
 
 template<> struct EventsTraits<SVSpawnPlayer> {
@@ -990,11 +964,133 @@ inline flatbuffers::Offset<SVActionSwamp> CreateSVActionSwamp(
   return builder_.Finish();
 }
 
+struct CLActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER1_UID = 4,
+    VT_PLAYER2_UID = 6,
+    VT_TYPE = 8
+  };
+  uint32_t player1_uid() const {
+    return GetField<uint32_t>(VT_PLAYER1_UID, 0);
+  }
+  uint32_t player2_uid() const {
+    return GetField<uint32_t>(VT_PLAYER2_UID, 0);
+  }
+  ActionDuelType type() const {
+    return static_cast<ActionDuelType>(GetField<int8_t>(VT_TYPE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER1_UID) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER2_UID) &&
+           VerifyField<int8_t>(verifier, VT_TYPE) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLActionDuelBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player1_uid(uint32_t player1_uid) {
+    fbb_.AddElement<uint32_t>(CLActionDuel::VT_PLAYER1_UID, player1_uid, 0);
+  }
+  void add_player2_uid(uint32_t player2_uid) {
+    fbb_.AddElement<uint32_t>(CLActionDuel::VT_PLAYER2_UID, player2_uid, 0);
+  }
+  void add_type(ActionDuelType type) {
+    fbb_.AddElement<int8_t>(CLActionDuel::VT_TYPE, static_cast<int8_t>(type), 0);
+  }
+  CLActionDuelBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLActionDuelBuilder &operator=(const CLActionDuelBuilder &);
+  flatbuffers::Offset<CLActionDuel> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<CLActionDuel>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLActionDuel> CreateCLActionDuel(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player1_uid = 0,
+    uint32_t player2_uid = 0,
+    ActionDuelType type = ActionDuelType_STARTED) {
+  CLActionDuelBuilder builder_(_fbb);
+  builder_.add_player2_uid(player2_uid);
+  builder_.add_player1_uid(player1_uid);
+  builder_.add_type(type);
+  return builder_.Finish();
+}
+
+struct SVActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER1_UID = 4,
+    VT_PLAYER2_UID = 6,
+    VT_TYPE = 8
+  };
+  uint32_t player1_uid() const {
+    return GetField<uint32_t>(VT_PLAYER1_UID, 0);
+  }
+  uint32_t player2_uid() const {
+    return GetField<uint32_t>(VT_PLAYER2_UID, 0);
+  }
+  ActionDuelType type() const {
+    return static_cast<ActionDuelType>(GetField<int8_t>(VT_TYPE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER1_UID) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER2_UID) &&
+           VerifyField<int8_t>(verifier, VT_TYPE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVActionDuelBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player1_uid(uint32_t player1_uid) {
+    fbb_.AddElement<uint32_t>(SVActionDuel::VT_PLAYER1_UID, player1_uid, 0);
+  }
+  void add_player2_uid(uint32_t player2_uid) {
+    fbb_.AddElement<uint32_t>(SVActionDuel::VT_PLAYER2_UID, player2_uid, 0);
+  }
+  void add_type(ActionDuelType type) {
+    fbb_.AddElement<int8_t>(SVActionDuel::VT_TYPE, static_cast<int8_t>(type), 0);
+  }
+  SVActionDuelBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVActionDuelBuilder &operator=(const SVActionDuelBuilder &);
+  flatbuffers::Offset<SVActionDuel> Finish() {
+    const auto end = fbb_.EndTable(start_, 3);
+    auto o = flatbuffers::Offset<SVActionDuel>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVActionDuel> CreateSVActionDuel(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player1_uid = 0,
+    uint32_t player2_uid = 0,
+    ActionDuelType type = ActionDuelType_STARTED) {
+  SVActionDuelBuilder builder_(_fbb);
+  builder_.add_player2_uid(player2_uid);
+  builder_.add_player1_uid(player1_uid);
+  builder_.add_type(type);
+  return builder_.Finish();
+}
+
 struct SVSpawnPlayer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
     VT_X = 6,
-    VT_Y = 8
+    VT_Y = 8,
+    VT_HP = 10,
+    VT_MAX_HP = 12
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
@@ -1005,11 +1101,19 @@ struct SVSpawnPlayer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t y() const {
     return GetField<uint16_t>(VT_Y, 0);
   }
+  uint16_t hp() const {
+    return GetField<uint16_t>(VT_HP, 0);
+  }
+  uint16_t max_hp() const {
+    return GetField<uint16_t>(VT_MAX_HP, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
            VerifyField<uint16_t>(verifier, VT_X) &&
            VerifyField<uint16_t>(verifier, VT_Y) &&
+           VerifyField<uint16_t>(verifier, VT_HP) &&
+           VerifyField<uint16_t>(verifier, VT_MAX_HP) &&
            verifier.EndTable();
   }
 };
@@ -1026,13 +1130,19 @@ struct SVSpawnPlayerBuilder {
   void add_y(uint16_t y) {
     fbb_.AddElement<uint16_t>(SVSpawnPlayer::VT_Y, y, 0);
   }
+  void add_hp(uint16_t hp) {
+    fbb_.AddElement<uint16_t>(SVSpawnPlayer::VT_HP, hp, 0);
+  }
+  void add_max_hp(uint16_t max_hp) {
+    fbb_.AddElement<uint16_t>(SVSpawnPlayer::VT_MAX_HP, max_hp, 0);
+  }
   SVSpawnPlayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   SVSpawnPlayerBuilder &operator=(const SVSpawnPlayerBuilder &);
   flatbuffers::Offset<SVSpawnPlayer> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 5);
     auto o = flatbuffers::Offset<SVSpawnPlayer>(end);
     return o;
   }
@@ -1042,9 +1152,13 @@ inline flatbuffers::Offset<SVSpawnPlayer> CreateSVSpawnPlayer(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
     uint16_t x = 0,
-    uint16_t y = 0) {
+    uint16_t y = 0,
+    uint16_t hp = 0,
+    uint16_t max_hp = 0) {
   SVSpawnPlayerBuilder builder_(_fbb);
   builder_.add_player_uid(player_uid);
+  builder_.add_max_hp(max_hp);
+  builder_.add_hp(hp);
   builder_.add_y(y);
   builder_.add_x(x);
   return builder_.Finish();
@@ -1054,7 +1168,9 @@ struct SVRespawnPlayer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
     VT_X = 6,
-    VT_Y = 8
+    VT_Y = 8,
+    VT_HP = 10,
+    VT_MAX_HP = 12
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
@@ -1065,11 +1181,19 @@ struct SVRespawnPlayer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t y() const {
     return GetField<uint16_t>(VT_Y, 0);
   }
+  uint16_t hp() const {
+    return GetField<uint16_t>(VT_HP, 0);
+  }
+  uint16_t max_hp() const {
+    return GetField<uint16_t>(VT_MAX_HP, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
            VerifyField<uint16_t>(verifier, VT_X) &&
            VerifyField<uint16_t>(verifier, VT_Y) &&
+           VerifyField<uint16_t>(verifier, VT_HP) &&
+           VerifyField<uint16_t>(verifier, VT_MAX_HP) &&
            verifier.EndTable();
   }
 };
@@ -1086,13 +1210,19 @@ struct SVRespawnPlayerBuilder {
   void add_y(uint16_t y) {
     fbb_.AddElement<uint16_t>(SVRespawnPlayer::VT_Y, y, 0);
   }
+  void add_hp(uint16_t hp) {
+    fbb_.AddElement<uint16_t>(SVRespawnPlayer::VT_HP, hp, 0);
+  }
+  void add_max_hp(uint16_t max_hp) {
+    fbb_.AddElement<uint16_t>(SVRespawnPlayer::VT_MAX_HP, max_hp, 0);
+  }
   SVRespawnPlayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   SVRespawnPlayerBuilder &operator=(const SVRespawnPlayerBuilder &);
   flatbuffers::Offset<SVRespawnPlayer> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 5);
     auto o = flatbuffers::Offset<SVRespawnPlayer>(end);
     return o;
   }
@@ -1102,9 +1232,13 @@ inline flatbuffers::Offset<SVRespawnPlayer> CreateSVRespawnPlayer(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
     uint16_t x = 0,
-    uint16_t y = 0) {
+    uint16_t y = 0,
+    uint16_t hp = 0,
+    uint16_t max_hp = 0) {
   SVRespawnPlayerBuilder builder_(_fbb);
   builder_.add_player_uid(player_uid);
+  builder_.add_max_hp(max_hp);
+  builder_.add_hp(hp);
   builder_.add_y(y);
   builder_.add_x(x);
   return builder_.Finish();
@@ -1392,6 +1526,14 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
     }
     case Events_SVActionSwamp: {
       auto ptr = reinterpret_cast<const SVActionSwamp *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Events_CLActionDuel: {
+      auto ptr = reinterpret_cast<const CLActionDuel *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Events_SVActionDuel: {
+      auto ptr = reinterpret_cast<const SVActionDuel *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Events_SVSpawnPlayer: {

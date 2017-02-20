@@ -43,11 +43,14 @@ GameWorld::initial_spawn()
         Point2 spawn_point = GetRandomPosition();
         player.stPosition.x = spawn_point.x;
         player.stPosition.y = spawn_point.y;
+        player.nHP = player.nHPMax;
         
         auto gs_spawn = CreateSVSpawnPlayer(m_oBuilder,
                                             player.nUID,
                                             player.stPosition.x,
-                                            player.stPosition.y);
+                                            player.stPosition.y,
+                                            player.nHP,
+                                            player.nHPMax);
         auto gs_event = CreateEvent(m_oBuilder,
                                     Events_SVSpawnPlayer,
                                     gs_spawn.Union());
@@ -351,12 +354,135 @@ GameWorld::update(std::chrono::milliseconds ms)
                 break;
             }
                 
+            case Events_CLActionDuel:
+            {
+                auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
+                auto player1 = GetPlayerByUID(cl_duel->player1_uid());
+                auto player2 = GetPlayerByUID(cl_duel->player2_uid());
+                
+                switch(cl_duel->type())
+                {
+                    case ActionDuelType_ATTACK:
+                    {
+                        player2->nHP -= player1->nDamage;
+                        
+                        auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
+                                                              player1->nUID, // who attacks goes first
+                                                              player2->nUID, // attacked goes second
+                                                              ActionDuelType_ATTACK);
+                        auto sv_event = CreateEvent(m_oBuilder,
+                                                    Events_SVActionDuel,
+                                                    sv_duel_att.Union());
+                        m_oBuilder.Finish(sv_event);
+                        
+                        std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                    m_oBuilder.GetBufferPointer() +
+                                                    m_oBuilder.GetSize());
+                        m_aOutEvents.emplace(packet);
+                        
+                        m_oBuilder.Clear();
+                        
+                        if(player2->nHP <= 0)
+                        {
+                            player2->nHP = player2->nHPMax; // set hp to default
+                            
+                            player2->eState = Player::State::DEAD; // will be respawned
+                            player1->eState = Player::State::WALKING; // can now walk
+                            
+                                // duel ends, ENEMY dead
+                            auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
+                                                                  player1->nUID, // killer first
+                                                                  player2->nUID, // who died second
+                                                                  ActionDuelType_KILL);
+                            sv_event = CreateEvent(m_oBuilder,
+                                                   Events_SVActionDuel,
+                                                   sv_duel_end.Union());
+                            m_oBuilder.Finish(sv_event);
+                            
+                            packet.assign(m_oBuilder.GetBufferPointer(),
+                                          m_oBuilder.GetBufferPointer() +
+                                          m_oBuilder.GetSize());
+                            m_aOutEvents.emplace(packet);
+                            
+                            m_oBuilder.Clear();
+                        }
+                        
+                        break;
+                    }
+                        
+                    case ActionDuelType_ESCAPE:
+                    {
+                            // set players new state
+                        player1->eState = Player::State::WALKING; // player escaped
+                        player2->eState = Player::State::WALKING;
+                        
+                        auto sv_escape = CreateSVActionDuel(m_oBuilder,
+                                                            player1->nUID, // who escaped
+                                                            player2->nUID,
+                                                            ActionDuelType_ESCAPE);
+                        auto sv_event = CreateEvent(m_oBuilder,
+                                                    Events_SVActionDuel,
+                                                    sv_escape.Union());
+                        m_oBuilder.Finish(sv_event);
+                        
+                        std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                    m_oBuilder.GetBufferPointer() +
+                                                    m_oBuilder.GetSize());
+                        m_aOutEvents.emplace(packet);
+                        
+                        m_oBuilder.Clear();
+                        
+                        break;
+                    }
+                        
+                    default:
+                        assert(false);
+                        break;
+                }
+                
+                break;
+            }
+                
             default:
                 assert(false);
                 break;
         }
         
         m_aInEvents.pop(); // remove packet
+    }
+        // check that player can fight
+    for(auto& x : m_aPlayers)
+    {
+        for(auto& y : m_aPlayers)
+        {
+            if(x.nUID != y.nUID)
+            {
+                if(x.eState == Player::State::WALKING &&
+                   y.eState == Player::State::WALKING &&
+                   x.stPosition == y.stPosition)
+                {
+                        // battle begins
+                    x.eState = Player::State::DUEL;
+                    y.eState = Player::State::DUEL;
+                    
+                    auto sv_duel = CreateSVActionDuel(m_oBuilder,
+                                                      x.nUID,
+                                                      y.nUID,
+                                                      ActionDuelType_STARTED);
+                    auto sv_event = CreateEvent(m_oBuilder,
+                                                Events_SVActionDuel,
+                                                sv_duel.Union());
+                    m_oBuilder.Finish(sv_event);
+                    
+                    std::vector<uint8_t> packet(m_oBuilder.GetBufferPointer(),
+                                                m_oBuilder.GetBufferPointer() +
+                                                m_oBuilder.GetSize());
+                    m_aOutEvents.emplace(packet);
+                    
+                    m_oBuilder.Clear();
+                }
+            }
+        }
     }
     
         // timer for players in swamp
@@ -430,6 +556,7 @@ GameWorld::update(std::chrono::milliseconds ms)
             if(player.nTimer > 3000)
             {
                 player.nTimer = 0;
+                player.nHP = player.nHPMax;
                 
                 player.eState = Player::State::WALKING;
                 
@@ -445,7 +572,9 @@ GameWorld::update(std::chrono::milliseconds ms)
                 auto gs_resp = CreateSVRespawnPlayer(m_oBuilder,
                                                      player.nUID,
                                                      player.stPosition.x,
-                                                     player.stPosition.y);
+                                                     player.stPosition.y,
+                                                     player.nHP,
+                                                     player.nHPMax);
                 auto gs_event = CreateEvent(m_oBuilder,
                                             Events_SVRespawnPlayer,
                                             gs_resp.Union());

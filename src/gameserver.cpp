@@ -289,6 +289,22 @@ GameServer::EventLoop()
                     break;
                 }
                     
+                case Events_CLActionDuel:
+                {
+                    auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
+                    auto player1 = FindPlayerByUID(cl_duel->player1_uid());
+                    auto player2 = FindPlayerByUID(cl_duel->player2_uid());
+                    
+                    if(player1 != m_aPlayers.end() &&
+                       player1->sock_addr != sender_addr)
+                    {
+                        player1->sock_addr = sender_addr;
+                    }
+                    
+                    is_event_valid = true;
+                    break;
+                }
+                    
                 default:
                     assert(false);
                     break;
@@ -307,7 +323,7 @@ GameServer::EventLoop()
         
         m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
         
-        if(times_skipped > 200)
+        if(times_skipped > 200000)
         {
             m_eState = GameServer::State::FINISHED;
         }

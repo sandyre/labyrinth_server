@@ -1,46 +1,5 @@
 namespace GameEvent;
 
-enum Type : byte
-{
-// GENERAL PART (can be sent/received in any server state)
-CL_PING,
-SRV_PING,
-
-// PREGAMING PART (only pregaming state)
-CL_CONNECT, // user connects {uid, name}
-SRV_ACCEPT_CONNECT, // accepts
-SRV_REFUSE_CONNECT, // refuses
-SRV_PLAYER_CONNECTED, // {uid, name} of a new player (if connection is accepted
-// is sent to all players
-CL_PLAYER_READY, // when client hit 'ready' button
-SRV_GEN_MAP, // lobby formed, start generation
-CL_GEN_MAP_OK, // player is ready
-SRV_GAME_START, // game begins
-
-// IN-GAME (verifiable)
-CL_MOVEMENT,
-SRV_MOVEMENT,
-
-CL_TAKE_EQUIP,
-SRV_TAKE_EQUIP,
-
-CL_ATTACK_PLAYER,
-SRV_ATTACK_PLAYER,
-
-CL_ATTACK_MONSTER,
-SRV_ATTACK_MONSTER,
-
-CL_CHECK_WIN,
-SRV_GAME_END,
-
-// IN-GAME (server only actions)
-SRV_MONSTER_MOVE,
-SRV_SPAWN_PLAYER,
-SRV_SPAWN_MONSTER,
-SRV_SPAWN_ITEM,
-SRV_SPAWN_CONSTRUCTION,
-}
-
 enum ConnectionStatus : byte
 {
 ACCEPTED,
@@ -136,11 +95,35 @@ player_uid:uint;
 status:ActionSwampStatus;
 }
 
+enum ActionDuelType : byte
+{
+STARTED,
+ATTACK,
+ESCAPE,
+KILL
+}
+
+table CLActionDuel
+{
+player1_uid:uint;
+player2_uid:uint;
+type:ActionDuelType;
+}
+
+table SVActionDuel
+{
+player1_uid:uint;
+player2_uid:uint;
+type:ActionDuelType;
+}
+
 table SVSpawnPlayer
 {
 player_uid:uint;
 x:ushort;
 y:ushort;
+hp:ushort;
+max_hp:ushort;
 }
 
 table SVRespawnPlayer
@@ -148,6 +131,8 @@ table SVRespawnPlayer
 player_uid:uint;
 x:ushort;
 y:ushort;
+hp:ushort;
+max_hp:ushort;
 }
 
 enum ItemType : byte
@@ -201,6 +186,9 @@ SVActionItem,
 
 CLActionSwamp,
 SVActionSwamp,
+
+CLActionDuel,
+SVActionDuel,
 
 SVSpawnPlayer,
 SVRespawnPlayer,

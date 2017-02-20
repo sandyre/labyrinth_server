@@ -42,7 +42,6 @@ public:
     virtual void initial_spawn();
     virtual void update(std::chrono::milliseconds);
     
-    
     GameWorld::State        GetState();
     const GameMap&          GetGameMap();
     std::vector<Item>&      GetItems();
