@@ -8,7 +8,7 @@ find_library(LIBFLAT_LOCATION libflatbuffers.a)
 
 set(CMAKE_COLOR_MAKEFILE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
 
 set(SOURCES
 	src/main.cpp
