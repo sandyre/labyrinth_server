@@ -29,7 +29,7 @@ m_msPerUpdate(0)
     std::cout << m_sServerName << " STARTED. CONFIG {SEED: "
     << m_stConfig.nRandomSeed << "; PLAYERS: " << m_stConfig.nPlayers << "}\n";
     
-    Poco::Net::SocketAddress addr("localhost", m_stConfig.nPort);
+    Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), m_stConfig.nPort);
     m_oSocket.bind(addr);
     
     m_oThread = std::thread(

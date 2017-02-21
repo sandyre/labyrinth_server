@@ -19,7 +19,8 @@ m_oGenerator(228), // FIXME: random should always be random!
 m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
                                          std::numeric_limits<int32_t>::max()))
 {
-    Poco::Net::SocketAddress sock_addr("localhost", Port);
+    Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
+    m_oSocket.setBroadcast(true);
     m_oSocket.bind(sock_addr);
     
     std::cout << "MasterServer started at port " << Port << "\n";
@@ -38,7 +39,7 @@ MasterServer::init()
     for(uint32_t i = 1931; i < (1931 + 2000); ++i)
     {
         Poco::Net::DatagramSocket socket;
-        Poco::Net::SocketAddress addr("localhost", i);
+        Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), i);
         
         try
         {
@@ -126,7 +127,7 @@ MasterServer::run()
                 m_qAvailablePorts.pop();
                 
                 GameServer::Configuration config;
-                config.nPlayers = 1; // +-
+                config.nPlayers = 2; // +-
                 config.nRandomSeed = m_oDistr(m_oGenerator);
                 config.nPort = nGSPort;
                 
