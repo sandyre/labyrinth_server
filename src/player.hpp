@@ -30,8 +30,8 @@ struct Player
     uint32_t    nTimer = 0;
     uint32_t    nUID = 0;
     char        sNickname[16];
-    int16_t     nHP = 3;
-    int16_t     nHPMax = 3;
+    int16_t     nHP = 1;
+    int16_t     nHPMax = 1;
     uint16_t    nDamage = 1;
     
     Poco::Net::SocketAddress sock_addr;

@@ -103,23 +103,40 @@ ESCAPE,
 KILL
 }
 
+enum ActionDuelTarget : byte
+{
+PLAYER,
+MONSTER
+}
+
 table CLActionDuel
 {
 player1_uid:uint;
 player2_uid:uint;
-type:ActionDuelType;
+target_type:ActionDuelTarget;
+act_type:ActionDuelType;
 }
 
 table SVActionDuel
 {
 player1_uid:uint;
 player2_uid:uint;
-type:ActionDuelType;
+target_type:ActionDuelTarget;
+act_type:ActionDuelType;
 }
 
 table SVSpawnPlayer
 {
 player_uid:uint;
+x:ushort;
+y:ushort;
+hp:ushort;
+max_hp:ushort;
+}
+
+table SVSpawnMonster
+{
+monster_uid:ushort;
 x:ushort;
 y:ushort;
 hp:ushort;
@@ -192,6 +209,7 @@ SVActionDuel,
 
 SVSpawnPlayer,
 SVRespawnPlayer,
+SVSpawnMonster,
 SVSpawnItem,
 SVSpawnConstr,
 SVGameEnd

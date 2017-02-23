@@ -1,10 +1,10 @@
-    //
-    //  gameserver.cpp
-    //  labyrinth_server
-    //
-    //  Created by Aleksandr Borzikh on 28.01.17.
-    //  Copyright © 2017 sandyre. All rights reserved.
-    //
+//
+//  gameserver.cpp
+//  labyrinth_server
+//
+//  Created by Aleksandr Borzikh on 28.01.17.
+//  Copyright © 2017 sandyre. All rights reserved.
+//
 
 #include "gameserver.hpp"
 
@@ -296,6 +296,7 @@ GameServer::EventLoop()
                     auto player2 = FindPlayerByUID(cl_duel->player2_uid());
                     
                     if(player1 != m_aPlayers.end() &&
+                       player2 != m_aPlayers.end() &&
                        player1->sock_addr != sender_addr)
                     {
                         player1->sock_addr = sender_addr;
@@ -323,7 +324,7 @@ GameServer::EventLoop()
         
         m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
         
-        if(times_skipped > 200000)
+        if(times_skipped > 20000)
         {
             m_eState = GameServer::State::FINISHED;
         }

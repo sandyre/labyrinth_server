@@ -167,6 +167,29 @@ GameWorld::initial_spawn()
                 m_oBuilder.GetBufferPointer() + m_oBuilder.GetSize());
     m_aOutEvents.emplace(data);
     m_oBuilder.Clear();
+    
+        // make a monster
+    pos = GetRandomPosition();
+    Monster monster = m_oMonsterFactory.createMonster();
+    monster.stPosition = pos;
+    m_aMonsters.push_back(monster);
+    
+    auto gs_monster = CreateSVSpawnMonster(m_oBuilder,
+                                           monster.nUID,
+                                           monster.stPosition.x,
+                                           monster.stPosition.y,
+                                           monster.nHP,
+                                           monster.nMaxHP);
+    
+    gs_event = CreateEvent(m_oBuilder,
+                           Events_SVSpawnMonster,
+                           gs_monster.Union());
+    m_oBuilder.Finish(gs_event);
+    
+    data.assign(m_oBuilder.GetBufferPointer(),
+                m_oBuilder.GetBufferPointer() + m_oBuilder.GetSize());
+    m_aOutEvents.emplace(data);
+    m_oBuilder.Clear();
 }
 
 void
@@ -182,20 +205,20 @@ GameWorld::update(std::chrono::milliseconds ms)
             case Events_CLActionMove:
             {
                 auto cl_mov = static_cast<const CLActionMove*>(gs_event->event());
-                auto player = GetPlayerByUID(cl_mov->player_uid());
+                auto& player = m_aPlayers[FindPlayerByUID(cl_mov->player_uid())];
                 
                     // check that player CAN walk
-                if(player->eState != Player::State::WALKING)
+                if(player.eState != Player::State::WALKING)
                     break;
                 
                     // apply movement changes
-                player->stPosition.x = cl_mov->x();
-                player->stPosition.y = cl_mov->y();
+                player.stPosition.x = cl_mov->x();
+                player.stPosition.y = cl_mov->y();
                 
                 auto gs_mov = CreateSVActionMove(m_oBuilder,
-                                                 player->nUID,
-                                                 player->stPosition.x,
-                                                 player->stPosition.y);
+                                                 player.nUID,
+                                                 player.stPosition.x,
+                                                 player.stPosition.y);
                 auto gs_ev = CreateEvent(m_oBuilder,
                                          Events_SVActionMove,
                                          gs_mov.Union());
@@ -213,7 +236,8 @@ GameWorld::update(std::chrono::milliseconds ms)
             case Events_CLActionItem:
             {
                 auto cl_item = static_cast<const CLActionItem*>(gs_event->event());
-                auto player = GetPlayerByUID(cl_item->player_uid());
+                auto& player = m_aPlayers[FindPlayerByUID(cl_item->player_uid())];
+                
                 auto item = std::find_if(m_aItems.begin(),
                                          m_aItems.end(),
                                          [cl_item](Item& it)
@@ -231,10 +255,10 @@ GameWorld::update(std::chrono::milliseconds ms)
                     {
                         if(item->nCarrierID == 0) // player takes item
                         {
-                            item->nCarrierID = player->nUID;
+                            item->nCarrierID = player.nUID;
                             
                             auto gs_take = CreateSVActionItem(m_oBuilder,
-                                                              player->nUID,
+                                                              player.nUID,
                                                               item->nUID,
                                                               ActionItemType_TAKE);
                             auto gs_event = CreateEvent(m_oBuilder,
@@ -256,10 +280,10 @@ GameWorld::update(std::chrono::milliseconds ms)
                     case ActionItemType_DROP:
                     {
                         item->nCarrierID = 0;
-                        item->stPosition = player->stPosition;
+                        item->stPosition = player.stPosition;
                         
                         auto gs_drop = CreateSVActionItem(m_oBuilder,
-                                                          player->nUID,
+                                                          player.nUID,
                                                           item->nUID,
                                                           ActionItemType_DROP);
                         auto gs_event = CreateEvent(m_oBuilder,
@@ -288,16 +312,16 @@ GameWorld::update(std::chrono::milliseconds ms)
             case Events_CLActionSwamp:
             {
                 auto cl_swamp = static_cast<const CLActionSwamp*>(gs_event->event());
-                auto player = GetPlayerByUID(cl_swamp->player_uid());
+                auto& player = m_aPlayers[FindPlayerByUID(cl_swamp->player_uid())];
                 
                 if(cl_swamp->status() == GameEvent::ActionSwampStatus_ESCAPED)
                 {
-                    player->eState = Player::State::WALKING;
-                    player->nTimer = 0;
+                    player.eState = Player::State::WALKING;
+                    player.nTimer = 0;
                     
                         // notify that player escaped
                     auto sv_esc = CreateSVActionSwamp(m_oBuilder,
-                                                      player->nUID,
+                                                      player.nUID,
                                                       ActionSwampStatus_ESCAPED);
                     auto sv_event = CreateEvent(m_oBuilder,
                                                 Events_SVActionSwamp,
@@ -313,31 +337,31 @@ GameWorld::update(std::chrono::milliseconds ms)
                     
                         // move player away from swamp
                     auto& map = m_oGameMap.GetMap();
-                    if(map[player->stPosition.x-1][player->stPosition.y] ==
+                    if(map[player.stPosition.x-1][player.stPosition.y] ==
                        GameMap::MapBlockType::NOBLOCK)
                     {
-                        player->stPosition.x--;
+                        player.stPosition.x--;
                     }
-                    else if(map[player->stPosition.x+1][player->stPosition.y] ==
+                    else if(map[player.stPosition.x+1][player.stPosition.y] ==
                             GameMap::MapBlockType::NOBLOCK)
                     {
-                        player->stPosition.x++;
+                        player.stPosition.x++;
                     }
-                    else if(map[player->stPosition.x][player->stPosition.y-1] ==
+                    else if(map[player.stPosition.x][player.stPosition.y-1] ==
                             GameMap::MapBlockType::NOBLOCK)
                     {
-                        player->stPosition.y--;
+                        player.stPosition.y--;
                     }
-                    else if(map[player->stPosition.x+1][player->stPosition.y+1] ==
+                    else if(map[player.stPosition.x+1][player.stPosition.y+1] ==
                             GameMap::MapBlockType::NOBLOCK)
                     {
-                        player->stPosition.y++;
+                        player.stPosition.y++;
                     }
                     
                     auto sv_move = CreateSVActionMove(m_oBuilder,
-                                                      player->nUID,
-                                                      player->stPosition.x,
-                                                      player->stPosition.y);
+                                                      player.nUID,
+                                                      player.stPosition.x,
+                                                      player.stPosition.y);
                     sv_event = CreateEvent(m_oBuilder,
                                            Events_SVActionMove,
                                            sv_move.Union());
@@ -357,18 +381,19 @@ GameWorld::update(std::chrono::milliseconds ms)
             case Events_CLActionDuel:
             {
                 auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
-                auto player1 = GetPlayerByUID(cl_duel->player1_uid());
-                auto player2 = GetPlayerByUID(cl_duel->player2_uid());
+                auto& player1 = m_aPlayers[FindPlayerByUID(cl_duel->player1_uid())];
+                auto& player2 = m_aPlayers[FindPlayerByUID(cl_duel->player2_uid())];
                 
-                switch(cl_duel->type())
+                switch(cl_duel->act_type())
                 {
                     case ActionDuelType_ATTACK:
                     {
-                        player2->nHP -= player1->nDamage;
+                        player2.nHP -= player1.nDamage;
                         
                         auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
-                                                              player1->nUID, // who attacks goes first
-                                                              player2->nUID, // attacked goes second
+                                                              player1.nUID, // who attacks goes first
+                                                              player2.nUID, // attacked goes second
+                                                              ActionDuelTarget_PLAYER,
                                                               ActionDuelType_ATTACK);
                         auto sv_event = CreateEvent(m_oBuilder,
                                                     Events_SVActionDuel,
@@ -382,17 +407,44 @@ GameWorld::update(std::chrono::milliseconds ms)
                         
                         m_oBuilder.Clear();
                         
-                        if(player2->nHP <= 0)
+                        if(player2.nHP <= 0)
                         {
-                            player2->nHP = player2->nHPMax; // set hp to default
+                            player2.nHP = player2.nHPMax; // set hp to default
                             
-                            player2->eState = Player::State::DEAD; // will be respawned
-                            player1->eState = Player::State::WALKING; // can now walk
+                                // drop items
+                            for(auto& item : m_aItems)
+                            {
+                                if(player2.nUID == item.nCarrierID)
+                                {
+                                    item.stPosition = player2.stPosition;
+                                    item.nCarrierID = 0;
+                                    auto sv_item_drop = CreateSVActionItem(m_oBuilder,
+                                                                           player2.nUID,
+                                                                           item.nUID,
+                                                                           ActionItemType_DROP);
+                                    auto gs_event = CreateEvent(m_oBuilder,
+                                                                Events_SVActionItem,
+                                                                sv_item_drop.Union());
+                                    m_oBuilder.Finish(gs_event);
+                                    
+                                    packet.assign(m_oBuilder.GetBufferPointer(),
+                                                  m_oBuilder.GetBufferPointer() +
+                                                  m_oBuilder.GetSize());
+                                    m_aOutEvents.emplace(packet);
+                                    
+                                    m_oBuilder.Clear();
+                                }
+                            }
+                            
+                            
+                            player2.eState = Player::State::DEAD; // will be respawned
+                            player1.eState = Player::State::WALKING; // can now walk
                             
                                 // duel ends, ENEMY dead
                             auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
-                                                                  player1->nUID, // killer first
-                                                                  player2->nUID, // who died second
+                                                                  player1.nUID, // killer first
+                                                                  player2.nUID, // who died second
+                                                                  ActionDuelTarget_PLAYER,
                                                                   ActionDuelType_KILL);
                             sv_event = CreateEvent(m_oBuilder,
                                                    Events_SVActionDuel,
@@ -413,12 +465,13 @@ GameWorld::update(std::chrono::milliseconds ms)
                     case ActionDuelType_ESCAPE:
                     {
                             // set players new state
-                        player1->eState = Player::State::WALKING; // player escaped
-                        player2->eState = Player::State::WALKING;
+                        player1.eState = Player::State::WALKING; // player escaped
+                        player2.eState = Player::State::WALKING;
                         
                         auto sv_escape = CreateSVActionDuel(m_oBuilder,
-                                                            player1->nUID, // who escaped
-                                                            player2->nUID,
+                                                            player1.nUID, // who escaped
+                                                            player2.nUID,
+                                                            ActionDuelTarget_PLAYER,
                                                             ActionDuelType_ESCAPE);
                         auto sv_event = CreateEvent(m_oBuilder,
                                                     Events_SVActionDuel,
@@ -468,6 +521,7 @@ GameWorld::update(std::chrono::milliseconds ms)
                     auto sv_duel = CreateSVActionDuel(m_oBuilder,
                                                       x.nUID,
                                                       y.nUID,
+                                                      ActionDuelTarget_PLAYER,
                                                       ActionDuelType_STARTED);
                     auto sv_event = CreateEvent(m_oBuilder,
                                                 Events_SVActionDuel,
@@ -682,18 +736,19 @@ GameWorld::GetRandomPosition()
     return position;
 }
 
-std::vector<Player>::iterator
-GameWorld::GetPlayerByUID(PlayerUID uid)
+
+int32_t
+GameWorld::FindPlayerByUID(PlayerUID uid)
 {
-    for(auto iter = m_aPlayers.begin();
-        iter != m_aPlayers.end();
-        ++iter)
+    for(int32_t i = 0;
+        i < m_aPlayers.size();
+        ++i)
     {
-        if((*iter).nUID == uid)
+        if(m_aPlayers[i].nUID == uid)
         {
-            return iter;
+            return i;
         }
     }
     
-    return m_aPlayers.end();
+    return -1;
 }

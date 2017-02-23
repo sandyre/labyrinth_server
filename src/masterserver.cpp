@@ -20,7 +20,6 @@ m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
                                          std::numeric_limits<int32_t>::max()))
 {
     Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
-    m_oSocket.setBroadcast(true);
     m_oSocket.bind(sock_addr);
     
     std::cout << "MasterServer started at port " << Port << "\n";
@@ -127,7 +126,7 @@ MasterServer::run()
                 m_qAvailablePorts.pop();
                 
                 GameServer::Configuration config;
-                config.nPlayers = 2; // +-
+                config.nPlayers = 1; // +-
                 config.nRandomSeed = m_oDistr(m_oGenerator);
                 config.nPort = nGSPort;
                 

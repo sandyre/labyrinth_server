@@ -18,6 +18,7 @@
 #include "gamemap.hpp"
 #include "player.hpp"
 #include "item.hpp"
+#include "monster.hpp"
 #include "construction.hpp"
 #include "gsnet_generated.h"
 
@@ -53,7 +54,9 @@ public:
     
 protected:
     Point2    GetRandomPosition();
-    std::vector<Player>::iterator GetPlayerByUID(PlayerUID);
+    
+        // returns index
+    int32_t   FindPlayerByUID(PlayerUID);
 protected:
     GameWorld::State               m_eState;
     
@@ -64,9 +67,10 @@ protected:
     std::vector<Player>&   m_aPlayers;
     std::vector<Item>    m_aItems;
     std::vector<Construction> m_aConstructions;
-//    std::vector<Monster> m_aMonsters;
+    std::vector<Monster> m_aMonsters;
     GameMap              m_oGameMap;
     
+    MonsterFactory       m_oMonsterFactory;
     ItemFactory          m_oItemFactory;
     ConstructionFactory  m_oConstrFactory;
 };
