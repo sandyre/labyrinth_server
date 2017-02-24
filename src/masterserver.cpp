@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <sstream>
 
 #include "netpacket.hpp"
 #include "msnet_generated.h"
@@ -21,15 +22,20 @@ m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
 {
     Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
     m_oSocket.bind(sock_addr);
+    m_oLogSys.Init("MS", LogSystem::Mode::MIXED);
     
-    std::cout << "MasterServer started at port " << Port << "\n";
-    std::cout << "Available CPU cores: " << std::thread::hardware_concurrency() << "\n";
+    m_oMsgBuilder << "Started at port " << Port;
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
 }
 
 MasterServer::~MasterServer()
 {
+    m_oLogSys.Close();
     m_oSocket.close();
-    std::cout << "MasterServer shut down.\n";
+    m_oMsgBuilder << "Shutdown";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
 }
 
 void
@@ -98,14 +104,18 @@ MasterServer::run()
                     
                     m_aPlayersPool.push_back(player);
                     
-                    std::cout << "[MS] PLAYER ADDED UID: " << finder->player_uid() << "\n";
+                    m_oMsgBuilder << "Player with connected, UID: " << finder->player_uid();
+                    m_oLogSys.Write(m_oMsgBuilder.str());
+                    m_oMsgBuilder.str("");
                 }
                 
                 break;
             }
             
             default:
-                std::cout << "Undefined packet received\n";
+                m_oMsgBuilder << "Undefined packet received";
+                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oMsgBuilder.str("");
                 break;
         }
         

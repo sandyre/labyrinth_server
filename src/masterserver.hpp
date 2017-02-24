@@ -14,10 +14,12 @@
 #include <deque>
 #include <random>
 #include <memory>
+#include <sstream>
 #include <Poco/Net/DatagramSocket.h>
 
 #include "player.hpp"
 #include "gameserver.hpp"
+#include "logsystem.hpp"
 
 class MasterServer
 {
@@ -35,6 +37,9 @@ protected:
     std::deque<Player>        m_aPlayersPool;
     std::vector<std::unique_ptr<GameServer>>  m_aGameServers;
     Poco::Net::DatagramSocket m_oSocket;
+    
+    LogSystem m_oLogSys;
+    std::ostringstream m_oMsgBuilder;
 };
 
 #endif /* masterserver_hpp */

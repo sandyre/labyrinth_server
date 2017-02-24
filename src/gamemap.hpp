@@ -40,6 +40,10 @@ public:
     GameMap(const GameMap::Settings&);
     ~GameMap();
     
+    std::vector<MapBlockType>& operator[](int i)
+    {
+        return m_oMap[i];
+    }
     const Map&          GetMap() const;
     
     Point2              GetRandomPosition();

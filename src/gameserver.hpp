@@ -12,11 +12,13 @@
 #include <Poco/Net/DatagramSocket.h>
 #include "player.hpp"
 #include "gameworld.hpp"
+#include "logsystem.hpp"
 #include <thread>
 #include <vector>
 #include <chrono>
 #include <string>
 #include <cstring>
+#include <sstream>
 #include <memory>
 
 using std::chrono::high_resolution_clock;
@@ -63,6 +65,9 @@ private:
     
     std::unique_ptr<GameWorld>  m_pGameWorld;
     std::vector<Player> m_aPlayers;
+    
+    LogSystem m_oLogSys;
+    std::ostringstream m_oMsgBuilder;
 };
 
 #endif /* gameserver_hpp */

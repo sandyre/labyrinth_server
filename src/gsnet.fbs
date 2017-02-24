@@ -40,17 +40,25 @@ table SVGameStart
 {
 }
 
+enum ActionMoveTarget : byte
+{
+PLAYER,
+MONSTER
+}
+
 // INGAME
 table CLActionMove
 {
-player_uid:uint;
+target_uid:uint;
+target_type:ActionMoveTarget;
 x:ushort;
 y:ushort;
 }
 
 table SVActionMove
 {
-player_uid:uint;
+target_uid:uint;
+target_type:ActionMoveTarget;
 x:ushort;
 y:ushort;
 }
@@ -111,17 +119,19 @@ MONSTER
 
 table CLActionDuel
 {
-player1_uid:uint;
-player2_uid:uint;
-target_type:ActionDuelTarget;
+target1_uid:uint;
+target1_type:ActionDuelTarget;
+target2_uid:uint;
+target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
 }
 
 table SVActionDuel
 {
-player1_uid:uint;
-player2_uid:uint;
-target_type:ActionDuelTarget;
+target1_uid:uint;
+target1_type:ActionDuelTarget;
+target2_uid:uint;
+target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
 }
 

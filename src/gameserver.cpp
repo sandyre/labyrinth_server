@@ -22,12 +22,15 @@ m_stConfig(config),
 m_nStartTime(steady_clock::now()),
 m_msPerUpdate(0)
 {
-    m_sServerName = "[GS";
+    m_sServerName = "GS";
     m_sServerName += std::to_string(m_stConfig.nPort);
-    m_sServerName += "]";
     
-    std::cout << m_sServerName << " STARTED. CONFIG {SEED: "
-    << m_stConfig.nRandomSeed << "; PLAYERS: " << m_stConfig.nPlayers << "}\n";
+    m_oLogSys.Init(m_sServerName, LogSystem::Mode::MIXED);
+    
+    m_oMsgBuilder << "Started. Configuration: {SEED:" << m_stConfig.nRandomSeed;
+    m_oMsgBuilder << "; PLAYERS_COUNT: " << m_stConfig.nPlayers << "}";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
     
     Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), m_stConfig.nPort);
     m_oSocket.bind(addr);
@@ -43,6 +46,7 @@ m_msPerUpdate(0)
 GameServer::~GameServer()
 {
     m_oSocket.close();
+    m_oLogSys.Close();
 }
 
 GameServer::State
@@ -87,8 +91,9 @@ GameServer::EventLoop()
                 
                 m_aPlayers.emplace_back(new_player);
                 
-                std::cout << m_sServerName << " PLAYER \'" << new_player.sNickname << "\' ATTACHED WITH UID "
-                << new_player.nUID << "\n";
+                m_oMsgBuilder << "Player \'" << new_player.sNickname << "\' connected";
+                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oMsgBuilder.str("");
                 
                     // notify connector that he is accepted
                 auto gs_accept = CreateSVConnectionStatus(builder,
@@ -144,7 +149,9 @@ GameServer::EventLoop()
         }
     }
     
-    std::cout << m_sServerName << " GENERATING WORLD\n";
+    m_oMsgBuilder << "Generating world";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
     
     if(m_eState == GameServer::State::GENERATING_WORLD)
     {
@@ -179,8 +186,12 @@ GameServer::EventLoop()
             if(gs_event->event_type() == Events_CLMapGenerated)
             {
                 auto cl_gen_ok = static_cast<const CLMapGenerated*>(gs_event->event());
-                std::cout << m_sServerName << " USER ID " << cl_gen_ok->player_uid()
-                << " GENERATED MAP\n";
+                
+                m_oMsgBuilder << "Player " << cl_gen_ok->player_uid();
+                m_oMsgBuilder << " generated map";
+                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oMsgBuilder.str("");
+                
                 --players_ungenerated;
             }
         }
@@ -198,7 +209,9 @@ GameServer::EventLoop()
         SendToAll(builder.GetBufferPointer(), builder.GetSize());
         builder.Clear();
         
-        std::cout << m_sServerName << " GAME BEGINS\n";
+        m_oMsgBuilder << "Game begins";
+        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oMsgBuilder.str("");
     }
     
     int times_skipped = 0;
@@ -247,7 +260,7 @@ GameServer::EventLoop()
                 case Events_CLActionMove:
                 {
                     auto cl_mov = static_cast<const CLActionMove*>(gs_event->event());
-                    auto player = FindPlayerByUID(cl_mov->player_uid());
+                    auto player = FindPlayerByUID(cl_mov->target_uid());
                     
                     if(player != m_aPlayers.end() &&
                        player->sock_addr != sender_addr)
@@ -292,15 +305,8 @@ GameServer::EventLoop()
                 case Events_CLActionDuel:
                 {
                     auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
-                    auto player1 = FindPlayerByUID(cl_duel->player1_uid());
-                    auto player2 = FindPlayerByUID(cl_duel->player2_uid());
                     
-                    if(player1 != m_aPlayers.end() &&
-                       player2 != m_aPlayers.end() &&
-                       player1->sock_addr != sender_addr)
-                    {
-                        player1->sock_addr = sender_addr;
-                    }
+                        //FIXME: players validation needed?
                     
                     is_event_valid = true;
                     break;
@@ -332,7 +338,9 @@ GameServer::EventLoop()
     
     auto end_time = steady_clock::now();
     auto duration = duration_cast<seconds>(end_time - m_nStartTime).count();
-    std::cout << m_sServerName << " FINISHED IN " << duration << " SECONDS\n";
+    m_oMsgBuilder << "Finished in " << duration << " seconds";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
 }
 
 void

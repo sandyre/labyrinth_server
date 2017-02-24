@@ -71,6 +71,27 @@ inline const char *EnumNameConnectionStatus(ConnectionStatus e) {
   return EnumNamesConnectionStatus()[index];
 }
 
+enum ActionMoveTarget {
+  ActionMoveTarget_PLAYER = 0,
+  ActionMoveTarget_MONSTER = 1,
+  ActionMoveTarget_MIN = ActionMoveTarget_PLAYER,
+  ActionMoveTarget_MAX = ActionMoveTarget_MONSTER
+};
+
+inline const char **EnumNamesActionMoveTarget() {
+  static const char *names[] = {
+    "PLAYER",
+    "MONSTER",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameActionMoveTarget(ActionMoveTarget e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesActionMoveTarget()[index];
+}
+
 enum ActionItemType {
   ActionItemType_TAKE = 0,
   ActionItemType_DROP = 1,
@@ -655,12 +676,16 @@ inline flatbuffers::Offset<SVGameStart> CreateSVGameStart(
 
 struct CLActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER_UID = 4,
-    VT_X = 6,
-    VT_Y = 8
+    VT_TARGET_UID = 4,
+    VT_TARGET_TYPE = 6,
+    VT_X = 8,
+    VT_Y = 10
   };
-  uint32_t player_uid() const {
-    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  uint32_t target_uid() const {
+    return GetField<uint32_t>(VT_TARGET_UID, 0);
+  }
+  ActionMoveTarget target_type() const {
+    return static_cast<ActionMoveTarget>(GetField<int8_t>(VT_TARGET_TYPE, 0));
   }
   uint16_t x() const {
     return GetField<uint16_t>(VT_X, 0);
@@ -670,7 +695,8 @@ struct CLActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET_TYPE) &&
            VerifyField<uint16_t>(verifier, VT_X) &&
            VerifyField<uint16_t>(verifier, VT_Y) &&
            verifier.EndTable();
@@ -680,8 +706,11 @@ struct CLActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct CLActionMoveBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(CLActionMove::VT_PLAYER_UID, player_uid, 0);
+  void add_target_uid(uint32_t target_uid) {
+    fbb_.AddElement<uint32_t>(CLActionMove::VT_TARGET_UID, target_uid, 0);
+  }
+  void add_target_type(ActionMoveTarget target_type) {
+    fbb_.AddElement<int8_t>(CLActionMove::VT_TARGET_TYPE, static_cast<int8_t>(target_type), 0);
   }
   void add_x(uint16_t x) {
     fbb_.AddElement<uint16_t>(CLActionMove::VT_X, x, 0);
@@ -695,7 +724,7 @@ struct CLActionMoveBuilder {
   }
   CLActionMoveBuilder &operator=(const CLActionMoveBuilder &);
   flatbuffers::Offset<CLActionMove> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<CLActionMove>(end);
     return o;
   }
@@ -703,24 +732,30 @@ struct CLActionMoveBuilder {
 
 inline flatbuffers::Offset<CLActionMove> CreateCLActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0,
+    uint32_t target_uid = 0,
+    ActionMoveTarget target_type = ActionMoveTarget_PLAYER,
     uint16_t x = 0,
     uint16_t y = 0) {
   CLActionMoveBuilder builder_(_fbb);
-  builder_.add_player_uid(player_uid);
+  builder_.add_target_uid(target_uid);
   builder_.add_y(y);
   builder_.add_x(x);
+  builder_.add_target_type(target_type);
   return builder_.Finish();
 }
 
 struct SVActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER_UID = 4,
-    VT_X = 6,
-    VT_Y = 8
+    VT_TARGET_UID = 4,
+    VT_TARGET_TYPE = 6,
+    VT_X = 8,
+    VT_Y = 10
   };
-  uint32_t player_uid() const {
-    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  uint32_t target_uid() const {
+    return GetField<uint32_t>(VT_TARGET_UID, 0);
+  }
+  ActionMoveTarget target_type() const {
+    return static_cast<ActionMoveTarget>(GetField<int8_t>(VT_TARGET_TYPE, 0));
   }
   uint16_t x() const {
     return GetField<uint16_t>(VT_X, 0);
@@ -730,7 +765,8 @@ struct SVActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET_TYPE) &&
            VerifyField<uint16_t>(verifier, VT_X) &&
            VerifyField<uint16_t>(verifier, VT_Y) &&
            verifier.EndTable();
@@ -740,8 +776,11 @@ struct SVActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct SVActionMoveBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(SVActionMove::VT_PLAYER_UID, player_uid, 0);
+  void add_target_uid(uint32_t target_uid) {
+    fbb_.AddElement<uint32_t>(SVActionMove::VT_TARGET_UID, target_uid, 0);
+  }
+  void add_target_type(ActionMoveTarget target_type) {
+    fbb_.AddElement<int8_t>(SVActionMove::VT_TARGET_TYPE, static_cast<int8_t>(target_type), 0);
   }
   void add_x(uint16_t x) {
     fbb_.AddElement<uint16_t>(SVActionMove::VT_X, x, 0);
@@ -755,7 +794,7 @@ struct SVActionMoveBuilder {
   }
   SVActionMoveBuilder &operator=(const SVActionMoveBuilder &);
   flatbuffers::Offset<SVActionMove> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<SVActionMove>(end);
     return o;
   }
@@ -763,13 +802,15 @@ struct SVActionMoveBuilder {
 
 inline flatbuffers::Offset<SVActionMove> CreateSVActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0,
+    uint32_t target_uid = 0,
+    ActionMoveTarget target_type = ActionMoveTarget_PLAYER,
     uint16_t x = 0,
     uint16_t y = 0) {
   SVActionMoveBuilder builder_(_fbb);
-  builder_.add_player_uid(player_uid);
+  builder_.add_target_uid(target_uid);
   builder_.add_y(y);
   builder_.add_x(x);
+  builder_.add_target_type(target_type);
   return builder_.Finish();
 }
 
@@ -995,28 +1036,33 @@ inline flatbuffers::Offset<SVActionSwamp> CreateSVActionSwamp(
 
 struct CLActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER1_UID = 4,
-    VT_PLAYER2_UID = 6,
-    VT_TARGET_TYPE = 8,
-    VT_ACT_TYPE = 10
+    VT_TARGET1_UID = 4,
+    VT_TARGET1_TYPE = 6,
+    VT_TARGET2_UID = 8,
+    VT_TARGET2_TYPE = 10,
+    VT_ACT_TYPE = 12
   };
-  uint32_t player1_uid() const {
-    return GetField<uint32_t>(VT_PLAYER1_UID, 0);
+  uint32_t target1_uid() const {
+    return GetField<uint32_t>(VT_TARGET1_UID, 0);
   }
-  uint32_t player2_uid() const {
-    return GetField<uint32_t>(VT_PLAYER2_UID, 0);
+  ActionDuelTarget target1_type() const {
+    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET1_TYPE, 0));
   }
-  ActionDuelTarget target_type() const {
-    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET_TYPE, 0));
+  uint32_t target2_uid() const {
+    return GetField<uint32_t>(VT_TARGET2_UID, 0);
+  }
+  ActionDuelTarget target2_type() const {
+    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET2_TYPE, 0));
   }
   ActionDuelType act_type() const {
     return static_cast<ActionDuelType>(GetField<int8_t>(VT_ACT_TYPE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER1_UID) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER2_UID) &&
-           VerifyField<int8_t>(verifier, VT_TARGET_TYPE) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET1_TYPE) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET2_TYPE) &&
            VerifyField<int8_t>(verifier, VT_ACT_TYPE) &&
            verifier.EndTable();
   }
@@ -1025,14 +1071,17 @@ struct CLActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct CLActionDuelBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player1_uid(uint32_t player1_uid) {
-    fbb_.AddElement<uint32_t>(CLActionDuel::VT_PLAYER1_UID, player1_uid, 0);
+  void add_target1_uid(uint32_t target1_uid) {
+    fbb_.AddElement<uint32_t>(CLActionDuel::VT_TARGET1_UID, target1_uid, 0);
   }
-  void add_player2_uid(uint32_t player2_uid) {
-    fbb_.AddElement<uint32_t>(CLActionDuel::VT_PLAYER2_UID, player2_uid, 0);
+  void add_target1_type(ActionDuelTarget target1_type) {
+    fbb_.AddElement<int8_t>(CLActionDuel::VT_TARGET1_TYPE, static_cast<int8_t>(target1_type), 0);
   }
-  void add_target_type(ActionDuelTarget target_type) {
-    fbb_.AddElement<int8_t>(CLActionDuel::VT_TARGET_TYPE, static_cast<int8_t>(target_type), 0);
+  void add_target2_uid(uint32_t target2_uid) {
+    fbb_.AddElement<uint32_t>(CLActionDuel::VT_TARGET2_UID, target2_uid, 0);
+  }
+  void add_target2_type(ActionDuelTarget target2_type) {
+    fbb_.AddElement<int8_t>(CLActionDuel::VT_TARGET2_TYPE, static_cast<int8_t>(target2_type), 0);
   }
   void add_act_type(ActionDuelType act_type) {
     fbb_.AddElement<int8_t>(CLActionDuel::VT_ACT_TYPE, static_cast<int8_t>(act_type), 0);
@@ -1043,7 +1092,7 @@ struct CLActionDuelBuilder {
   }
   CLActionDuelBuilder &operator=(const CLActionDuelBuilder &);
   flatbuffers::Offset<CLActionDuel> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
+    const auto end = fbb_.EndTable(start_, 5);
     auto o = flatbuffers::Offset<CLActionDuel>(end);
     return o;
   }
@@ -1051,42 +1100,49 @@ struct CLActionDuelBuilder {
 
 inline flatbuffers::Offset<CLActionDuel> CreateCLActionDuel(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player1_uid = 0,
-    uint32_t player2_uid = 0,
-    ActionDuelTarget target_type = ActionDuelTarget_PLAYER,
+    uint32_t target1_uid = 0,
+    ActionDuelTarget target1_type = ActionDuelTarget_PLAYER,
+    uint32_t target2_uid = 0,
+    ActionDuelTarget target2_type = ActionDuelTarget_PLAYER,
     ActionDuelType act_type = ActionDuelType_STARTED) {
   CLActionDuelBuilder builder_(_fbb);
-  builder_.add_player2_uid(player2_uid);
-  builder_.add_player1_uid(player1_uid);
+  builder_.add_target2_uid(target2_uid);
+  builder_.add_target1_uid(target1_uid);
   builder_.add_act_type(act_type);
-  builder_.add_target_type(target_type);
+  builder_.add_target2_type(target2_type);
+  builder_.add_target1_type(target1_type);
   return builder_.Finish();
 }
 
 struct SVActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER1_UID = 4,
-    VT_PLAYER2_UID = 6,
-    VT_TARGET_TYPE = 8,
-    VT_ACT_TYPE = 10
+    VT_TARGET1_UID = 4,
+    VT_TARGET1_TYPE = 6,
+    VT_TARGET2_UID = 8,
+    VT_TARGET2_TYPE = 10,
+    VT_ACT_TYPE = 12
   };
-  uint32_t player1_uid() const {
-    return GetField<uint32_t>(VT_PLAYER1_UID, 0);
+  uint32_t target1_uid() const {
+    return GetField<uint32_t>(VT_TARGET1_UID, 0);
   }
-  uint32_t player2_uid() const {
-    return GetField<uint32_t>(VT_PLAYER2_UID, 0);
+  ActionDuelTarget target1_type() const {
+    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET1_TYPE, 0));
   }
-  ActionDuelTarget target_type() const {
-    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET_TYPE, 0));
+  uint32_t target2_uid() const {
+    return GetField<uint32_t>(VT_TARGET2_UID, 0);
+  }
+  ActionDuelTarget target2_type() const {
+    return static_cast<ActionDuelTarget>(GetField<int8_t>(VT_TARGET2_TYPE, 0));
   }
   ActionDuelType act_type() const {
     return static_cast<ActionDuelType>(GetField<int8_t>(VT_ACT_TYPE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER1_UID) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER2_UID) &&
-           VerifyField<int8_t>(verifier, VT_TARGET_TYPE) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET1_TYPE) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
+           VerifyField<int8_t>(verifier, VT_TARGET2_TYPE) &&
            VerifyField<int8_t>(verifier, VT_ACT_TYPE) &&
            verifier.EndTable();
   }
@@ -1095,14 +1151,17 @@ struct SVActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct SVActionDuelBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player1_uid(uint32_t player1_uid) {
-    fbb_.AddElement<uint32_t>(SVActionDuel::VT_PLAYER1_UID, player1_uid, 0);
+  void add_target1_uid(uint32_t target1_uid) {
+    fbb_.AddElement<uint32_t>(SVActionDuel::VT_TARGET1_UID, target1_uid, 0);
   }
-  void add_player2_uid(uint32_t player2_uid) {
-    fbb_.AddElement<uint32_t>(SVActionDuel::VT_PLAYER2_UID, player2_uid, 0);
+  void add_target1_type(ActionDuelTarget target1_type) {
+    fbb_.AddElement<int8_t>(SVActionDuel::VT_TARGET1_TYPE, static_cast<int8_t>(target1_type), 0);
   }
-  void add_target_type(ActionDuelTarget target_type) {
-    fbb_.AddElement<int8_t>(SVActionDuel::VT_TARGET_TYPE, static_cast<int8_t>(target_type), 0);
+  void add_target2_uid(uint32_t target2_uid) {
+    fbb_.AddElement<uint32_t>(SVActionDuel::VT_TARGET2_UID, target2_uid, 0);
+  }
+  void add_target2_type(ActionDuelTarget target2_type) {
+    fbb_.AddElement<int8_t>(SVActionDuel::VT_TARGET2_TYPE, static_cast<int8_t>(target2_type), 0);
   }
   void add_act_type(ActionDuelType act_type) {
     fbb_.AddElement<int8_t>(SVActionDuel::VT_ACT_TYPE, static_cast<int8_t>(act_type), 0);
@@ -1113,7 +1172,7 @@ struct SVActionDuelBuilder {
   }
   SVActionDuelBuilder &operator=(const SVActionDuelBuilder &);
   flatbuffers::Offset<SVActionDuel> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
+    const auto end = fbb_.EndTable(start_, 5);
     auto o = flatbuffers::Offset<SVActionDuel>(end);
     return o;
   }
@@ -1121,15 +1180,17 @@ struct SVActionDuelBuilder {
 
 inline flatbuffers::Offset<SVActionDuel> CreateSVActionDuel(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player1_uid = 0,
-    uint32_t player2_uid = 0,
-    ActionDuelTarget target_type = ActionDuelTarget_PLAYER,
+    uint32_t target1_uid = 0,
+    ActionDuelTarget target1_type = ActionDuelTarget_PLAYER,
+    uint32_t target2_uid = 0,
+    ActionDuelTarget target2_type = ActionDuelTarget_PLAYER,
     ActionDuelType act_type = ActionDuelType_STARTED) {
   SVActionDuelBuilder builder_(_fbb);
-  builder_.add_player2_uid(player2_uid);
-  builder_.add_player1_uid(player1_uid);
+  builder_.add_target2_uid(target2_uid);
+  builder_.add_target1_uid(target1_uid);
   builder_.add_act_type(act_type);
-  builder_.add_target_type(target_type);
+  builder_.add_target2_type(target2_type);
+  builder_.add_target1_type(target1_type);
   return builder_.Finish();
 }
 

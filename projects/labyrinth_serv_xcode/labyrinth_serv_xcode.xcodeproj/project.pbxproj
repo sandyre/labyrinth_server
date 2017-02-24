@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1F9203D21E5C933F006DF25E /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D01E5C933F006DF25E /* monster.cpp */; };
+		1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D61E60B637006DF25E /* logsystem.cpp */; };
 		1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14431E450ED5004EC380 /* gameserver.cpp */; };
 		1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14451E450ED5004EC380 /* gameworld.cpp */; };
 		1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144A1E450ED5004EC380 /* gamemap.cpp */; };
@@ -38,6 +39,8 @@
 		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
 		1F9203D01E5C933F006DF25E /* monster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = monster.cpp; path = ../../../src/monster.cpp; sourceTree = "<group>"; };
 		1F9203D11E5C933F006DF25E /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/monster.hpp; sourceTree = "<group>"; };
+		1F9203D61E60B637006DF25E /* logsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logsystem.cpp; path = ../../../src/logsystem.cpp; sourceTree = "<group>"; };
+		1F9203D71E60B637006DF25E /* logsystem.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logsystem.hpp; path = ../../../src/logsystem.hpp; sourceTree = "<group>"; };
 		1FEC14251E450E9A004EC380 /* labyrinth_serv_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = labyrinth_serv_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FEC14431E450ED5004EC380 /* gameserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameserver.cpp; path = ../../../src/gameserver.cpp; sourceTree = "<group>"; };
 		1FEC14441E450ED5004EC380 /* netpacket.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = netpacket.hpp; path = ../../../src/netpacket.hpp; sourceTree = "<group>"; };
@@ -113,6 +116,8 @@
 				1FEC14491E450ED5004EC380 /* player.hpp */,
 				1F9203D01E5C933F006DF25E /* monster.cpp */,
 				1F9203D11E5C933F006DF25E /* monster.hpp */,
+				1F9203D61E60B637006DF25E /* logsystem.cpp */,
+				1F9203D71E60B637006DF25E /* logsystem.hpp */,
 			);
 			path = labyrinth_serv_xcode;
 			sourceTree = "<group>";
@@ -191,6 +196,7 @@
 				1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */,
 				1F9203D21E5C933F006DF25E /* monster.cpp in Sources */,
 				1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */,
+				1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */,
 				1FEC14561E450ED5004EC380 /* main.cpp in Sources */,
 				1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */,
 			);

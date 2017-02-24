@@ -57,6 +57,9 @@ protected:
     
         // returns index
     int32_t   FindPlayerByUID(PlayerUID);
+    
+        // packet builder work
+    void      PushEventAndClear();
 protected:
     GameWorld::State               m_eState;
     
