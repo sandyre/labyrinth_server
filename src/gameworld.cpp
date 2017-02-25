@@ -466,6 +466,7 @@ GameWorld::update(std::chrono::milliseconds ms)
             if(monster.stPosition == player.stPosition)
             {
                 monster.eState = Monster::State::DUEL;
+                player.eState = Player::State::DUEL;
                 auto sv_duel = CreateSVActionDuel(m_oBuilder,
                                                   player.nUID,
                                                   ActionDuelTarget_PLAYER,
