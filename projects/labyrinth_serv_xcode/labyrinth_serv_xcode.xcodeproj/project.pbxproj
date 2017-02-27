@@ -10,13 +10,15 @@
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1F9203D21E5C933F006DF25E /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D01E5C933F006DF25E /* monster.cpp */; };
 		1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D61E60B637006DF25E /* logsystem.cpp */; };
+		1F9203E91E63BD8B006DF25E /* libPocoDataSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */; };
+		1F9203EA1E63BD8B006DF25E /* libPocoData.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E71E63BD8B006DF25E /* libPocoData.a */; };
+		1F9203EB1E63BD8B006DF25E /* libPocoFoundation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E81E63BD8B006DF25E /* libPocoFoundation.a */; };
+		1F9203ED1E63BDA5006DF25E /* libPocoNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203EC1E63BDA5006DF25E /* libPocoNet.a */; };
 		1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14431E450ED5004EC380 /* gameserver.cpp */; };
 		1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14451E450ED5004EC380 /* gameworld.cpp */; };
 		1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144A1E450ED5004EC380 /* gamemap.cpp */; };
 		1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144C1E450ED5004EC380 /* masterserver.cpp */; };
 		1FEC14561E450ED5004EC380 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14501E450ED5004EC380 /* main.cpp */; };
-		1FEC145E1E452966004EC380 /* libPocoNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FEC145C1E452966004EC380 /* libPocoNet.a */; };
-		1FEC145F1E452966004EC380 /* libPocoFoundation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FEC145D1E452966004EC380 /* libPocoFoundation.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,6 +43,10 @@
 		1F9203D11E5C933F006DF25E /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/monster.hpp; sourceTree = "<group>"; };
 		1F9203D61E60B637006DF25E /* logsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logsystem.cpp; path = ../../../src/logsystem.cpp; sourceTree = "<group>"; };
 		1F9203D71E60B637006DF25E /* logsystem.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logsystem.hpp; path = ../../../src/logsystem.hpp; sourceTree = "<group>"; };
+		1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataSQLite.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataSQLite.a; sourceTree = "<group>"; };
+		1F9203E71E63BD8B006DF25E /* libPocoData.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoData.a; path = labyrinth_serv_xcode.xcodeproj/libPocoData.a; sourceTree = "<group>"; };
+		1F9203E81E63BD8B006DF25E /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = labyrinth_serv_xcode.xcodeproj/libPocoFoundation.a; sourceTree = "<group>"; };
+		1F9203EC1E63BDA5006DF25E /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = labyrinth_serv_xcode.xcodeproj/libPocoNet.a; sourceTree = "<group>"; };
 		1FEC14251E450E9A004EC380 /* labyrinth_serv_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = labyrinth_serv_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FEC14431E450ED5004EC380 /* gameserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameserver.cpp; path = ../../../src/gameserver.cpp; sourceTree = "<group>"; };
 		1FEC14441E450ED5004EC380 /* netpacket.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = netpacket.hpp; path = ../../../src/netpacket.hpp; sourceTree = "<group>"; };
@@ -56,10 +62,7 @@
 		1FEC144E1E450ED5004EC380 /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = globals.h; path = ../../../src/globals.h; sourceTree = "<group>"; };
 		1FEC14501E450ED5004EC380 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../../src/main.cpp; sourceTree = "<group>"; };
 		1FEC14511E450ED5004EC380 /* masterserver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = masterserver.hpp; path = ../../../src/masterserver.hpp; sourceTree = "<group>"; };
-		1FEC14581E4527E9004EC380 /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = "../../third-party/poco-1.7.7/lib/Darwin/x86_64/libPocoNet.a"; sourceTree = "<group>"; };
 		1FEC14591E4527E9004EC380 /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = "../../third-party/poco-1.7.7/lib/Darwin/x86_64/libPocoFoundation.a"; sourceTree = "<group>"; };
-		1FEC145C1E452966004EC380 /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = labyrinth_serv_xcode.xcodeproj/libPocoNet.a; sourceTree = "<group>"; };
-		1FEC145D1E452966004EC380 /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = labyrinth_serv_xcode.xcodeproj/libPocoFoundation.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,9 +70,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F9203ED1E63BDA5006DF25E /* libPocoNet.a in Frameworks */,
+				1F9203E91E63BD8B006DF25E /* libPocoDataSQLite.a in Frameworks */,
+				1F9203EA1E63BD8B006DF25E /* libPocoData.a in Frameworks */,
+				1F9203EB1E63BD8B006DF25E /* libPocoFoundation.a in Frameworks */,
 				1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */,
-				1FEC145E1E452966004EC380 /* libPocoNet.a in Frameworks */,
-				1FEC145F1E452966004EC380 /* libPocoFoundation.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,10 +130,11 @@
 		1FEC14571E4527E9004EC380 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1F9203EC1E63BDA5006DF25E /* libPocoNet.a */,
+				1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */,
+				1F9203E71E63BD8B006DF25E /* libPocoData.a */,
+				1F9203E81E63BD8B006DF25E /* libPocoFoundation.a */,
 				1F40F9691E49E13C003861AF /* libflatbuffers.a */,
-				1FEC145C1E452966004EC380 /* libPocoNet.a */,
-				1FEC145D1E452966004EC380 /* libPocoFoundation.a */,
-				1FEC14581E4527E9004EC380 /* libPocoNet.a */,
 				1FEC14591E4527E9004EC380 /* libPocoFoundation.a */,
 			);
 			name = Frameworks;
@@ -246,9 +252,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Net/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Foundation/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/SQLite/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -292,9 +300,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Net/include",
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.7/Foundation/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Net/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Foundation/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/SQLite/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;

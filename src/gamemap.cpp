@@ -25,7 +25,7 @@ GameMap::GameMap(const GameMap::Settings& settings)
 {
     m_stSettings = settings;
     m_oRandGen = std::mt19937(m_stSettings.nSeed);
-    m_oRandDistr = std::uniform_int_distribution<>(0, 1000);
+    m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
     m_oMap.resize(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2,
                   std::vector<MapBlockType>(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2, MapBlockType::NOBLOCK));
     
@@ -65,8 +65,8 @@ GameMap::GameMap(const GameMap::Settings& settings)
             std::vector<Cell> list;
             uint16_t x, y;
             
-            x = m_oRandDistr(m_oRandGen) % n;
-            y = m_oRandDistr(m_oRandGen) % n;
+            x = (int)m_oRandDistr(m_oRandGen) % n;
+            y = (int)m_oRandDistr(m_oRandGen) % n;
             
             rooms[i][j].cells[x][y] = MapBlockType::NOBLOCK;
             if (x > 0)
@@ -92,7 +92,7 @@ GameMap::GameMap(const GameMap::Settings& settings)
             
             while (list.size())
             {
-                int rand = m_oRandDistr(m_oRandGen) % list.size();
+                int rand = (int)m_oRandDistr(m_oRandGen) % list.size();
                 Cell cell = list[rand];
                 std::vector<Cell> neighbours;
                 int count = 0;
@@ -215,8 +215,8 @@ GameMap::GetRandomPosition()
     
     do
     {
-        position.x = m_oRandDistr(m_oRandGen) % m_oMap.size();
-        position.y = m_oRandDistr(m_oRandGen) % m_oMap[position.x].size();
+        position.x = (int)m_oRandDistr(m_oRandGen) % m_oMap.size();
+        position.y = (int)m_oRandDistr(m_oRandGen) % m_oMap[position.x].size();
     } while(m_oMap[position.x][position.y] != GameMap::MapBlockType::NOBLOCK);
     return position;
 }

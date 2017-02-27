@@ -25,7 +25,7 @@ m_msPerUpdate(0)
     m_sServerName = "GS";
     m_sServerName += std::to_string(m_stConfig.nPort);
     
-    m_oLogSys.Init(m_sServerName, LogSystem::Mode::MIXED);
+    m_oLogSys.Init(m_sServerName, LogSystem::Mode::STDIO);
     
     m_oMsgBuilder << "Started. Configuration: {SEED:" << m_stConfig.nRandomSeed;
     m_oMsgBuilder << "; PLAYERS_COUNT: " << m_stConfig.nPlayers << "}";
@@ -244,7 +244,7 @@ GameServer::EventLoop()
             event_received = true;
             times_skipped = 0;
         }
-        else // sleep and update gameworld overwise (10 updates ps)
+        else // sleep and update gameworld overwise (50 updates ps)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             event_received = false;

@@ -51,7 +51,7 @@ private:
     GameMap::Settings   m_stSettings;
     Map                 m_oMap;
     std::mt19937        m_oRandGen;
-    std::uniform_int_distribution<> m_oRandDistr;
+    std::uniform_real_distribution<float> m_oRandDistr;
 };
 
 #endif /* gamemap_hpp */

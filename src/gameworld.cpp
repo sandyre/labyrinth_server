@@ -19,6 +19,7 @@ m_eState(State::RUNNING),
 m_stSettings(sets),
 m_aPlayers(players)
 {
+    
 }
 
 void
@@ -322,115 +323,7 @@ GameWorld::update(std::chrono::milliseconds ms)
                 
             case Events_CLActionDuel:
             {
-                auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
-                auto& player1 = m_aPlayers[FindPlayerByUID(cl_duel->target1_uid())];
-                
-                    // vs player handling
-                if(cl_duel->target2_type() == ActionDuelTarget_PLAYER)
-                {
-                    auto& player2 = m_aPlayers[FindPlayerByUID(cl_duel->target2_uid())];
-                    
-                        // player only can attack, but act_type() validation needed
-                    player2.nHP -= player1.nDamage;
-                    
-                    auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
-                                                          player1.nUID,
-                                                          ActionDuelTarget_PLAYER,
-                                                          player2.nUID,
-                                                          ActionDuelTarget_PLAYER,
-                                                          ActionDuelType_ATTACK);
-                    auto sv_event = CreateEvent(m_oBuilder,
-                                                Events_SVActionDuel,
-                                                sv_duel_att.Union());
-                    m_oBuilder.Finish(sv_event);
-                    PushEventAndClear();
-                    
-                    if(player2.nHP <= 0)
-                    {
-                        player2.nHP = player2.nHPMax;
-                        
-                            // drop items
-                        for(auto& item : m_aItems)
-                        {
-                            if(player2.nUID == item.nCarrierID)
-                            {
-                                item.stPosition = player2.stPosition;
-                                item.nCarrierID = 0;
-                                
-                                auto sv_item_drop = CreateSVActionItem(m_oBuilder,
-                                                                       player2.nUID,
-                                                                       item.nUID,
-                                                                       ActionItemType_DROP);
-                                auto sv_event = CreateEvent(m_oBuilder,
-                                                            Events_SVActionItem,
-                                                            sv_item_drop.Union());
-                                m_oBuilder.Finish(sv_event);
-                                PushEventAndClear();
-                            }
-                        }
-                        
-                            // duel ends
-                        player1.eState = Player::State::WALKING;
-                        player2.eState = Player::State::DEAD;
-                        
-                        auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
-                                                              player1.nUID,
-                                                              ActionDuelTarget_PLAYER,
-                                                              player2.nUID,
-                                                              ActionDuelTarget_PLAYER,
-                                                              ActionDuelType_KILL);
-                        auto sv_event = CreateEvent(m_oBuilder,
-                                                    Events_SVActionDuel,
-                                                    sv_duel_end.Union());
-                        m_oBuilder.Finish(sv_event);
-                        PushEventAndClear();
-                    }
-                }
-                    // vs monster handling
-                else if(cl_duel->target2_type() == ActionDuelTarget_MONSTER)
-                {
-                    auto monster = std::find_if(m_aMonsters.begin(),
-                                                m_aMonsters.end(),
-                                                [cl_duel](Monster& monst)
-                                                {
-                                                    return monst.nUID == cl_duel->target2_uid();
-                                                });
-                    
-                        // player only can attack, but act_type() validation needed
-                    monster->nHP -= player1.nDamage;
-                    
-                    auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
-                                                          player1.nUID,
-                                                          ActionDuelTarget_PLAYER,
-                                                          monster->nUID,
-                                                          ActionDuelTarget_MONSTER,
-                                                          ActionDuelType_ATTACK);
-                    auto sv_event = CreateEvent(m_oBuilder,
-                                                Events_SVActionDuel,
-                                                sv_duel_att.Union());
-                    m_oBuilder.Finish(sv_event);
-                    PushEventAndClear();
-                    
-                    if(monster->nHP <= 0)
-                    {
-                        player1.eState = Player::State::WALKING;
-                        monster->eState = Monster::State::DEAD;
-                        
-                            // duel ends
-                        auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
-                                                              player1.nUID,
-                                                              ActionDuelTarget_PLAYER,
-                                                              monster->nUID,
-                                                              ActionDuelTarget_MONSTER,
-                                                              ActionDuelType_KILL);
-                        auto sv_event = CreateEvent(m_oBuilder,
-                                                    Events_SVActionDuel,
-                                                    sv_duel_end.Union());
-                        m_oBuilder.Finish(sv_event);
-                        PushEventAndClear();
-                    }
-                }
-
+                ProcessDuelEvent(static_cast<const CLActionDuel*>(gs_event->event()));
                 break;
             }
                 
@@ -619,37 +512,6 @@ GameWorld::update(std::chrono::milliseconds ms)
         }
     }
     
-        // check that player can fight
-    for(auto& x : m_aPlayers)
-    {
-        for(auto& y : m_aPlayers)
-        {
-            if(x.nUID != y.nUID)
-            {
-                if(x.eState == Player::State::WALKING &&
-                   y.eState == Player::State::WALKING &&
-                   x.stPosition == y.stPosition)
-                {
-                        // battle begins
-                    x.eState = Player::State::DUEL;
-                    y.eState = Player::State::DUEL;
-                    
-                    auto sv_duel = CreateSVActionDuel(m_oBuilder,
-                                                      x.nUID,
-                                                      ActionDuelTarget_PLAYER,
-                                                      y.nUID,
-                                                      ActionDuelTarget_PLAYER,
-                                                      ActionDuelType_STARTED);
-                    auto sv_event = CreateEvent(m_oBuilder,
-                                                Events_SVActionDuel,
-                                                sv_duel.Union());
-                    m_oBuilder.Finish(sv_event);
-                    PushEventAndClear();
-                }
-            }
-        }
-    }
-    
         // timer for players in swamp
     for(auto& player : m_aPlayers)
     {
@@ -657,7 +519,7 @@ GameWorld::update(std::chrono::milliseconds ms)
         {
             player.nTimer += ms.count();
             
-            if(player.nTimer > 8000)
+            if(player.nTimer > 3000)
             {
                 player.nTimer = 0;
                 player.eState = Player::State::DEAD;
@@ -735,6 +597,29 @@ GameWorld::update(std::chrono::milliseconds ms)
                 PushEventAndClear();
             }
         }
+    }
+    
+    m_nMonstersTimer += ms.count();
+    if(m_nMonstersTimer > 15000)
+    {
+        m_nMonstersTimer = 0;
+        auto pos = GetRandomPosition();
+        Monster monster = m_oMonsterFactory.createMonster();
+        monster.stPosition = pos;
+        m_aMonsters.push_back(monster);
+        
+        auto gs_monster = CreateSVSpawnMonster(m_oBuilder,
+                                               monster.nUID,
+                                               monster.stPosition.x,
+                                               monster.stPosition.y,
+                                               monster.nHP,
+                                               monster.nMaxHP);
+        
+        auto gs_event = CreateEvent(m_oBuilder,
+                                    Events_SVSpawnMonster,
+                                    gs_monster.Union());
+        m_oBuilder.Finish(gs_event);
+        PushEventAndClear();
     }
     
         // check that game is over
@@ -849,4 +734,143 @@ GameWorld::PushEventAndClear()
     m_aOutEvents.emplace(packet);
     
     m_oBuilder.Clear();
+}
+
+void
+GameWorld::ProcessDuelEvent(const GameEvent::CLActionDuel* cl_duel)
+{
+    auto& player1 = m_aPlayers[FindPlayerByUID(cl_duel->target1_uid())];
+    
+    if(cl_duel->act_type() == ActionDuelType_STARTED)
+    {
+        auto& player2 = m_aPlayers[FindPlayerByUID(cl_duel->target2_uid())];
+        
+        player1.eState = Player::State::DUEL;
+        player2.eState = Player::State::DUEL;
+        
+        auto sv_duel = CreateSVActionDuel(m_oBuilder,
+                                          player1.nUID,
+                                          ActionDuelTarget_PLAYER,
+                                          player2.nUID,
+                                          ActionDuelTarget_PLAYER,
+                                          ActionDuelType_STARTED);
+        auto sv_event = CreateEvent(m_oBuilder,
+                                    Events_SVActionDuel,
+                                    sv_duel.Union());
+        m_oBuilder.Finish(sv_event);
+        
+        PushEventAndClear();
+    }
+    else if(cl_duel->act_type() == ActionDuelType_ATTACK)
+    {
+            // vs player handling
+        if(cl_duel->target2_type() == ActionDuelTarget_PLAYER)
+        {
+            auto& player2 = m_aPlayers[FindPlayerByUID(cl_duel->target2_uid())];
+            
+                // player only can attack, but act_type() validation needed
+            player2.nHP -= player1.nDamage;
+            
+            auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
+                                                  player1.nUID,
+                                                  ActionDuelTarget_PLAYER,
+                                                  player2.nUID,
+                                                  ActionDuelTarget_PLAYER,
+                                                  ActionDuelType_ATTACK);
+            auto sv_event = CreateEvent(m_oBuilder,
+                                        Events_SVActionDuel,
+                                        sv_duel_att.Union());
+            m_oBuilder.Finish(sv_event);
+            PushEventAndClear();
+            
+            if(player2.nHP <= 0)
+            {
+                player2.nHP = player2.nHPMax;
+                
+                    // drop items
+                for(auto& item : m_aItems)
+                {
+                    if(player2.nUID == item.nCarrierID)
+                    {
+                        item.stPosition = player2.stPosition;
+                        item.nCarrierID = 0;
+                        
+                        auto sv_item_drop = CreateSVActionItem(m_oBuilder,
+                                                               player2.nUID,
+                                                               item.nUID,
+                                                               ActionItemType_DROP);
+                        auto sv_event = CreateEvent(m_oBuilder,
+                                                    Events_SVActionItem,
+                                                    sv_item_drop.Union());
+                        m_oBuilder.Finish(sv_event);
+                        PushEventAndClear();
+                    }
+                }
+                
+                    // duel ends
+                player1.eState = Player::State::WALKING;
+                player2.eState = Player::State::DEAD;
+                
+                auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
+                                                      player1.nUID,
+                                                      ActionDuelTarget_PLAYER,
+                                                      player2.nUID,
+                                                      ActionDuelTarget_PLAYER,
+                                                      ActionDuelType_KILL);
+                auto sv_event = CreateEvent(m_oBuilder,
+                                            Events_SVActionDuel,
+                                            sv_duel_end.Union());
+                m_oBuilder.Finish(sv_event);
+                PushEventAndClear();
+            }
+        }
+            // vs monster handling
+        else if(cl_duel->target2_type() == ActionDuelTarget_MONSTER)
+        {
+            auto monster = std::find_if(m_aMonsters.begin(),
+                                        m_aMonsters.end(),
+                                        [cl_duel](Monster& monst)
+                                        {
+                                            return monst.nUID == cl_duel->target2_uid();
+                                        });
+            
+                // player only can attack, but act_type() validation needed
+            monster->nHP -= player1.nDamage;
+            
+            auto sv_duel_att = CreateSVActionDuel(m_oBuilder,
+                                                  player1.nUID,
+                                                  ActionDuelTarget_PLAYER,
+                                                  monster->nUID,
+                                                  ActionDuelTarget_MONSTER,
+                                                  ActionDuelType_ATTACK);
+            auto sv_event = CreateEvent(m_oBuilder,
+                                        Events_SVActionDuel,
+                                        sv_duel_att.Union());
+            m_oBuilder.Finish(sv_event);
+            PushEventAndClear();
+            
+            if(monster->nHP <= 0)
+            {
+                player1.eState = Player::State::WALKING;
+                monster->eState = Monster::State::DEAD;
+                
+                    // duel ends
+                auto sv_duel_end = CreateSVActionDuel(m_oBuilder,
+                                                      player1.nUID,
+                                                      ActionDuelTarget_PLAYER,
+                                                      monster->nUID,
+                                                      ActionDuelTarget_MONSTER,
+                                                      ActionDuelType_KILL);
+                auto sv_event = CreateEvent(m_oBuilder,
+                                            Events_SVActionDuel,
+                                            sv_duel_end.Union());
+                m_oBuilder.Finish(sv_event);
+                PushEventAndClear();
+            }
+        }
+    }
+    else
+    {
+        assert(false);
+    }
 }

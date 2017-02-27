@@ -22,7 +22,7 @@ m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
 {
     Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
     m_oSocket.bind(sock_addr);
-    m_oLogSys.Init("MS", LogSystem::Mode::MIXED);
+    m_oLogSys.Init("MS", LogSystem::Mode::STDIO);
     
     m_oMsgBuilder << "Started at port " << Port;
     m_oLogSys.Write(m_oMsgBuilder.str());
@@ -163,6 +163,8 @@ MasterServer::run()
                 m_oSocket.sendTo(builder.GetBufferPointer(),
                                  builder.GetSize(),
                                  player.sock_addr);
+                
+                builder.Clear();
                 m_aPlayersPool.pop_front(); // remove a player from queue
             }
         }

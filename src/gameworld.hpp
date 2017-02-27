@@ -60,6 +60,9 @@ protected:
     
         // packet builder work
     void      PushEventAndClear();
+    
+        // proccess events
+    void      ProcessDuelEvent(const GameEvent::CLActionDuel*);
 protected:
     GameWorld::State               m_eState;
     
@@ -73,6 +76,7 @@ protected:
     std::vector<Monster> m_aMonsters;
     GameMap              m_oGameMap;
     
+    uint32_t             m_nMonstersTimer = 0;
     MonsterFactory       m_oMonsterFactory;
     ItemFactory          m_oItemFactory;
     ConstructionFactory  m_oConstrFactory;
