@@ -21,7 +21,22 @@ table MSPing
 
 table CLFindGame
 {
-  player_uid:uint;
+player_uid:uint;
+cl_version_major:byte;
+cl_version_minor:byte;
+cl_version_build:byte;
+}
+
+enum ConnectionResponse : byte
+{
+ACCEPTED,
+REFUSED
+}
+
+table SVFindGame
+{
+player_uid:uint;
+response:ConnectionResponse;
 }
 
 table MSGameFound
@@ -34,6 +49,7 @@ union MSEvents
   CLPing,
   MSPing,
   CLFindGame,
+  SVFindGame,
   MSGameFound
 }
 

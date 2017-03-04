@@ -12,6 +12,15 @@ player_uid:uint;
 nickname:string;
 }
 
+enum HeroType : byte
+{
+AIR_ELEMENTALIST,
+WATER_ELEMENTALIST,
+FIRE_ELEMENTALIST,
+EARTH_ELEMENTALIST,
+UNDEFINED
+}
+
 table SVConnectionStatus
 {
 player_uid:uint;
@@ -22,6 +31,32 @@ table SVPlayerConnected
 {
 player_uid:uint;
 nickname:string;
+}
+
+table SVHeroPickStage
+{
+}
+
+table CLHeroPick
+{
+player_uid:uint;
+hero_type:HeroType;
+}
+
+table SVHeroPick
+{
+player_uid:uint;
+hero_type:HeroType;
+}
+
+table CLReadyToStart
+{
+player_uid:uint;
+}
+
+table SVReadyToStart
+{
+player_uid:uint;
 }
 
 table SVGenerateMap
@@ -84,6 +119,31 @@ item_uid:ushort;
 act_type:ActionItemType;
 }
 
+enum ActionSpellTarget : byte
+{
+TARGET_PLAYER,
+TARGET_MONSTER,
+TARGET_POINT
+}
+
+table CLActionSpell
+{
+player_uid:uint;
+spell_id:ushort;
+spell_target:ActionSpellTarget;
+x_or_id:uint; // also represents TARGET_ID
+y:uint;
+}
+
+table SVActionSpell
+{
+player_uid:uint;
+spell_id:ushort;
+spell_target:ActionSpellTarget;
+point_x:uint; // also represents TARGET_ID
+point_y:uint;
+}
+
 enum ActionSwampStatus : byte
 {
 STARTED,
@@ -124,6 +184,7 @@ target1_type:ActionDuelTarget;
 target2_uid:uint;
 target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
+damage:ushort;
 }
 
 table SVActionDuel
@@ -133,6 +194,29 @@ target1_type:ActionDuelTarget;
 target2_uid:uint;
 target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
+damage:ushort;
+}
+
+enum ActionMapType : byte
+{
+CREATE_BLOCK,
+DESTROY_BLOCK
+}
+
+table CLActionMap
+{
+player_uid:uint;
+act_type:ActionMapType;
+x:ushort;
+y:ushort;
+}
+
+table SVActionMap
+{
+player_uid:uint;
+act_type:ActionMapType;
+x:ushort;
+y:ushort;
 }
 
 table SVSpawnPlayer
@@ -201,6 +285,11 @@ union Events
 CLConnection,
 SVConnectionStatus,
 SVPlayerConnected,
+SVHeroPickStage,
+CLHeroPick,
+SVHeroPick,
+CLReadyToStart,
+SVReadyToStart,
 SVGenerateMap,
 CLMapGenerated,
 SVGameStart,
@@ -216,6 +305,12 @@ SVActionSwamp,
 
 CLActionDuel,
 SVActionDuel,
+
+CLActionSpell,
+SVActionSpell,
+
+CLActionMap,
+SVActionMap,
 
 SVSpawnPlayer,
 SVRespawnPlayer,

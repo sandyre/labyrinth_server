@@ -16,22 +16,33 @@
 
 struct Player
 {
+    enum Hero
+    {
+        ROGUE,
+        PALADIN,
+        UNDEFINED
+    };
     enum State : unsigned char
     {
-        WALKING,
-        DUEL,
-        SWAMP,
-        INVULNERABLE,
-        DEAD
+        PRE_UNDEFINED,
+        PRE_CONNECTED_TO_SERVER,
+        PRE_READY_TO_START,
+        
+        IN_WALKING,
+        IN_DUEL,
+        IN_SWAMP,
+        IN_INVULNERABLE,
+        IN_DEAD
     };
     
-    State       eState = WALKING;
+    State       eState = PRE_UNDEFINED;
+    Hero        eHero = UNDEFINED;
     Point2      stPosition;
     uint32_t    nTimer = 0;
     uint32_t    nUID = 0;
     char        sNickname[16];
-    int16_t     nHP = 3;
-    int16_t     nHPMax = 3;
+    int16_t     nHP = 40;
+    int16_t     nHPMax = 40;
     uint16_t    nDamage = 1;
     
     Poco::Net::SocketAddress sock_addr;

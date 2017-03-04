@@ -14,6 +14,8 @@ struct MSPing;
 
 struct CLFindGame;
 
+struct SVFindGame;
+
 struct MSGameFound;
 
 struct MSEvent;
@@ -43,12 +45,34 @@ inline const char *EnumNameType(Type e) {
   return EnumNamesType()[index];
 }
 
+enum ConnectionResponse {
+  ConnectionResponse_ACCEPTED = 0,
+  ConnectionResponse_REFUSED = 1,
+  ConnectionResponse_MIN = ConnectionResponse_ACCEPTED,
+  ConnectionResponse_MAX = ConnectionResponse_REFUSED
+};
+
+inline const char **EnumNamesConnectionResponse() {
+  static const char *names[] = {
+    "ACCEPTED",
+    "REFUSED",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameConnectionResponse(ConnectionResponse e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesConnectionResponse()[index];
+}
+
 enum MSEvents {
   MSEvents_NONE = 0,
   MSEvents_CLPing = 1,
   MSEvents_MSPing = 2,
   MSEvents_CLFindGame = 3,
-  MSEvents_MSGameFound = 4,
+  MSEvents_SVFindGame = 4,
+  MSEvents_MSGameFound = 5,
   MSEvents_MIN = MSEvents_NONE,
   MSEvents_MAX = MSEvents_MSGameFound
 };
@@ -59,6 +83,7 @@ inline const char **EnumNamesMSEvents() {
     "CLPing",
     "MSPing",
     "CLFindGame",
+    "SVFindGame",
     "MSGameFound",
     nullptr
   };
@@ -84,6 +109,10 @@ template<> struct MSEventsTraits<MSPing> {
 
 template<> struct MSEventsTraits<CLFindGame> {
   static const MSEvents enum_value = MSEvents_CLFindGame;
+};
+
+template<> struct MSEventsTraits<SVFindGame> {
+  static const MSEvents enum_value = MSEvents_SVFindGame;
 };
 
 template<> struct MSEventsTraits<MSGameFound> {
@@ -151,14 +180,29 @@ inline flatbuffers::Offset<MSPing> CreateMSPing(
 
 struct CLFindGame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER_UID = 4
+    VT_PLAYER_UID = 4,
+    VT_CL_VERSION_MAJOR = 6,
+    VT_CL_VERSION_MINOR = 8,
+    VT_CL_VERSION_BUILD = 10
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
   }
+  int8_t cl_version_major() const {
+    return GetField<int8_t>(VT_CL_VERSION_MAJOR, 0);
+  }
+  int8_t cl_version_minor() const {
+    return GetField<int8_t>(VT_CL_VERSION_MINOR, 0);
+  }
+  int8_t cl_version_build() const {
+    return GetField<int8_t>(VT_CL_VERSION_BUILD, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           VerifyField<int8_t>(verifier, VT_CL_VERSION_MAJOR) &&
+           VerifyField<int8_t>(verifier, VT_CL_VERSION_MINOR) &&
+           VerifyField<int8_t>(verifier, VT_CL_VERSION_BUILD) &&
            verifier.EndTable();
   }
 };
@@ -169,13 +213,22 @@ struct CLFindGameBuilder {
   void add_player_uid(uint32_t player_uid) {
     fbb_.AddElement<uint32_t>(CLFindGame::VT_PLAYER_UID, player_uid, 0);
   }
+  void add_cl_version_major(int8_t cl_version_major) {
+    fbb_.AddElement<int8_t>(CLFindGame::VT_CL_VERSION_MAJOR, cl_version_major, 0);
+  }
+  void add_cl_version_minor(int8_t cl_version_minor) {
+    fbb_.AddElement<int8_t>(CLFindGame::VT_CL_VERSION_MINOR, cl_version_minor, 0);
+  }
+  void add_cl_version_build(int8_t cl_version_build) {
+    fbb_.AddElement<int8_t>(CLFindGame::VT_CL_VERSION_BUILD, cl_version_build, 0);
+  }
   CLFindGameBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   CLFindGameBuilder &operator=(const CLFindGameBuilder &);
   flatbuffers::Offset<CLFindGame> Finish() {
-    const auto end = fbb_.EndTable(start_, 1);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<CLFindGame>(end);
     return o;
   }
@@ -183,9 +236,65 @@ struct CLFindGameBuilder {
 
 inline flatbuffers::Offset<CLFindGame> CreateCLFindGame(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0) {
+    uint32_t player_uid = 0,
+    int8_t cl_version_major = 0,
+    int8_t cl_version_minor = 0,
+    int8_t cl_version_build = 0) {
   CLFindGameBuilder builder_(_fbb);
   builder_.add_player_uid(player_uid);
+  builder_.add_cl_version_build(cl_version_build);
+  builder_.add_cl_version_minor(cl_version_minor);
+  builder_.add_cl_version_major(cl_version_major);
+  return builder_.Finish();
+}
+
+struct SVFindGame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER_UID = 4,
+    VT_RESPONSE = 6
+  };
+  uint32_t player_uid() const {
+    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  }
+  ConnectionResponse response() const {
+    return static_cast<ConnectionResponse>(GetField<int8_t>(VT_RESPONSE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           VerifyField<int8_t>(verifier, VT_RESPONSE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVFindGameBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player_uid(uint32_t player_uid) {
+    fbb_.AddElement<uint32_t>(SVFindGame::VT_PLAYER_UID, player_uid, 0);
+  }
+  void add_response(ConnectionResponse response) {
+    fbb_.AddElement<int8_t>(SVFindGame::VT_RESPONSE, static_cast<int8_t>(response), 0);
+  }
+  SVFindGameBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVFindGameBuilder &operator=(const SVFindGameBuilder &);
+  flatbuffers::Offset<SVFindGame> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<SVFindGame>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVFindGame> CreateSVFindGame(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player_uid = 0,
+    ConnectionResponse response = ConnectionResponse_ACCEPTED) {
+  SVFindGameBuilder builder_(_fbb);
+  builder_.add_player_uid(player_uid);
+  builder_.add_response(response);
   return builder_.Finish();
 }
 
@@ -295,6 +404,10 @@ inline bool VerifyMSEvents(flatbuffers::Verifier &verifier, const void *obj, MSE
     }
     case MSEvents_CLFindGame: {
       auto ptr = reinterpret_cast<const CLFindGame *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MSEvents_SVFindGame: {
+      auto ptr = reinterpret_cast<const SVFindGame *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MSEvents_MSGameFound: {

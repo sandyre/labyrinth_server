@@ -11,6 +11,10 @@
 
 #include <cstdint>
 
+const int GAMEVERSION_MAJOR = 0;
+const int GAMEVERSION_MINOR = 3;
+const int GAMEVERSION_BUILD = 0;
+
 struct Point2
 {
     Point2() :

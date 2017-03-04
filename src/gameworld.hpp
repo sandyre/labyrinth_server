@@ -62,7 +62,19 @@ protected:
     void      PushEventAndClear();
     
         // proccess events
-    void      ProcessDuelEvent(const GameEvent::CLActionDuel*);
+    void        ProcessDuelEvent(const GameEvent::CLActionDuel*);
+    void        ProcessSwampEvent(const GameEvent::CLActionSwamp*);
+    void        ProcessItemEvent(const GameEvent::CLActionItem*);
+    void        ProcessMoveEvent(const GameEvent::CLActionMove*);
+    void        ProcessSpellEvent(const GameEvent::CLActionSpell*);
+    void        ProcessMapEvent(const GameEvent::CLActionMap*);
+    
+        // update functions (updates states)
+    void        UpdateMonsters(std::chrono::milliseconds delta);
+    void        UpdatePlayers(std::chrono::milliseconds delta);
+    void        UpdateWorld(std::chrono::milliseconds delta); // spawn something, etc
+    
+    void        ApplyInputEvents();
 protected:
     GameWorld::State               m_eState;
     

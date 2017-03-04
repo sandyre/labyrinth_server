@@ -29,8 +29,8 @@ class GameServer
 public:
     enum class State
     {
-        REQUESTING_PLAYERS,
-        WAITING_PLAYERS_READY_SIGNAL,
+        LOBBY_FORMING,
+        HERO_PICK,
         GENERATING_WORLD,
         RUNNING_GAME,
         FINISHED
@@ -68,6 +68,8 @@ private:
     
     LogSystem m_oLogSys;
     std::ostringstream m_oMsgBuilder;
+    
+    flatbuffers::FlatBufferBuilder  m_oBuilder;
 };
 
 #endif /* gameserver_hpp */

@@ -87,6 +87,36 @@ MasterServer::run()
             case MSNet::MSEvents_CLFindGame:
             {
                 auto finder = static_cast<const MSNet::CLFindGame*>(event->event());
+                
+                if(finder->cl_version_major() == GAMEVERSION_MAJOR)
+                {
+                    auto gs_accepted = MSNet::CreateSVFindGame(builder,
+                                                               finder->player_uid(),
+                                                               MSNet::ConnectionResponse_ACCEPTED);
+                    auto gs_event = MSNet::CreateMSEvent(builder,
+                                                         MSNet::MSEvents_SVFindGame,
+                                                         gs_accepted.Union());
+                    builder.Finish(gs_event);
+                    m_oSocket.sendTo(builder.GetBufferPointer(),
+                                     builder.GetSize(),
+                                     sender_addr);
+                    builder.Clear();
+                }
+                else
+                {
+                    auto gs_refused = MSNet::CreateSVFindGame(builder,
+                                                              finder->player_uid(),
+                                                              MSNet::ConnectionResponse_REFUSED);
+                    auto gs_event = MSNet::CreateMSEvent(builder,
+                                                         MSNet::MSEvents_SVFindGame,
+                                                         gs_refused.Union());
+                    builder.Finish(gs_event);
+                    m_oSocket.sendTo(builder.GetBufferPointer(),
+                                     builder.GetSize(),
+                                     sender_addr);
+                    builder.Clear();
+                    break;
+                }
                     // check that player isnt already in pool
                 auto iter = std::find_if(m_aPlayersPool.begin(),
                                          m_aPlayersPool.end(),
@@ -126,7 +156,7 @@ MasterServer::run()
                                                    m_aGameServers.end(),
                                                    [this](std::unique_ptr<GameServer> const& gs)
                                                    {
-                                                       return gs->GetState() == GameServer::State::REQUESTING_PLAYERS;
+                                                       return gs->GetState() == GameServer::State::LOBBY_FORMING;
                                                    });
             
                 // no servers? start a new
@@ -150,7 +180,7 @@ MasterServer::run()
             if(m_aPlayersPool.size() == 0) // optimization (no need to loop more through gss)
                 break;
             
-            if(gs->GetState() == GameServer::State::REQUESTING_PLAYERS)
+            if(gs->GetState() == GameServer::State::LOBBY_FORMING)
             {
                 auto serv_config = gs->GetConfig();
                     // transfer player to GS
@@ -175,8 +205,12 @@ MasterServer::run()
                                             m_aGameServers.end(),
                                             [this](std::unique_ptr<GameServer> const& server)
                                             {
-                                                m_qAvailablePorts.push(server->GetConfig().nPort);
-                                                return server->GetState() == GameServer::State::FINISHED;
+                                                if(server->GetState() == GameServer::State::FINISHED)
+                                                {
+                                                    m_qAvailablePorts.push(server->GetConfig().nPort);
+                                                    return true;
+                                                }
+                                                return false;
                                             }),
                              m_aGameServers.end()
                              );

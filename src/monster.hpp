@@ -28,9 +28,9 @@ struct Monster
     uint32_t nTimer = 0;
     uint32_t nAttackCD = 4000;
     uint32_t nMoveCD = 1000; // in ms
-    int8_t nHP = 3;
-    uint8_t nMaxHP = 3;
-    uint8_t nDamage = 1;
+    int8_t nHP = 50;
+    uint8_t nMaxHP = 50;
+    uint8_t nDamage = 10;
     uint8_t nVision = 3;
     uint8_t nChargeRadius = 8;
 };

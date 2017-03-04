@@ -17,7 +17,7 @@ using namespace GameEvent;
 using namespace std::chrono;
 
 GameServer::GameServer(const Configuration& config) :
-m_eState(GameServer::State::REQUESTING_PLAYERS),
+m_eState(GameServer::State::LOBBY_FORMING),
 m_stConfig(config),
 m_nStartTime(steady_clock::now()),
 m_msPerUpdate(0)
@@ -38,7 +38,15 @@ m_msPerUpdate(0)
     m_oThread = std::thread(
                             [this]()
                             {
-                                this->EventLoop();
+                                while(m_eState != GameServer::State::FINISHED)
+                                {
+                                    this->EventLoop();
+                                }
+                                auto end_time = steady_clock::now();
+                                auto duration = duration_cast<seconds>(end_time - m_nStartTime).count();
+                                m_oMsgBuilder << "Finished in " << duration << " seconds";
+                                m_oLogSys.Write(m_oMsgBuilder.str());
+                                m_oMsgBuilder.str("");
                             });
     m_oThread.detach();
 }
@@ -64,12 +72,10 @@ GameServer::GetConfig() const
 void
 GameServer::EventLoop()
 {
-    flatbuffers::FlatBufferBuilder builder;
-    
     Poco::Net::SocketAddress sender_addr;
     unsigned char buf[256];
     
-    while(m_eState == GameServer::State::REQUESTING_PLAYERS)
+    if(m_eState == GameServer::State::LOBBY_FORMING)
     {
         auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
         
@@ -96,64 +102,143 @@ GameServer::EventLoop()
                 m_oMsgBuilder.str("");
                 
                     // notify connector that he is accepted
-                auto gs_accept = CreateSVConnectionStatus(builder,
+                auto gs_accept = CreateSVConnectionStatus(m_oBuilder,
                                                           ConnectionStatus_ACCEPTED);
-                auto gs_event = CreateEvent(builder,
+                auto gs_event = CreateEvent(m_oBuilder,
                                             Events_SVConnectionStatus,
                                             gs_accept.Union());
-                builder.Finish(gs_event);
+                m_oBuilder.Finish(gs_event);
                 
-                m_oSocket.sendTo(builder.GetBufferPointer(),
-                                 builder.GetSize(),
+                m_oSocket.sendTo(m_oBuilder.GetBufferPointer(),
+                                 m_oBuilder.GetSize(),
                                  sender_addr);
-                builder.Clear();
+                m_oBuilder.Clear();
                 
                     // send him info about all current players in lobby
                 for(auto& player : m_aPlayers)
                 {
-                    auto nick = builder.CreateString(player.sNickname);
-                    auto player_info = CreateSVPlayerConnected(builder,
+                    auto nick = m_oBuilder.CreateString(player.sNickname);
+                    auto player_info = CreateSVPlayerConnected(m_oBuilder,
                                                                player.nUID,
                                                                nick);
-                    gs_event = CreateEvent(builder,
+                    gs_event = CreateEvent(m_oBuilder,
                                            Events_SVPlayerConnected,
                                            player_info.Union());
-                    builder.Finish(gs_event);
+                    m_oBuilder.Finish(gs_event);
                     
-                    m_oSocket.sendTo(builder.GetBufferPointer(),
-                                     builder.GetSize(),
+                    m_oSocket.sendTo(m_oBuilder.GetBufferPointer(),
+                                     m_oBuilder.GetSize(),
                                      sender_addr);
-                    builder.Clear();
+                    m_oBuilder.Clear();
                 }
                 
                     // notify all players about connected one
-                auto nick = builder.CreateString(con_info->nickname()->c_str(),
-                                                 con_info->nickname()->size());
-                auto gs_new_player = CreateSVPlayerConnected(builder,
+                auto nick = m_oBuilder.CreateString(con_info->nickname()->c_str(),
+                                                    con_info->nickname()->size());
+                auto gs_new_player = CreateSVPlayerConnected(m_oBuilder,
                                                              con_info->player_uid(),
                                                              nick);
-                gs_event = CreateEvent(builder,
+                gs_event = CreateEvent(m_oBuilder,
                                        Events_SVPlayerConnected,
                                        gs_new_player.Union());
-                builder.Finish(gs_event);
+                m_oBuilder.Finish(gs_event);
                 
-                SendToAll(builder.GetBufferPointer(),
-                          builder.GetSize());
-                builder.Clear();
+                SendToAll(m_oBuilder.GetBufferPointer(),
+                          m_oBuilder.GetSize());
+                m_oBuilder.Clear();
             }
         }
         
         if(m_aPlayers.size() == m_stConfig.nPlayers)
         {
-            m_eState = GameServer::State::GENERATING_WORLD;
+            m_eState = GameServer::State::HERO_PICK;
+            
+            auto gs_heropick = CreateSVHeroPickStage(m_oBuilder);
+            auto gs_event = CreateEvent(m_oBuilder,
+                                        Events_SVHeroPickStage,
+                                        gs_heropick.Union());
+            m_oBuilder.Finish(gs_event);
+            
+            SendToAll(m_oBuilder.GetBufferPointer(),
+                      m_oBuilder.GetSize());
+            m_oBuilder.Clear();
         }
     }
-    
-    m_oMsgBuilder << "Generating world";
-    m_oLogSys.Write(m_oMsgBuilder.str());
-    m_oMsgBuilder.str("");
-    
-    if(m_eState == GameServer::State::GENERATING_WORLD)
+    else if(m_eState == GameServer::State::HERO_PICK)
+    {
+        auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
+
+        auto gs_event = GetEvent(buf);
+        
+        switch(gs_event->event_type())
+        {
+            case GameEvent::Events_CLHeroPick:
+            {
+                auto cl_pick = static_cast<const CLHeroPick*>(gs_event->event());
+                
+                auto player = FindPlayerByUID(cl_pick->player_uid());
+                player->eHero = (Player::Hero)cl_pick->hero_type();
+                
+                auto sv_pick = CreateSVHeroPick(m_oBuilder,
+                                                cl_pick->player_uid(),
+                                                cl_pick->hero_type());
+                auto sv_event = CreateEvent(m_oBuilder,
+                                            Events_SVHeroPick,
+                                            sv_pick.Union());
+                m_oBuilder.Finish(sv_event);
+                SendToAll(m_oBuilder.GetBufferPointer(),
+                          m_oBuilder.GetSize());
+                m_oBuilder.Clear();
+                
+                break;
+            }
+                
+            case GameEvent::Events_CLReadyToStart:
+            {
+                auto cl_ready = static_cast<const CLReadyToStart*>(gs_event->event());
+                
+                auto player = FindPlayerByUID(cl_ready->player_uid());
+                player->eState = Player::State::PRE_READY_TO_START;
+                
+                auto sv_ready = CreateSVHeroPick(m_oBuilder,
+                                                 cl_ready->player_uid());
+                auto sv_event = CreateEvent(m_oBuilder,
+                                            Events_SVReadyToStart,
+                                            sv_ready.Union());
+                m_oBuilder.Finish(sv_event);
+                SendToAll(m_oBuilder.GetBufferPointer(),
+                          m_oBuilder.GetSize());
+                m_oBuilder.Clear();
+                
+                break;
+            }
+                
+            default:
+                assert(false);
+                break;
+        }
+        
+        bool bEveryoneReady = std::any_of(m_aPlayers.begin(),
+                                          m_aPlayers.end(),
+                                          [](Player& player)
+                                          {
+                                              return player.eState == Player::State::PRE_READY_TO_START;
+                                          });
+        if(bEveryoneReady)
+        {
+            m_eState = GameServer::State::GENERATING_WORLD;
+            
+            m_oMsgBuilder << "Generating world";
+            m_oLogSys.Write(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+            
+            for(auto& player : m_aPlayers)
+            {
+                player.eState = Player::State::IN_WALKING;
+            }
+        }
+    }
+    else if(m_eState == GameServer::State::GENERATING_WORLD)
     {
         GameWorld::Settings sets;
         sets.nSeed = m_stConfig.nRandomSeed;
@@ -164,17 +249,17 @@ GameServer::EventLoop()
         m_pGameWorld->generate_map();
         m_pGameWorld->initial_spawn(); // spawns players
         
-        auto gs_gen_map = CreateSVGenerateMap(builder,
+        auto gs_gen_map = CreateSVGenerateMap(m_oBuilder,
                                               sets.stGMSettings.nMapSize,
                                               sets.stGMSettings.nRoomSize,
                                               sets.nSeed);
-        auto gs_event = CreateEvent(builder,
+        auto gs_event = CreateEvent(m_oBuilder,
                                     Events_SVGenerateMap,
                                     gs_gen_map.Union());
-        builder.Finish(gs_event);
+        m_oBuilder.Finish(gs_event);
         
-        SendToAll(builder.GetBufferPointer(), builder.GetSize());
-        builder.Clear();
+        SendToAll(m_oBuilder.GetBufferPointer(), m_oBuilder.GetSize());
+        m_oBuilder.Clear();
         
         auto players_ungenerated = m_aPlayers.size();
         while(players_ungenerated)
@@ -197,25 +282,21 @@ GameServer::EventLoop()
         }
         
         m_eState = GameServer::State::RUNNING_GAME;
-    }
-    
-        // notify players that game starts!
-    {
-        auto game_start = CreateSVGameStart(builder);
-        auto gs_event = CreateEvent(builder,
-                                    Events_SVGameStart,
-                                    game_start.Union());
-        builder.Finish(gs_event);
-        SendToAll(builder.GetBufferPointer(), builder.GetSize());
-        builder.Clear();
+        
+            // notify players that game starts!
+        auto game_start = CreateSVGameStart(m_oBuilder);
+        gs_event = CreateEvent(m_oBuilder,
+                               Events_SVGameStart,
+                               game_start.Union());
+        m_oBuilder.Finish(gs_event);
+        SendToAll(m_oBuilder.GetBufferPointer(), m_oBuilder.GetSize());
+        m_oBuilder.Clear();
         
         m_oMsgBuilder << "Game begins";
         m_oLogSys.Write(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
-    
-    int times_skipped = 0;
-    while(m_eState == GameServer::State::RUNNING_GAME)
+    else if(m_eState == GameServer::State::RUNNING_GAME)
     {
         auto frame_start = steady_clock::now();
         
@@ -242,13 +323,11 @@ GameServer::EventLoop()
         {
             bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
             event_received = true;
-            times_skipped = 0;
         }
         else // sleep and update gameworld overwise (50 updates ps)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             event_received = false;
-            times_skipped++;
         }
         
         if(event_received)
@@ -312,6 +391,13 @@ GameServer::EventLoop()
                     break;
                 }
                     
+                case Events_CLActionSpell:
+                {
+                        //FIXME: validation needed, at least for players id
+                    is_event_valid = true;
+                    break;
+                }
+                    
                 default:
                     assert(false);
                     break;
@@ -329,18 +415,7 @@ GameServer::EventLoop()
         auto frame_end = steady_clock::now();
         
         m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
-        
-        if(times_skipped > 20000)
-        {
-            m_eState = GameServer::State::FINISHED;
-        }
     }
-    
-    auto end_time = steady_clock::now();
-    auto duration = duration_cast<seconds>(end_time - m_nStartTime).count();
-    m_oMsgBuilder << "Finished in " << duration << " seconds";
-    m_oLogSys.Write(m_oMsgBuilder.str());
-    m_oMsgBuilder.str("");
 }
 
 void
