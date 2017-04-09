@@ -11,41 +11,105 @@
 
 #include <Poco/Net/SocketAddress.h>
 #include <vector>
-#include "item.hpp"
+#include <cassert>
+
+#include "hero.hpp"
 #include "globals.h"
 
-struct Player
+class Player
 {
-    enum Hero
-    {
-        ROGUE,
-        PALADIN,
-        UNDEFINED
-    };
-    enum State : unsigned char
+public:
+    enum class State
     {
         PRE_UNDEFINED,
         PRE_CONNECTED_TO_SERVER,
         PRE_READY_TO_START,
         
-        IN_WALKING,
-        IN_DUEL,
-        IN_SWAMP,
-        IN_INVULNERABLE,
-        IN_DEAD
+        IN_GAME
     };
+public:
+    Player(PlayerUID uid,
+           Poco::Net::SocketAddress addr,
+           std::string nickname) :
+    m_nUID(uid),
+    m_stSocketAddr(addr),
+    m_sNickname(nickname),
     
-    State       eState = PRE_UNDEFINED;
-    Hero        eHero = UNDEFINED;
-    Point2      stPosition;
-    uint32_t    nTimer = 0;
-    uint32_t    nUID = 0;
-    char        sNickname[16];
-    int16_t     nHP = 40;
-    int16_t     nHPMax = 40;
-    uint16_t    nDamage = 1;
+    m_eHeroType(Hero::Type::RANDOM),
+    m_eState(Player::State::PRE_UNDEFINED)
+    {
+        
+    }
     
-    Poco::Net::SocketAddress sock_addr;
+    Player::State   GetState() const
+    {
+        return m_eState;
+    }
+    
+    void            SetState(Player::State state)
+    {
+        m_eState = state;
+    }
+    
+    PlayerUID   GetUID() const
+    {
+        return m_nUID;
+    }
+    
+    std::string GetNickname() const
+    {
+        return m_sNickname;
+    }
+    
+    Hero *  operator()(int i = 0)
+    {
+        return m_pHero.get();
+    }
+    
+    const Poco::Net::SocketAddress&   GetAddress() const
+    {
+        return m_stSocketAddr;
+    }
+    
+    void    SetAddress(Poco::Net::SocketAddress& addr)
+    {
+        m_stSocketAddr = addr;
+    }
+    
+    void    SetHeroPicked(Hero::Type hero)
+    {
+        m_eHeroType = hero;
+    }
+    
+    void    CreateHero()
+    {
+        switch(m_eHeroType)
+        {
+            case Hero::Type::AIR_ELEMENTALIST:
+                m_pHero = std::make_unique<AirElementalist>();
+                break;
+            case Hero::Type::EARTH_ELEMENTALIST:
+                m_pHero = std::make_unique<EarthElementalist>();
+                break;
+            case Hero::Type::FIRE_ELEMENTALIST:
+                m_pHero = std::make_unique<FireElementalist>();
+                break;
+            case Hero::Type::WATER_ELEMENTALIST:
+                m_pHero = std::make_unique<WaterElementalist>();
+                break;
+            default:
+                assert(false);
+                break;
+        }
+    }
+protected:
+    Player::State               m_eState;
+    PlayerUID                   m_nUID;
+    std::string                 m_sNickname;
+    Poco::Net::SocketAddress    m_stSocketAddr;
+    
+    Hero::Type                  m_eHeroType;
+    std::unique_ptr<Hero>       m_pHero;
 };
 
 #endif /* player_hpp */

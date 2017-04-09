@@ -10,7 +10,7 @@
 
 int main(int argc, const char * argv[])
 {
-    MasterServer server(1930);
-    server.init();
+    MasterServer server;
+    server.init(1930);
     server.run();
 }

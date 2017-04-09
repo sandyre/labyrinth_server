@@ -14,7 +14,6 @@
 #include <map>
 #include <cstring>
 #include <chrono>
-#include "netpacket.hpp"
 #include "gamemap.hpp"
 #include "player.hpp"
 #include "item.hpp"

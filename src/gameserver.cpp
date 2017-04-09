@@ -79,7 +79,7 @@ GameServer::EventLoop()
     {
         auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
         
-        auto gs_event = GetEvent(buf);
+        auto gs_event = GetMessage(buf);
         
         if(gs_event->event_type() == Events_CLConnection)
         {
@@ -88,23 +88,20 @@ GameServer::EventLoop()
             auto player = FindPlayerByUID(con_info->player_uid());
             if(player == m_aPlayers.end())
             {
-                Player new_player;
-                new_player.nUID = con_info->player_uid();
-                new_player.sock_addr = sender_addr;
-                strncpy(new_player.sNickname,
-                        con_info->nickname()->c_str(),
-                        con_info->nickname()->size());
+                Player new_player(con_info->player_uid(),
+                                  sender_addr,
+                                  con_info->nickname()->c_str());
                 
-                m_aPlayers.emplace_back(new_player);
-                
-                m_oMsgBuilder << "Player \'" << new_player.sNickname << "\' connected";
+                m_oMsgBuilder << "Player \'" << new_player.GetNickname() << "\' connected";
                 m_oLogSys.Write(m_oMsgBuilder.str());
                 m_oMsgBuilder.str("");
+                
+                m_aPlayers.emplace_back(std::move(new_player));
                 
                     // notify connector that he is accepted
                 auto gs_accept = CreateSVConnectionStatus(m_oBuilder,
                                                           ConnectionStatus_ACCEPTED);
-                auto gs_event = CreateEvent(m_oBuilder,
+                auto gs_event = CreateMessage(m_oBuilder,
                                             Events_SVConnectionStatus,
                                             gs_accept.Union());
                 m_oBuilder.Finish(gs_event);
@@ -117,11 +114,11 @@ GameServer::EventLoop()
                     // send him info about all current players in lobby
                 for(auto& player : m_aPlayers)
                 {
-                    auto nick = m_oBuilder.CreateString(player.sNickname);
+                    auto nick = m_oBuilder.CreateString(player.GetNickname());
                     auto player_info = CreateSVPlayerConnected(m_oBuilder,
-                                                               player.nUID,
+                                                               player.GetUID(),
                                                                nick);
-                    gs_event = CreateEvent(m_oBuilder,
+                    gs_event = CreateMessage(m_oBuilder,
                                            Events_SVPlayerConnected,
                                            player_info.Union());
                     m_oBuilder.Finish(gs_event);
@@ -138,7 +135,7 @@ GameServer::EventLoop()
                 auto gs_new_player = CreateSVPlayerConnected(m_oBuilder,
                                                              con_info->player_uid(),
                                                              nick);
-                gs_event = CreateEvent(m_oBuilder,
+                gs_event = CreateMessage(m_oBuilder,
                                        Events_SVPlayerConnected,
                                        gs_new_player.Union());
                 m_oBuilder.Finish(gs_event);
@@ -154,7 +151,7 @@ GameServer::EventLoop()
             m_eState = GameServer::State::HERO_PICK;
             
             auto gs_heropick = CreateSVHeroPickStage(m_oBuilder);
-            auto gs_event = CreateEvent(m_oBuilder,
+            auto gs_event = CreateMessage(m_oBuilder,
                                         Events_SVHeroPickStage,
                                         gs_heropick.Union());
             m_oBuilder.Finish(gs_event);
@@ -168,7 +165,7 @@ GameServer::EventLoop()
     {
         auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
 
-        auto gs_event = GetEvent(buf);
+        auto gs_event = GetMessage(buf);
         
         switch(gs_event->event_type())
         {
@@ -177,12 +174,12 @@ GameServer::EventLoop()
                 auto cl_pick = static_cast<const CLHeroPick*>(gs_event->event());
                 
                 auto player = FindPlayerByUID(cl_pick->player_uid());
-                player->eHero = (Player::Hero)cl_pick->hero_type();
+                player->SetHeroPicked((Hero::Type)cl_pick->hero_type());
                 
                 auto sv_pick = CreateSVHeroPick(m_oBuilder,
                                                 cl_pick->player_uid(),
                                                 cl_pick->hero_type());
-                auto sv_event = CreateEvent(m_oBuilder,
+                auto sv_event = CreateMessage(m_oBuilder,
                                             Events_SVHeroPick,
                                             sv_pick.Union());
                 m_oBuilder.Finish(sv_event);
@@ -198,11 +195,11 @@ GameServer::EventLoop()
                 auto cl_ready = static_cast<const CLReadyToStart*>(gs_event->event());
                 
                 auto player = FindPlayerByUID(cl_ready->player_uid());
-                player->eState = Player::State::PRE_READY_TO_START;
+                player->SetState(Player::State::PRE_READY_TO_START);
                 
-                auto sv_ready = CreateSVHeroPick(m_oBuilder,
-                                                 cl_ready->player_uid());
-                auto sv_event = CreateEvent(m_oBuilder,
+                auto sv_ready = CreateSVReadyToStart(m_oBuilder,
+                                                     cl_ready->player_uid());
+                auto sv_event = CreateMessage(m_oBuilder,
                                             Events_SVReadyToStart,
                                             sv_ready.Union());
                 m_oBuilder.Finish(sv_event);
@@ -218,11 +215,11 @@ GameServer::EventLoop()
                 break;
         }
         
-        bool bEveryoneReady = std::any_of(m_aPlayers.begin(),
+        bool bEveryoneReady = std::all_of(m_aPlayers.begin(),
                                           m_aPlayers.end(),
                                           [](Player& player)
                                           {
-                                              return player.eState == Player::State::PRE_READY_TO_START;
+                                              return player.GetState() == Player::State::PRE_READY_TO_START;
                                           });
         if(bEveryoneReady)
         {
@@ -234,7 +231,7 @@ GameServer::EventLoop()
             
             for(auto& player : m_aPlayers)
             {
-                player.eState = Player::State::IN_WALKING;
+                player.SetState(Player::State::IN_GAME);
             }
         }
     }
@@ -253,7 +250,7 @@ GameServer::EventLoop()
                                               sets.stGMSettings.nMapSize,
                                               sets.stGMSettings.nRoomSize,
                                               sets.nSeed);
-        auto gs_event = CreateEvent(m_oBuilder,
+        auto gs_event = CreateMessage(m_oBuilder,
                                     Events_SVGenerateMap,
                                     gs_gen_map.Union());
         m_oBuilder.Finish(gs_event);
@@ -266,7 +263,7 @@ GameServer::EventLoop()
         {
             m_oSocket.receiveBytes(buf, 256);
             
-            auto gs_event = GetEvent(buf);
+            auto gs_event = GetMessage(buf);
             
             if(gs_event->event_type() == Events_CLMapGenerated)
             {
@@ -285,7 +282,7 @@ GameServer::EventLoop()
         
             // notify players that game starts!
         auto game_start = CreateSVGameStart(m_oBuilder);
-        gs_event = CreateEvent(m_oBuilder,
+        gs_event = CreateMessage(m_oBuilder,
                                Events_SVGameStart,
                                game_start.Union());
         m_oBuilder.Finish(gs_event);
@@ -332,7 +329,7 @@ GameServer::EventLoop()
         
         if(event_received)
         {
-            auto gs_event = GetEvent(buf);
+            auto gs_event = GetMessage(buf);
             
             switch(gs_event->event_type())
             {
@@ -342,9 +339,9 @@ GameServer::EventLoop()
                     auto player = FindPlayerByUID(cl_mov->target_uid());
                     
                     if(player != m_aPlayers.end() &&
-                       player->sock_addr != sender_addr)
+                       player->GetAddress() != sender_addr)
                     {
-                        player->sock_addr = sender_addr;
+                        player->SetAddress(sender_addr);
                     }
                     
                     is_event_valid = true;
@@ -357,9 +354,9 @@ GameServer::EventLoop()
                     auto player = FindPlayerByUID(cl_item->player_uid());
                     
                     if(player != m_aPlayers.end() &&
-                       player->sock_addr != sender_addr)
+                       player->GetAddress() != sender_addr)
                     {
-                        player->sock_addr = sender_addr;
+                        player->SetAddress(sender_addr);
                     }
                     
                     is_event_valid = true;
@@ -372,9 +369,9 @@ GameServer::EventLoop()
                     auto player = FindPlayerByUID(cl_swamp->player_uid());
                     
                     if(player != m_aPlayers.end() &&
-                       player->sock_addr != sender_addr)
+                       player->GetAddress() != sender_addr)
                     {
-                        player->sock_addr = sender_addr;
+                        player->SetAddress(sender_addr);
                     }
                     
                     is_event_valid = true;
@@ -427,7 +424,7 @@ GameServer::SendToAll(uint8_t * buf,
                   [buf, size, this](const Player& player)
                   {
                       m_oSocket.sendTo(buf, size,
-                                       player.sock_addr);
+                                       player.GetAddress());
                   });
 }
 
@@ -442,7 +439,7 @@ GameServer::SendToOne(uint32_t player_id,
     {
         m_oSocket.sendTo(buf,
                          size,
-                         player->sock_addr);
+                         player->GetAddress());
     }
 }
 
@@ -453,7 +450,7 @@ GameServer::FindPlayerByUID(PlayerUID uid)
         iter != m_aPlayers.end();
         ++iter)
     {
-        if((*iter).nUID == uid)
+        if((*iter).GetUID() == uid)
         {
             return iter;
         }

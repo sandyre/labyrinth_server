@@ -12,6 +12,14 @@ struct CLPing;
 
 struct MSPing;
 
+struct CLRegister;
+
+struct SVRegister;
+
+struct CLLogin;
+
+struct SVLogin;
+
 struct CLFindGame;
 
 struct SVFindGame;
@@ -20,29 +28,46 @@ struct MSGameFound;
 
 struct MSEvent;
 
-enum Type {
-  Type_CL_PING = 0,
-  Type_MS_PING = 1,
-  Type_CL_FIND_GAME = 2,
-  Type_MS_GAME_FOUND = 3,
-  Type_MIN = Type_CL_PING,
-  Type_MAX = Type_MS_GAME_FOUND
+enum RegistrationStatus {
+  RegistrationStatus_SUCCESS = 0,
+  RegistrationStatus_EMAIL_TAKEN = 1,
+  RegistrationStatus_MIN = RegistrationStatus_SUCCESS,
+  RegistrationStatus_MAX = RegistrationStatus_EMAIL_TAKEN
 };
 
-inline const char **EnumNamesType() {
+inline const char **EnumNamesRegistrationStatus() {
   static const char *names[] = {
-    "CL_PING",
-    "MS_PING",
-    "CL_FIND_GAME",
-    "MS_GAME_FOUND",
+    "SUCCESS",
+    "EMAIL_TAKEN",
     nullptr
   };
   return names;
 }
 
-inline const char *EnumNameType(Type e) {
+inline const char *EnumNameRegistrationStatus(RegistrationStatus e) {
   const size_t index = static_cast<int>(e);
-  return EnumNamesType()[index];
+  return EnumNamesRegistrationStatus()[index];
+}
+
+enum LoginStatus {
+  LoginStatus_SUCCESS = 0,
+  LoginStatus_WRONG_INPUT = 1,
+  LoginStatus_MIN = LoginStatus_SUCCESS,
+  LoginStatus_MAX = LoginStatus_WRONG_INPUT
+};
+
+inline const char **EnumNamesLoginStatus() {
+  static const char *names[] = {
+    "SUCCESS",
+    "WRONG_INPUT",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameLoginStatus(LoginStatus e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesLoginStatus()[index];
 }
 
 enum ConnectionResponse {
@@ -70,9 +95,13 @@ enum MSEvents {
   MSEvents_NONE = 0,
   MSEvents_CLPing = 1,
   MSEvents_MSPing = 2,
-  MSEvents_CLFindGame = 3,
-  MSEvents_SVFindGame = 4,
-  MSEvents_MSGameFound = 5,
+  MSEvents_CLRegister = 3,
+  MSEvents_SVRegister = 4,
+  MSEvents_CLLogin = 5,
+  MSEvents_SVLogin = 6,
+  MSEvents_CLFindGame = 7,
+  MSEvents_SVFindGame = 8,
+  MSEvents_MSGameFound = 9,
   MSEvents_MIN = MSEvents_NONE,
   MSEvents_MAX = MSEvents_MSGameFound
 };
@@ -82,6 +111,10 @@ inline const char **EnumNamesMSEvents() {
     "NONE",
     "CLPing",
     "MSPing",
+    "CLRegister",
+    "SVRegister",
+    "CLLogin",
+    "SVLogin",
     "CLFindGame",
     "SVFindGame",
     "MSGameFound",
@@ -105,6 +138,22 @@ template<> struct MSEventsTraits<CLPing> {
 
 template<> struct MSEventsTraits<MSPing> {
   static const MSEvents enum_value = MSEvents_MSPing;
+};
+
+template<> struct MSEventsTraits<CLRegister> {
+  static const MSEvents enum_value = MSEvents_CLRegister;
+};
+
+template<> struct MSEventsTraits<SVRegister> {
+  static const MSEvents enum_value = MSEvents_SVRegister;
+};
+
+template<> struct MSEventsTraits<CLLogin> {
+  static const MSEvents enum_value = MSEvents_CLLogin;
+};
+
+template<> struct MSEventsTraits<SVLogin> {
+  static const MSEvents enum_value = MSEvents_SVLogin;
 };
 
 template<> struct MSEventsTraits<CLFindGame> {
@@ -175,6 +224,210 @@ struct MSPingBuilder {
 inline flatbuffers::Offset<MSPing> CreateMSPing(
     flatbuffers::FlatBufferBuilder &_fbb) {
   MSPingBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct CLRegister FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_EMAIL = 4,
+    VT_PASSWORD = 6
+  };
+  const flatbuffers::String *email() const {
+    return GetPointer<const flatbuffers::String *>(VT_EMAIL);
+  }
+  const flatbuffers::String *password() const {
+    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_EMAIL) &&
+           verifier.Verify(email()) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_PASSWORD) &&
+           verifier.Verify(password()) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLRegisterBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_email(flatbuffers::Offset<flatbuffers::String> email) {
+    fbb_.AddOffset(CLRegister::VT_EMAIL, email);
+  }
+  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
+    fbb_.AddOffset(CLRegister::VT_PASSWORD, password);
+  }
+  CLRegisterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLRegisterBuilder &operator=(const CLRegisterBuilder &);
+  flatbuffers::Offset<CLRegister> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<CLRegister>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLRegister> CreateCLRegister(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> email = 0,
+    flatbuffers::Offset<flatbuffers::String> password = 0) {
+  CLRegisterBuilder builder_(_fbb);
+  builder_.add_password(password);
+  builder_.add_email(email);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<CLRegister> CreateCLRegisterDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *email = nullptr,
+    const char *password = nullptr) {
+  return CreateCLRegister(
+      _fbb,
+      email ? _fbb.CreateString(email) : 0,
+      password ? _fbb.CreateString(password) : 0);
+}
+
+struct SVRegister FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_RESPONSE = 4
+  };
+  RegistrationStatus response() const {
+    return static_cast<RegistrationStatus>(GetField<int8_t>(VT_RESPONSE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int8_t>(verifier, VT_RESPONSE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVRegisterBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_response(RegistrationStatus response) {
+    fbb_.AddElement<int8_t>(SVRegister::VT_RESPONSE, static_cast<int8_t>(response), 0);
+  }
+  SVRegisterBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVRegisterBuilder &operator=(const SVRegisterBuilder &);
+  flatbuffers::Offset<SVRegister> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SVRegister>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVRegister> CreateSVRegister(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    RegistrationStatus response = RegistrationStatus_SUCCESS) {
+  SVRegisterBuilder builder_(_fbb);
+  builder_.add_response(response);
+  return builder_.Finish();
+}
+
+struct CLLogin FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_EMAIL = 4,
+    VT_PASSWORD = 6
+  };
+  const flatbuffers::String *email() const {
+    return GetPointer<const flatbuffers::String *>(VT_EMAIL);
+  }
+  const flatbuffers::String *password() const {
+    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_EMAIL) &&
+           verifier.Verify(email()) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_PASSWORD) &&
+           verifier.Verify(password()) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLLoginBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_email(flatbuffers::Offset<flatbuffers::String> email) {
+    fbb_.AddOffset(CLLogin::VT_EMAIL, email);
+  }
+  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
+    fbb_.AddOffset(CLLogin::VT_PASSWORD, password);
+  }
+  CLLoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLLoginBuilder &operator=(const CLLoginBuilder &);
+  flatbuffers::Offset<CLLogin> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<CLLogin>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLLogin> CreateCLLogin(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> email = 0,
+    flatbuffers::Offset<flatbuffers::String> password = 0) {
+  CLLoginBuilder builder_(_fbb);
+  builder_.add_password(password);
+  builder_.add_email(email);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<CLLogin> CreateCLLoginDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *email = nullptr,
+    const char *password = nullptr) {
+  return CreateCLLogin(
+      _fbb,
+      email ? _fbb.CreateString(email) : 0,
+      password ? _fbb.CreateString(password) : 0);
+}
+
+struct SVLogin FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_RESPONSE = 4
+  };
+  LoginStatus response() const {
+    return static_cast<LoginStatus>(GetField<int8_t>(VT_RESPONSE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int8_t>(verifier, VT_RESPONSE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVLoginBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_response(LoginStatus response) {
+    fbb_.AddElement<int8_t>(SVLogin::VT_RESPONSE, static_cast<int8_t>(response), 0);
+  }
+  SVLoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVLoginBuilder &operator=(const SVLoginBuilder &);
+  flatbuffers::Offset<SVLogin> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SVLogin>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVLogin> CreateSVLogin(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    LoginStatus response = LoginStatus_SUCCESS) {
+  SVLoginBuilder builder_(_fbb);
+  builder_.add_response(response);
   return builder_.Finish();
 }
 
@@ -400,6 +653,22 @@ inline bool VerifyMSEvents(flatbuffers::Verifier &verifier, const void *obj, MSE
     }
     case MSEvents_MSPing: {
       auto ptr = reinterpret_cast<const MSPing *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MSEvents_CLRegister: {
+      auto ptr = reinterpret_cast<const CLRegister *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MSEvents_SVRegister: {
+      auto ptr = reinterpret_cast<const SVRegister *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MSEvents_CLLogin: {
+      auto ptr = reinterpret_cast<const CLLogin *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case MSEvents_SVLogin: {
+      auto ptr = reinterpret_cast<const SVLogin *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case MSEvents_CLFindGame: {

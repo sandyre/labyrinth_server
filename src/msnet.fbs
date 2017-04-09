@@ -1,14 +1,5 @@
 namespace MSNet;
 
-enum Type : byte
-{
-  CL_PING,
-  MS_PING,
-
-  CL_FIND_GAME,
-  MS_GAME_FOUND
-}
-
 table CLPing
 {
 
@@ -17,6 +8,40 @@ table CLPing
 table MSPing
 {
 
+}
+
+table CLRegister
+{
+email:string;
+password:string;
+}
+
+enum RegistrationStatus : byte
+{
+SUCCESS,
+EMAIL_TAKEN
+}
+
+table SVRegister
+{
+response:RegistrationStatus;
+}
+
+table CLLogin
+{
+email:string;
+password:string;
+}
+
+enum LoginStatus : byte
+{
+SUCCESS,
+WRONG_INPUT
+}
+
+table SVLogin
+{
+response:LoginStatus;
 }
 
 table CLFindGame
@@ -48,6 +73,10 @@ union MSEvents
 {
   CLPing,
   MSPing,
+  CLRegister,
+  SVRegister,
+  CLLogin,
+  SVLogin,
   CLFindGame,
   SVFindGame,
   MSGameFound
