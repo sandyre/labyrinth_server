@@ -94,9 +94,8 @@ enum HeroType {
   HeroType_WATER_ELEMENTALIST = 1,
   HeroType_FIRE_ELEMENTALIST = 2,
   HeroType_EARTH_ELEMENTALIST = 3,
-  HeroType_RANDOM = 4,
   HeroType_MIN = HeroType_AIR_ELEMENTALIST,
-  HeroType_MAX = HeroType_RANDOM
+  HeroType_MAX = HeroType_EARTH_ELEMENTALIST
 };
 
 inline const char **EnumNamesHeroType() {
@@ -105,7 +104,6 @@ inline const char **EnumNamesHeroType() {
     "WATER_ELEMENTALIST",
     "FIRE_ELEMENTALIST",
     "EARTH_ELEMENTALIST",
-    "RANDOM",
     nullptr
   };
   return names;

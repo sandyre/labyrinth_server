@@ -25,7 +25,7 @@ public:
         WATER_ELEMENTALIST = 0x01,
         FIRE_ELEMENTALIST = 0x02,
         EARTH_ELEMENTALIST = 0x03,
-        RANDOM  = 0x04
+        LAST_HERO = 0x03
     };
     enum class State
     {
@@ -46,7 +46,7 @@ public:
 public:
     Hero()
     {
-        m_eHero = Hero::Type::RANDOM;
+        m_eHero = Hero::Type::FIRST_HERO;
         m_nStatus = Status::MOVABLE | Status::DUELABLE;
         
         m_nDamage = m_nHealth = m_nMHealth = 0;

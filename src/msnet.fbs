@@ -1,11 +1,11 @@
-namespace MSNet;
+namespace MasterEvent;
 
 table CLPing
 {
 
 }
 
-table MSPing
+table SVPing
 {
 
 }
@@ -64,27 +64,27 @@ player_uid:uint;
 response:ConnectionResponse;
 }
 
-table MSGameFound
+table SVGameFound
 {
   gs_port:uint;
 }
 
-union MSEvents
+union Messages
 {
   CLPing,
-  MSPing,
+  SVPing,
   CLRegister,
   SVRegister,
   CLLogin,
   SVLogin,
   CLFindGame,
   SVFindGame,
-  MSGameFound
+  SVGameFound
 }
 
-table MSEvent
+table Message
 {
-  event:MSEvents;
+  message:Messages;
 }
 
-root_type MSEvent;
+root_type Message;

@@ -34,8 +34,7 @@ public:
     m_nUID(uid),
     m_stSocketAddr(addr),
     m_sNickname(nickname),
-    
-    m_eHeroType(Hero::Type::RANDOM),
+    m_eHeroType(Hero::Type::FIRST_HERO),
     m_eState(Player::State::PRE_UNDEFINED)
     {
         

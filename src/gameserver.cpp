@@ -323,7 +323,7 @@ GameServer::EventLoop()
         }
         else // sleep and update gameworld overwise (50 updates ps)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            std::this_thread::sleep_for(20ms);
             event_received = false;
         }
         
