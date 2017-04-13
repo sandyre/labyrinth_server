@@ -13,4 +13,6 @@ int main(int argc, const char * argv[])
     MasterServer server;
     server.init(1930);
     server.run();
+    
+    return 0;
 }

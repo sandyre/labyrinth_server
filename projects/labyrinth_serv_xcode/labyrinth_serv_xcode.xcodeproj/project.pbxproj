@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1F1651BB1E9E6D5A00F1181C /* libPocoDataMySQL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */; };
+		1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */; };
 		1F2FC7901E6B984000679230 /* hero.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F2FC78E1E6B984000679230 /* hero.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
+		1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */; };
 		1F9203D21E5C933F006DF25E /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D01E5C933F006DF25E /* monster.cpp */; };
 		1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D61E60B637006DF25E /* logsystem.cpp */; };
 		1F9203E91E63BD8B006DF25E /* libPocoDataSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */; };
@@ -35,6 +38,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataMySQL.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataMySQL.a; sourceTree = "<group>"; };
+		1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libmysqlcppconn-static.a"; path = "labyrinth_serv_xcode.xcodeproj/libmysqlcppconn-static.a"; sourceTree = "<group>"; };
 		1F2FC78E1E6B984000679230 /* hero.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hero.cpp; path = ../../../src/hero.cpp; sourceTree = "<group>"; };
 		1F2FC78F1E6B984000679230 /* hero.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hero.hpp; path = ../../../src/hero.hpp; sourceTree = "<group>"; };
 		1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = msnet.fbs; path = ../../../src/msnet.fbs; sourceTree = "<group>"; };
@@ -42,6 +47,8 @@
 		1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gsnet_generated.h; path = ../../../src/gsnet_generated.h; sourceTree = "<group>"; };
 		1F40F9691E49E13C003861AF /* libflatbuffers.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflatbuffers.a; path = labyrinth_serv_xcode.xcodeproj/libflatbuffers.a; sourceTree = "<group>"; };
 		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
+		1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mailservice.cpp; path = ../../../src/mailservice.cpp; sourceTree = "<group>"; };
+		1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mailservice.hpp; path = ../../../src/mailservice.hpp; sourceTree = "<group>"; };
 		1F9203D01E5C933F006DF25E /* monster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = monster.cpp; path = ../../../src/monster.cpp; sourceTree = "<group>"; };
 		1F9203D11E5C933F006DF25E /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/monster.hpp; sourceTree = "<group>"; };
 		1F9203D61E60B637006DF25E /* logsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logsystem.cpp; path = ../../../src/logsystem.cpp; sourceTree = "<group>"; };
@@ -72,6 +79,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */,
+				1F1651BB1E9E6D5A00F1181C /* libPocoDataMySQL.a in Frameworks */,
 				1F9203ED1E63BDA5006DF25E /* libPocoNet.a in Frameworks */,
 				1F9203E91E63BD8B006DF25E /* libPocoDataSQLite.a in Frameworks */,
 				1F9203EA1E63BD8B006DF25E /* libPocoData.a in Frameworks */,
@@ -126,6 +135,8 @@
 				1F9203D71E60B637006DF25E /* logsystem.hpp */,
 				1F2FC78E1E6B984000679230 /* hero.cpp */,
 				1F2FC78F1E6B984000679230 /* hero.hpp */,
+				1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */,
+				1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */,
 			);
 			path = labyrinth_serv_xcode;
 			sourceTree = "<group>";
@@ -133,6 +144,8 @@
 		1FEC14571E4527E9004EC380 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */,
+				1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */,
 				1F9203EC1E63BDA5006DF25E /* libPocoNet.a */,
 				1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */,
 				1F9203E71E63BD8B006DF25E /* libPocoData.a */,
@@ -204,6 +217,7 @@
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
 				1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */,
 				1F9203D21E5C933F006DF25E /* monster.cpp in Sources */,
+				1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */,
 				1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */,
 				1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */,
 				1FEC14561E450ED5004EC380 /* main.cpp in Sources */,
@@ -218,7 +232,7 @@
 		1FEC142A1E450E9A004EC380 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -260,7 +274,7 @@
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Foundation/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/include",
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/SQLite/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/MySQL/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -272,7 +286,7 @@
 		1FEC142B1E450E9A004EC380 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -308,7 +322,7 @@
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Foundation/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/flatbuffers/include",
 					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/include",
-					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/SQLite/include",
+					"/Users/aleksandr/gamedev/labyrinth_server/third-party/poco-1.7.8-all/Data/MySQL/include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;

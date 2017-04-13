@@ -12,15 +12,15 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <Poco/Data/MySQL/Connector.h>
+#include <Poco/Data/MySQL/MySQLException.h>
 #include <Poco/Net/MailMessage.h>
 #include <Poco/Net/SMTPClientSession.h>
-#include <Poco/Data/SQLite/Connector.h>
 #include "msnet_generated.h"
 
 using namespace MasterEvent;
 using namespace Poco::Data::Keywords;
 using namespace std::chrono_literals;
-using Poco::Data::Session;
 using Poco::Data::Statement;
 
 MasterServer::MasterServer() :
@@ -30,6 +30,7 @@ m_oDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
                                          std::numeric_limits<int32_t>::max())),
 m_bCommutationNeeded(false)
 {
+    
 }
 
 MasterServer::~MasterServer()
@@ -52,11 +53,11 @@ MasterServer::init(uint32_t Port)
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
+        // Init Net
     m_oMsgBuilder << "Initializing network...";
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
-        // Init Net
     try
     {
         Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
@@ -90,45 +91,52 @@ MasterServer::init(uint32_t Port)
         }
     }
     
-    m_oMsgBuilder << "Initializing mail service...";
+        // Init gameservers threadpool
+    m_oMsgBuilder << "Initializing gameservers threadpool...";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
+    m_oThreadPool = std::make_unique<Poco::ThreadPool>(10, // min
+                                                       40, // max
+                                                       120, // idle time
+                                                       0); // stack size
+    m_oMsgBuilder << "DONE. Threads available: " << m_oThreadPool->available();
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
         // Init mail
-    try
+    m_oMsgBuilder << "Initializing mail service...";
+    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
+    
+    m_oMailService.init();
+    
+    if(m_oMailService.GetState() == MailService::ESTABLISHED)
     {
-        m_poMailClient = std::make_unique<Poco::Net::SMTPClientSession>("smtp.timeweb.ru",
-                                                                        25);
-        
-        m_poMailClient->login(Poco::Net::SMTPClientSession::LoginMethod::AUTH_LOGIN,
-                              "noreply-labyrinth@hate-red.com",
-                              "VdAysb4A");
-        
         m_nSystemStatus |= SystemStatus::EMAIL_SYSTEM_ACTIVE;
         m_oMsgBuilder << "DONE";
         m_oLogSys.Write(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
-    catch(std::exception& e)
+    else
     {
         m_oMsgBuilder << "FAILED";
         m_oLogSys.Write(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     
-    
+        // Init DB
     m_oMsgBuilder << "Initializing database service...";
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
-        // Init DB
     try
     {
-        Poco::Data::SQLite::Connector::registerConnector(),
-        m_poDBSession = std::make_unique<Poco::Data::Session>("SQLite",
-                                                              "labyrinth.db");
-        
-        m_nSystemStatus |= SystemStatus::EMAIL_SYSTEM_ACTIVE;
+        using namespace Poco::Data;
+        MySQL::Connector::registerConnector();
+        std::string con_params = "host=127.0.0.1;user=masterserver;db=labyrinth;password=2(3oOS1E;compress=true;auto-reconnect=true";
+        m_poDBSession = std::make_unique<Session>("MySQL", con_params);
+
+        m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
         m_oMsgBuilder << "DONE";
         m_oLogSys.Write(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
@@ -140,7 +148,7 @@ MasterServer::init(uint32_t Port)
         m_oMsgBuilder.str("");
     }
     
-    if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & m_nSystemStatus) &&
+    if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & m_nSystemStatus) ||
        !(SystemStatus::DATABASE_SYSTEM_ACTIVE & m_nSystemStatus))
     {
         m_oMsgBuilder << "Critical systems failed to start, aborting";
@@ -154,38 +162,26 @@ MasterServer::init(uint32_t Port)
     m_oMsgBuilder << "MasterServer started running";
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
+    
+        // Advanced init - freement timer
+    m_poFreementTimer = std::make_unique<Poco::Timer>(0, 30000);
+    Poco::TimerCallback<MasterServer> free_callback(*this, &MasterServer::FreeResourcesAndSaveResults);
+    m_poFreementTimer->start(free_callback);
+    
+        // MailService timer
+    m_poMailTimer = std::make_unique<Poco::Timer>(0, 10000);
+    Poco::TimerCallback<MailService> mail_callback(m_oMailService, &MailService::run);
+    m_poMailTimer->start(mail_callback);
 }
 
 void
 MasterServer::run()
 {
-    auto tick_start = std::chrono::steady_clock::now();
-    auto tick_end = std::chrono::steady_clock::now();
-    auto tick_duration = std::chrono::duration_cast<std::chrono::microseconds>(tick_end - tick_start);
-    
     while(true)
     {
-        tick_start = std::chrono::steady_clock::now();
-        while(m_oSocket.available())
-        {
-            ProcessIncomingMessage();
-            if(m_bCommutationNeeded)
-            {
-                CommutatePlayers();
-            }
-        }
-        std::this_thread::sleep_for(1ms);
-        
-        if(m_usFreementTimer > 30s)
-        {
-            m_usFreementTimer = 0us;
-            FreeResourcesAndSaveResults();
-        }
-        
-        tick_end = std::chrono::steady_clock::now();
-        tick_duration = std::chrono::duration_cast<std::chrono::microseconds>(tick_end - tick_start);
-        
-        m_usFreementTimer += tick_duration;
+        ProcessIncomingMessage();
+        if(m_bCommutationNeeded)
+            CommutatePlayers();
     }
 }
 
@@ -221,9 +217,6 @@ MasterServer::ProcessIncomingMessage()
             std::string email(registr->email()->c_str());
             std::string password(registr->password()->c_str());
             
-            std::hash<std::string> hash_fn;
-            size_t email_hash = hash_fn(email);
-            
                 // Check that player isnt registered already
             Poco::Data::Statement select(*m_poDBSession);
             select << "SELECT COUNT(*) FROM players WHERE email=?", into(mail_presented), use(email), now;
@@ -233,8 +226,7 @@ MasterServer::ProcessIncomingMessage()
             {
                     // Add to DB
                 Poco::Data::Statement insert(*m_poDBSession);
-                insert << "INSERT INTO PLAYERS(uid, email, password) VALUES(?, ?, ?)", use(email_hash), use(email), use(password);
-                insert.execute();
+                insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(email), use(password), now;
                 
                     // Send email notification
                 if(m_nSystemStatus & SystemStatus::EMAIL_SYSTEM_ACTIVE)
@@ -251,7 +243,8 @@ MasterServer::ProcessIncomingMessage()
                     mail << "Your password: " << password << "\n";
                     mail << "Best regards, \nhate-red";
                     notification.setContent(mail.str());
-                    m_poMailClient->sendMessage(notification);
+                    
+                    m_oMailService.PushMessage(notification);
                 }
                 
                     // Send response to client
@@ -296,7 +289,7 @@ MasterServer::ProcessIncomingMessage()
             
                 // Check that player isnt registered already
             Poco::Data::Statement select(*m_poDBSession);
-            select << "SELECT PASSWORD FROM PLAYERS WHERE email=?", into(stored_pass), use(email), now;
+            select << "SELECT PASSWORD FROM labyrinth.PLAYERS WHERE email=?", into(stored_pass), use(email), now;
             
             if(!stored_pass.isNull())
             {
@@ -420,11 +413,13 @@ MasterServer::ProcessIncomingMessage()
 }
 
 void
-MasterServer::FreeResourcesAndSaveResults()
+MasterServer::FreeResourcesAndSaveResults(Poco::Timer& timer)
 {
-    m_oMsgBuilder << "Started gameservers freement... ";
+    m_oMsgBuilder << "Cleanup... ";
     
         // Free resources of finished servers
+    std::lock_guard<std::mutex> lock(m_oGSMutex);
+    
     auto servers_freed = 0;
     m_aGameServers.erase(
                          std::remove_if(m_aGameServers.begin(),
@@ -453,6 +448,8 @@ MasterServer::CommutatePlayers()
         // if there are some players, check that there is a server for them
     if(m_aPlayersPool.size() != 0)
     {
+        std::lock_guard<std::mutex> lock(m_oGSMutex);
+        
         auto servers_available = std::count_if(m_aGameServers.begin(),
                                                m_aGameServers.end(),
                                                [this](std::unique_ptr<GameServer> const& gs)
@@ -471,11 +468,14 @@ MasterServer::CommutatePlayers()
             config.nRandomSeed = m_oDistr(m_oGenerator);
             config.nPort = nGSPort;
             
-            m_aGameServers.push_back(std::make_unique<GameServer>(config));
+            m_aGameServers.emplace_back(std::make_unique<GameServer>(config));
+            m_oThreadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
+                                             *m_aGameServers.back());
         }
     }
     
         // FIXME: on a big amount of gameservers, may not run correctly
+    std::lock_guard<std::mutex> lock(m_oGSMutex);
     for(auto& gs : m_aGameServers)
     {
         if(m_aPlayersPool.size() == 0) // optimization (no need to loop more through gss)

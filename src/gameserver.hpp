@@ -10,6 +10,7 @@
 #define gameserver_hpp
 
 #include <Poco/Net/DatagramSocket.h>
+#include <Poco/Runnable.h>
 #include "player.hpp"
 #include "gameworld.hpp"
 #include "logsystem.hpp"
@@ -21,10 +22,9 @@
 #include <sstream>
 #include <memory>
 
-using std::chrono::high_resolution_clock;
 using std::chrono::steady_clock;
 
-class GameServer
+class GameServer : public Poco::Runnable
 {
 public:
     enum class State
@@ -46,10 +46,13 @@ public:
     GameServer(const Configuration&);
     ~GameServer();
     
+    virtual void run();
+    
     GameServer::State   GetState() const;
     GameServer::Configuration GetConfig() const;
 private:
-    void    EventLoop();
+    void    shutdown();
+    
     void    SendToOne(uint32_t, uint8_t *, size_t);
     void    SendToAll(uint8_t *, size_t);
     
@@ -58,7 +61,6 @@ private:
     GameServer::State   m_eState;
     GameServer::Configuration m_stConfig;
     std::string         m_sServerName;
-    std::thread         m_oThread;
     Poco::Net::DatagramSocket m_oSocket;
     steady_clock::time_point          m_nStartTime;
     std::chrono::milliseconds         m_msPerUpdate;

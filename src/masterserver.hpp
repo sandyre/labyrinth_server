@@ -15,17 +15,20 @@
 #include <deque>
 #include <random>
 #include <memory>
+#include <mutex>
 #include <sstream>
+#include <Poco/ThreadPool.h>
 #include <Poco/Timer.h>
 #include <Poco/Net/MailMessage.h>
 #include <Poco/Net/SMTPClientSession.h>
 #include <Poco/Net/DatagramSocket.h>
-#include <Poco/Data/Session.h>
+#include <Poco/Data/SessionFactory.h>
 #include "flatbuffers/flatbuffers.h"
 
 #include "player.hpp"
 #include "gameserver.hpp"
 #include "logsystem.hpp"
+#include "mailservice.hpp"
 
 class MasterServer
 {
@@ -42,27 +45,34 @@ public:
     ~MasterServer();
     
     void    init(uint32_t Port);
-    void    run();
+    
+    virtual void run();
+    
 protected:
     void    ProcessIncomingMessage();
     void    CommutatePlayers();
-    void    FreeResourcesAndSaveResults();
-    
+    void    FreeResourcesAndSaveResults(Poco::Timer&);
     
     std::mt19937                    m_oGenerator;
     std::uniform_int_distribution<> m_oDistr;
     
     std::queue<uint32_t>      m_qAvailablePorts;
     std::deque<Player>        m_aPlayersPool;
-    std::vector<std::unique_ptr<GameServer>>  m_aGameServers;
     
     uint32_t    m_nSystemStatus;
     
+        // Gameservers
+    std::unique_ptr<Poco::ThreadPool>    m_oThreadPool;
+    std::mutex m_oGSMutex;
+    std::vector<std::unique_ptr<GameServer>>  m_aGameServers;
+    
         // System timers and flags
     std::unique_ptr<Poco::Timer>    m_poFreementTimer;
-    Poco::Timer m_oFreementTimer;
     bool        m_bCommutationNeeded;
-    std::chrono::microseconds m_usFreementTimer;
+    
+        // MailService and timer for it
+    MailService m_oMailService;
+    std::unique_ptr<Poco::Timer>    m_poMailTimer;
     
         // Network
     Poco::Net::DatagramSocket m_oSocket;
@@ -76,7 +86,7 @@ protected:
         // E-MAIL
     std::unique_ptr<Poco::Net::SMTPClientSession> m_poMailClient;
     
-        // Players database
+        // Labyrinth database
     std::unique_ptr<Poco::Data::Session> m_poDBSession;
 };
 
