@@ -437,7 +437,7 @@ MasterServer::FreeResourcesAndSaveResults(Poco::Timer& timer)
                          m_aGameServers.end()
                          );
     
-    m_oMsgBuilder << servers_freed << " servers freed";
+    m_oMsgBuilder << servers_freed << " servers freed. " << m_aGameServers.size() << " remains.";
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
 }

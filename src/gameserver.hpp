@@ -53,6 +53,11 @@ public:
 private:
     void    shutdown();
     
+    void    lobby_forming_stage();
+    void    hero_picking_stage();
+    void    world_generation_stage();
+    void    running_game_stage();
+    
     void    SendToOne(uint32_t, uint8_t *, size_t);
     void    SendToAll(uint8_t *, size_t);
     

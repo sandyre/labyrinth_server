@@ -128,23 +128,6 @@ GameWorld::initial_spawn()
     m_oBuilder.Finish(gs_event);
     PushEventAndClear();
     
-        // make swamp
-    pos = GetRandomPosition();
-    Construction swamp = m_oConstrFactory.createConstruction(Construction::Type::SWAMP);
-    swamp.stPosition = pos;
-    m_aConstructions.push_back(swamp);
-    
-    gs_constr = CreateSVSpawnConstr(m_oBuilder,
-                                    swamp.nUID,
-                                    ConstrType_SWAMP,
-                                    swamp.stPosition.x,
-                                    swamp.stPosition.y);
-    gs_event = CreateMessage(m_oBuilder,
-                           Events_SVSpawnConstr,
-                           gs_constr.Union());
-    m_oBuilder.Finish(gs_event);
-    PushEventAndClear();
-    
         // make a monster
     pos = GetRandomPosition();
     Monster monster = m_oMonsterFactory.createMonster();
