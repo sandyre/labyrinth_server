@@ -13,6 +13,8 @@
 #include <memory>
 #include "gsnet_generated.h"
 
+#include "gamelogic/gamemap.hpp"
+
 using namespace GameEvent;
 using namespace std::chrono;
 
@@ -282,18 +284,24 @@ GameServer::world_generation_stage()
     
     while(m_eState == State::GENERATING_WORLD)
     {
-        GameWorld::Settings sets;
+        GameMap::Configuration sets;
         sets.nSeed = m_stConfig.nRandomSeed;
-        sets.stGMSettings.nSeed = m_stConfig.nRandomSeed;
-        sets.stGMSettings.nMapSize = 3;
-        sets.stGMSettings.nRoomSize = 10;
-        m_pGameWorld = std::make_unique<GameWorld>(sets, m_aPlayers);
-        m_pGameWorld->generate_map();
-        m_pGameWorld->initial_spawn(); // spawns players
+        sets.nSeed = m_stConfig.nRandomSeed;
+        sets.nMapSize = 3;
+        sets.nRoomSize = 10;
+        m_pGameWorld = std::make_unique<GameWorld>();
+        m_pGameWorld->CreateGameMap(sets);
+        
+        for(int i = 0; i < m_aPlayers.size(); ++i)
+        {
+            m_pGameWorld->AddPlayer(m_aPlayers[i]);
+        }
+        
+        m_pGameWorld->InitialSpawn();
         
         auto gs_gen_map = CreateSVGenerateMap(m_oBuilder,
-                                              sets.stGMSettings.nMapSize,
-                                              sets.stGMSettings.nRoomSize,
+                                              sets.nMapSize,
+                                              sets.nRoomSize,
                                               sets.nSeed);
         auto gs_event = CreateMessage(m_oBuilder,
                                       Events_SVGenerateMap,
@@ -354,19 +362,19 @@ GameServer::running_game_stage()
         bool is_event_valid = false;
         size_t bytes_read = 0;
         
-        auto& out_events = m_pGameWorld->GetOutEvents();
+        auto& out_events = m_pGameWorld->GetOutgoingEvents();
         while(out_events.size())
         {
             auto event = out_events.front();
             SendToAll(event.data(), event.size());
             out_events.pop();
         }
-        
-            // if game ended
-        if(m_pGameWorld->GetState() == GameWorld::State::FINISHED)
-        {
-            m_eState = GameServer::State::FINISHED;
-        }
+//
+//            // if game ended
+//        if(m_pGameWorld->GetState() == GameWorld::State::FINISHED)
+//        {
+//            m_eState = GameServer::State::FINISHED;
+//        }
         
             // if event received, process it
 //        bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
@@ -457,7 +465,7 @@ GameServer::running_game_stage()
             
             if(is_event_valid) // add received event to the gameworld
             {
-                auto& in_events = m_pGameWorld->GetInEvents();
+                auto& in_events = m_pGameWorld->GetIncomingEvents();
                 std::vector<uint8_t> event(buf,
                                            buf + bytes_read);
                 in_events.emplace(event);

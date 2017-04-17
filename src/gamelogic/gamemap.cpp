@@ -1,15 +1,17 @@
 //
 //  gamemap.cpp
-//  labyrinth_server
+//  labyrinth_serv_xcode
 //
-//  Created by Aleksandr Borzikh on 02.02.17.
-//  Copyright © 2017 sandyre. All rights reserved.
+//  Created by Aleksandr Borzikh on 15.04.17.
+//  Copyright © 2017 hate-red. All rights reserved.
 //
 
 #include "gamemap.hpp"
 
 #include <random>
-#include <stack>
+#include "mapblock.hpp"
+#include "globals.h"
+#include "gameworld.hpp"
 
 GameMap::GameMap()
 {
@@ -21,13 +23,15 @@ GameMap::~GameMap()
     
 }
 
-GameMap::GameMap(const GameMap::Settings& settings)
+void
+GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
 {
-    m_stSettings = settings;
-    m_oRandGen = std::mt19937(m_stSettings.nSeed);
-    m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
-    m_oMap.resize(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2,
-                  std::vector<MapBlockType>(m_stSettings.nMapSize*m_stSettings.nRoomSize + 2, MapBlockType::NOBLOCK));
+    auto m_oRandGen = std::mt19937(settings.nSeed);
+    auto m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
+    
+    std::vector<std::vector<MapBlockType>> tmp_map(settings.nMapSize * settings.nRoomSize + 2,
+                                                   std::vector<MapBlockType>(settings.nMapSize * settings.nRoomSize + 2,
+                                                                             MapBlockType::NOBLOCK));
     
     struct Cell {
         Cell(uint16_t _x, uint16_t _y, MapBlockType _type) {
@@ -46,18 +50,18 @@ GameMap::GameMap(const GameMap::Settings& settings)
         std::vector<std::vector<MapBlockType>> cells;
     };
     
-    std::vector<std::vector<Room>> rooms(m_stSettings.nMapSize, std::vector<Room>(m_stSettings.nMapSize));
+    std::vector<std::vector<Room>> rooms(settings.nMapSize, std::vector<Room>(settings.nMapSize));
     
     bool red = false;
-    int n = m_stSettings.nRoomSize;
+    int n = settings.nRoomSize;
     
-    for (size_t i = 0; i < m_stSettings.nMapSize; i++)
+    for (size_t i = 0; i < settings.nMapSize; i++)
     {
-        if (m_stSettings.nMapSize % 2 != 1) {
+        if (settings.nMapSize % 2 != 1) {
             red = !red;
         }
         
-        for (size_t j = 0; j < m_stSettings.nMapSize; j++)
+        for (size_t j = 0; j < settings.nMapSize; j++)
         {
             rooms[i][j].cells.resize(n, std::vector<MapBlockType>(n, MapBlockType::WALL));
             
@@ -187,36 +191,70 @@ GameMap::GameMap(const GameMap::Settings& settings)
             {
                 for (size_t p = 0; p < n; p++)
                 {
-                    m_oMap[i* n + k + 1][j * n + p + 1] = rooms[i][j].cells[p][k];
+                    tmp_map[i* n + k + 1][j * n + p + 1] = rooms[i][j].cells[p][k];
                 }
             }
         }
     }
-    int size = m_stSettings.nMapSize * m_stSettings.nRoomSize + 2;
+    int size = settings.nMapSize * settings.nRoomSize + 2;
     for (size_t i = 0; i < size; i++)
     {
-        m_oMap[i][0] = MapBlockType::BORDER;
-        m_oMap[i][size - 1] = MapBlockType::BORDER;
-        m_oMap[0][i] = MapBlockType::BORDER;
-        m_oMap[size - 1][i] = MapBlockType::BORDER;
+        tmp_map[i][0] = MapBlockType::BORDER;
+        tmp_map[i][size - 1] = MapBlockType::BORDER;
+        tmp_map[0][i] = MapBlockType::BORDER;
+        tmp_map[size - 1][i] = MapBlockType::BORDER;
+    }
+    
+        // create floor
+    uint32_t current_block_uid = 1;
+    for(auto i = size-1; i >= 0; --i)
+    {
+        for(auto j = size-1; j >= 0; --j)
+        {
+            auto block = new NoBlock();
+            
+            Point2 log_coords(i,j);
+            block->SetGameWorld(world);
+            block->SetUID(current_block_uid);
+            block->SetLogicalPosition(log_coords);
+            
+            world->m_apoObjects.emplace_back(block);
+            
+            ++current_block_uid;
+        }
+    }
+    
+    for(auto i = size-1; i >= 0; --i)
+    {
+        for(auto j = size-1; j >= 0; --j)
+        {
+            if(tmp_map[i][j] == MapBlockType::WALL)
+            {
+                auto block = new WallBlock();
+                
+                Point2 log_coords(i,j);
+                block->SetGameWorld(world);
+                block->SetUID(current_block_uid);
+                block->SetLogicalPosition(log_coords);
+                
+                world->m_apoObjects.emplace_back(block);
+                
+                ++current_block_uid;
+            }
+            else if(tmp_map[i][j] == MapBlockType::BORDER)
+            {
+                auto block = new BorderBlock();
+                
+                Point2 log_coords(i,j);
+                block->SetGameWorld(world);
+                block->SetUID(current_block_uid);
+                block->SetLogicalPosition(log_coords);
+                
+                world->m_apoObjects.emplace_back(block);
+                
+                ++current_block_uid;
+            }
+        }
     }
 }
 
-const GameMap::Map&
-GameMap::GetMap() const
-{
-    return m_oMap;
-}
-
-Point2
-GameMap::GetRandomPosition()
-{
-    Point2 position;
-    
-    do
-    {
-        position.x = (int)m_oRandDistr(m_oRandGen) % m_oMap.size();
-        position.y = (int)m_oRandDistr(m_oRandGen) % m_oMap[position.x].size();
-    } while(m_oMap[position.x][position.y] != GameMap::MapBlockType::NOBLOCK);
-    return position;
-}

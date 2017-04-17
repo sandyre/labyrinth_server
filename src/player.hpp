@@ -13,7 +13,6 @@
 #include <vector>
 #include <cassert>
 
-#include "hero.hpp"
 #include "globals.h"
 
 class Player
@@ -34,7 +33,7 @@ public:
     m_nUID(uid),
     m_stSocketAddr(addr),
     m_sNickname(nickname),
-    m_eHeroType(Hero::Type::FIRST_HERO),
+    m_nHeroIndex(0),
     m_eState(Player::State::PRE_UNDEFINED)
     {
         
@@ -60,11 +59,6 @@ public:
         return m_sNickname;
     }
     
-    Hero *  operator()(int i = 0)
-    {
-        return m_pHero.get();
-    }
-    
     const Poco::Net::SocketAddress&   GetAddress() const
     {
         return m_stSocketAddr;
@@ -75,31 +69,13 @@ public:
         m_stSocketAddr = addr;
     }
     
-    void    SetHeroPicked(Hero::Type hero)
+    int32_t GetHeroPicked() const
     {
-        m_eHeroType = hero;
+        return m_nHeroIndex;
     }
-    
-    void    CreateHero()
+    void    SetHeroPicked(int32_t i)
     {
-        switch(m_eHeroType)
-        {
-            case Hero::Type::AIR_ELEMENTALIST:
-                m_pHero = std::make_unique<AirElementalist>();
-                break;
-            case Hero::Type::EARTH_ELEMENTALIST:
-                m_pHero = std::make_unique<EarthElementalist>();
-                break;
-            case Hero::Type::FIRE_ELEMENTALIST:
-                m_pHero = std::make_unique<FireElementalist>();
-                break;
-            case Hero::Type::WATER_ELEMENTALIST:
-                m_pHero = std::make_unique<WaterElementalist>();
-                break;
-            default:
-                assert(false);
-                break;
-        }
+        m_nHeroIndex = i;
     }
 protected:
     Player::State               m_eState;
@@ -107,8 +83,7 @@ protected:
     std::string                 m_sNickname;
     Poco::Net::SocketAddress    m_stSocketAddr;
     
-    Hero::Type                  m_eHeroType;
-    std::unique_ptr<Hero>       m_pHero;
+    int32_t                     m_nHeroIndex;
 };
 
 #endif /* player_hpp */

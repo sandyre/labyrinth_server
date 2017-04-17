@@ -9,18 +9,27 @@
 /* Begin PBXBuildFile section */
 		1F1651BB1E9E6D5A00F1181C /* libPocoDataMySQL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */; };
 		1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */; };
-		1F2FC7901E6B984000679230 /* hero.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F2FC78E1E6B984000679230 /* hero.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */; };
-		1F9203D21E5C933F006DF25E /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D01E5C933F006DF25E /* monster.cpp */; };
+		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
+		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
+		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
+		1F5FFBD71EA280C100542178 /* construction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD51EA280C100542178 /* construction.cpp */; };
+		1F5FFBDA1EA280ED00542178 /* mapblock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD81EA280ED00542178 /* mapblock.cpp */; };
+		1F5FFBDD1EA2810D00542178 /* item.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBDB1EA2810D00542178 /* item.cpp */; };
+		1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBDF1EA281EC00542178 /* unit.cpp */; };
+		1F5FFBE41EA2821400542178 /* hero.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE21EA2821400542178 /* hero.cpp */; };
+		1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE51EA2825A00542178 /* monster.cpp */; };
+		1F5FFBEA1EA2829700542178 /* air_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE81EA2829700542178 /* air_elementalist.cpp */; };
+		1F5FFBED1EA282C300542178 /* fire_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */; };
+		1F5FFBF01EA282F000542178 /* earth_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */; };
+		1F5FFBF31EA2830C00542178 /* water_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */; };
 		1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D61E60B637006DF25E /* logsystem.cpp */; };
 		1F9203E91E63BD8B006DF25E /* libPocoDataSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */; };
 		1F9203EA1E63BD8B006DF25E /* libPocoData.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E71E63BD8B006DF25E /* libPocoData.a */; };
 		1F9203EB1E63BD8B006DF25E /* libPocoFoundation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E81E63BD8B006DF25E /* libPocoFoundation.a */; };
 		1F9203ED1E63BDA5006DF25E /* libPocoNet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203EC1E63BDA5006DF25E /* libPocoNet.a */; };
 		1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14431E450ED5004EC380 /* gameserver.cpp */; };
-		1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14451E450ED5004EC380 /* gameworld.cpp */; };
-		1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144A1E450ED5004EC380 /* gamemap.cpp */; };
 		1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144C1E450ED5004EC380 /* masterserver.cpp */; };
 		1FEC14561E450ED5004EC380 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14501E450ED5004EC380 /* main.cpp */; };
 /* End PBXBuildFile section */
@@ -40,8 +49,6 @@
 /* Begin PBXFileReference section */
 		1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataMySQL.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataMySQL.a; sourceTree = "<group>"; };
 		1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libmysqlcppconn-static.a"; path = "labyrinth_serv_xcode.xcodeproj/libmysqlcppconn-static.a"; sourceTree = "<group>"; };
-		1F2FC78E1E6B984000679230 /* hero.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hero.cpp; path = ../../../src/hero.cpp; sourceTree = "<group>"; };
-		1F2FC78F1E6B984000679230 /* hero.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hero.hpp; path = ../../../src/hero.hpp; sourceTree = "<group>"; };
 		1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = msnet.fbs; path = ../../../src/msnet.fbs; sourceTree = "<group>"; };
 		1F3E69BF1E4A1D0A00A102C1 /* gsnet.fbs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gsnet.fbs; path = ../../../src/gsnet.fbs; sourceTree = "<group>"; };
 		1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gsnet_generated.h; path = ../../../src/gsnet_generated.h; sourceTree = "<group>"; };
@@ -49,8 +56,32 @@
 		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
 		1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mailservice.cpp; path = ../../../src/mailservice.cpp; sourceTree = "<group>"; };
 		1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mailservice.hpp; path = ../../../src/mailservice.hpp; sourceTree = "<group>"; };
-		1F9203D01E5C933F006DF25E /* monster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = monster.cpp; path = ../../../src/monster.cpp; sourceTree = "<group>"; };
-		1F9203D11E5C933F006DF25E /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/monster.hpp; sourceTree = "<group>"; };
+		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
+		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
+		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
+		1F5FFBCD1EA2801900542178 /* gameworld.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameworld.hpp; path = ../../../src/gamelogic/gameworld.hpp; sourceTree = "<group>"; };
+		1F5FFBD21EA2805E00542178 /* gamemap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gamemap.cpp; path = ../../../src/gamelogic/gamemap.cpp; sourceTree = "<group>"; };
+		1F5FFBD31EA2805E00542178 /* gamemap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gamemap.hpp; path = ../../../src/gamelogic/gamemap.hpp; sourceTree = "<group>"; };
+		1F5FFBD51EA280C100542178 /* construction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = construction.cpp; path = ../../../src/gamelogic/construction.cpp; sourceTree = "<group>"; };
+		1F5FFBD61EA280C100542178 /* construction.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = construction.hpp; path = ../../../src/gamelogic/construction.hpp; sourceTree = "<group>"; };
+		1F5FFBD81EA280ED00542178 /* mapblock.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mapblock.cpp; path = ../../../src/gamelogic/mapblock.cpp; sourceTree = "<group>"; };
+		1F5FFBD91EA280ED00542178 /* mapblock.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mapblock.hpp; path = ../../../src/gamelogic/mapblock.hpp; sourceTree = "<group>"; };
+		1F5FFBDB1EA2810D00542178 /* item.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = item.cpp; path = ../../../src/gamelogic/item.cpp; sourceTree = "<group>"; };
+		1F5FFBDC1EA2810D00542178 /* item.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = item.hpp; path = ../../../src/gamelogic/item.hpp; sourceTree = "<group>"; };
+		1F5FFBDF1EA281EC00542178 /* unit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = unit.cpp; path = ../../../src/gamelogic/units/unit.cpp; sourceTree = "<group>"; };
+		1F5FFBE01EA281EC00542178 /* unit.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = unit.hpp; path = ../../../src/gamelogic/units/unit.hpp; sourceTree = "<group>"; };
+		1F5FFBE21EA2821400542178 /* hero.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hero.cpp; path = ../../../src/gamelogic/units/hero.cpp; sourceTree = "<group>"; };
+		1F5FFBE31EA2821400542178 /* hero.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hero.hpp; path = ../../../src/gamelogic/units/hero.hpp; sourceTree = "<group>"; };
+		1F5FFBE51EA2825A00542178 /* monster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = monster.cpp; path = ../../../src/gamelogic/units/monster.cpp; sourceTree = "<group>"; };
+		1F5FFBE61EA2825A00542178 /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/gamelogic/units/monster.hpp; sourceTree = "<group>"; };
+		1F5FFBE81EA2829700542178 /* air_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = air_elementalist.cpp; path = ../../../src/gamelogic/units/air_elementalist.cpp; sourceTree = "<group>"; };
+		1F5FFBE91EA2829700542178 /* air_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = air_elementalist.hpp; path = ../../../src/gamelogic/units/air_elementalist.hpp; sourceTree = "<group>"; };
+		1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fire_elementalist.cpp; path = ../../../src/gamelogic/units/fire_elementalist.cpp; sourceTree = "<group>"; };
+		1F5FFBEC1EA282C300542178 /* fire_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fire_elementalist.hpp; path = ../../../src/gamelogic/units/fire_elementalist.hpp; sourceTree = "<group>"; };
+		1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = earth_elementalist.cpp; path = ../../../src/gamelogic/units/earth_elementalist.cpp; sourceTree = "<group>"; };
+		1F5FFBEF1EA282F000542178 /* earth_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = earth_elementalist.hpp; path = ../../../src/gamelogic/units/earth_elementalist.hpp; sourceTree = "<group>"; };
+		1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = water_elementalist.cpp; path = ../../../src/gamelogic/units/water_elementalist.cpp; sourceTree = "<group>"; };
+		1F5FFBF21EA2830C00542178 /* water_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = water_elementalist.hpp; path = ../../../src/gamelogic/units/water_elementalist.hpp; sourceTree = "<group>"; };
 		1F9203D61E60B637006DF25E /* logsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logsystem.cpp; path = ../../../src/logsystem.cpp; sourceTree = "<group>"; };
 		1F9203D71E60B637006DF25E /* logsystem.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logsystem.hpp; path = ../../../src/logsystem.hpp; sourceTree = "<group>"; };
 		1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataSQLite.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataSQLite.a; sourceTree = "<group>"; };
@@ -59,15 +90,9 @@
 		1F9203EC1E63BDA5006DF25E /* libPocoNet.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoNet.a; path = labyrinth_serv_xcode.xcodeproj/libPocoNet.a; sourceTree = "<group>"; };
 		1FEC14251E450E9A004EC380 /* labyrinth_serv_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = labyrinth_serv_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FEC14431E450ED5004EC380 /* gameserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameserver.cpp; path = ../../../src/gameserver.cpp; sourceTree = "<group>"; };
-		1FEC14451E450ED5004EC380 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gameworld.cpp; sourceTree = "<group>"; };
-		1FEC14461E450ED5004EC380 /* gameworld.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameworld.hpp; path = ../../../src/gameworld.hpp; sourceTree = "<group>"; };
 		1FEC14471E450ED5004EC380 /* gameserver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameserver.hpp; path = ../../../src/gameserver.hpp; sourceTree = "<group>"; };
-		1FEC14481E450ED5004EC380 /* item.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = item.hpp; path = ../../../src/item.hpp; sourceTree = "<group>"; };
 		1FEC14491E450ED5004EC380 /* player.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = player.hpp; path = ../../../src/player.hpp; sourceTree = "<group>"; };
-		1FEC144A1E450ED5004EC380 /* gamemap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gamemap.cpp; path = ../../../src/gamemap.cpp; sourceTree = "<group>"; };
-		1FEC144B1E450ED5004EC380 /* gamemap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gamemap.hpp; path = ../../../src/gamemap.hpp; sourceTree = "<group>"; };
 		1FEC144C1E450ED5004EC380 /* masterserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = masterserver.cpp; path = ../../../src/masterserver.cpp; sourceTree = "<group>"; };
-		1FEC144D1E450ED5004EC380 /* construction.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = construction.hpp; path = ../../../src/construction.hpp; sourceTree = "<group>"; };
 		1FEC144E1E450ED5004EC380 /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = globals.h; path = ../../../src/globals.h; sourceTree = "<group>"; };
 		1FEC14501E450ED5004EC380 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../../src/main.cpp; sourceTree = "<group>"; };
 		1FEC14511E450ED5004EC380 /* masterserver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = masterserver.hpp; path = ../../../src/masterserver.hpp; sourceTree = "<group>"; };
@@ -92,6 +117,47 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1F5FFBC81EA27F8C00542178 /* gamelogic */ = {
+			isa = PBXGroup;
+			children = (
+				1F5FFBDE1EA281C900542178 /* units */,
+				1F5FFBC91EA27FB400542178 /* gameobject.cpp */,
+				1F5FFBCA1EA27FB400542178 /* gameobject.hpp */,
+				1F5FFBCC1EA2801900542178 /* gameworld.cpp */,
+				1F5FFBCD1EA2801900542178 /* gameworld.hpp */,
+				1F5FFBD21EA2805E00542178 /* gamemap.cpp */,
+				1F5FFBD31EA2805E00542178 /* gamemap.hpp */,
+				1F5FFBD51EA280C100542178 /* construction.cpp */,
+				1F5FFBD61EA280C100542178 /* construction.hpp */,
+				1F5FFBD81EA280ED00542178 /* mapblock.cpp */,
+				1F5FFBD91EA280ED00542178 /* mapblock.hpp */,
+				1F5FFBDB1EA2810D00542178 /* item.cpp */,
+				1F5FFBDC1EA2810D00542178 /* item.hpp */,
+			);
+			name = gamelogic;
+			sourceTree = "<group>";
+		};
+		1F5FFBDE1EA281C900542178 /* units */ = {
+			isa = PBXGroup;
+			children = (
+				1F5FFBDF1EA281EC00542178 /* unit.cpp */,
+				1F5FFBE01EA281EC00542178 /* unit.hpp */,
+				1F5FFBE21EA2821400542178 /* hero.cpp */,
+				1F5FFBE31EA2821400542178 /* hero.hpp */,
+				1F5FFBE51EA2825A00542178 /* monster.cpp */,
+				1F5FFBE61EA2825A00542178 /* monster.hpp */,
+				1F5FFBE81EA2829700542178 /* air_elementalist.cpp */,
+				1F5FFBE91EA2829700542178 /* air_elementalist.hpp */,
+				1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */,
+				1F5FFBEC1EA282C300542178 /* fire_elementalist.hpp */,
+				1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */,
+				1F5FFBEF1EA282F000542178 /* earth_elementalist.hpp */,
+				1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */,
+				1F5FFBF21EA2830C00542178 /* water_elementalist.hpp */,
+			);
+			name = units;
+			sourceTree = "<group>";
+		};
 		1FEC141C1E450E9A004EC380 = {
 			isa = PBXGroup;
 			children = (
@@ -112,29 +178,20 @@
 		1FEC14271E450E9A004EC380 /* labyrinth_serv_xcode */ = {
 			isa = PBXGroup;
 			children = (
-				1FEC144D1E450ED5004EC380 /* construction.hpp */,
-				1FEC144A1E450ED5004EC380 /* gamemap.cpp */,
-				1FEC144B1E450ED5004EC380 /* gamemap.hpp */,
+				1F5FFBC81EA27F8C00542178 /* gamelogic */,
 				1FEC14431E450ED5004EC380 /* gameserver.cpp */,
 				1FEC14471E450ED5004EC380 /* gameserver.hpp */,
-				1FEC14451E450ED5004EC380 /* gameworld.cpp */,
-				1FEC14461E450ED5004EC380 /* gameworld.hpp */,
 				1FEC144E1E450ED5004EC380 /* globals.h */,
 				1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */,
 				1F3E69BF1E4A1D0A00A102C1 /* gsnet.fbs */,
-				1FEC14481E450ED5004EC380 /* item.hpp */,
 				1FEC14501E450ED5004EC380 /* main.cpp */,
 				1FEC144C1E450ED5004EC380 /* masterserver.cpp */,
 				1FEC14511E450ED5004EC380 /* masterserver.hpp */,
 				1F40F96D1E49F2A7003861AF /* msnet_generated.h */,
 				1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */,
 				1FEC14491E450ED5004EC380 /* player.hpp */,
-				1F9203D01E5C933F006DF25E /* monster.cpp */,
-				1F9203D11E5C933F006DF25E /* monster.hpp */,
 				1F9203D61E60B637006DF25E /* logsystem.cpp */,
 				1F9203D71E60B637006DF25E /* logsystem.hpp */,
-				1F2FC78E1E6B984000679230 /* hero.cpp */,
-				1F2FC78F1E6B984000679230 /* hero.hpp */,
 				1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */,
 				1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */,
 			);
@@ -214,15 +271,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F5FFBF31EA2830C00542178 /* water_elementalist.cpp in Sources */,
+				1F5FFBEA1EA2829700542178 /* air_elementalist.cpp in Sources */,
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
-				1FEC14531E450ED5004EC380 /* gameworld.cpp in Sources */,
-				1F9203D21E5C933F006DF25E /* monster.cpp in Sources */,
+				1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */,
+				1F5FFBDA1EA280ED00542178 /* mapblock.cpp in Sources */,
+				1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */,
+				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
 				1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */,
-				1FEC14541E450ED5004EC380 /* gamemap.cpp in Sources */,
+				1F5FFBF01EA282F000542178 /* earth_elementalist.cpp in Sources */,
+				1F5FFBED1EA282C300542178 /* fire_elementalist.cpp in Sources */,
+				1F5FFBE41EA2821400542178 /* hero.cpp in Sources */,
+				1F5FFBDD1EA2810D00542178 /* item.cpp in Sources */,
+				1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */,
 				1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */,
 				1FEC14561E450ED5004EC380 /* main.cpp in Sources */,
 				1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */,
-				1F2FC7901E6B984000679230 /* hero.cpp in Sources */,
+				1F5FFBD71EA280C100542178 /* construction.cpp in Sources */,
+				1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

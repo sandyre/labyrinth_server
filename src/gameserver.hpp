@@ -12,7 +12,7 @@
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Runnable.h>
 #include "player.hpp"
-#include "gameworld.hpp"
+#include "gamelogic/gameworld.hpp"
 #include "logsystem.hpp"
 #include <thread>
 #include <vector>

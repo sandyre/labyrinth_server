@@ -74,17 +74,10 @@ table SVGameStart
 {
 }
 
-enum ActionMoveTarget : byte
-{
-PLAYER,
-MONSTER
-}
-
 // INGAME
 table CLActionMove
 {
 target_uid:uint;
-target_type:ActionMoveTarget;
 x:ushort;
 y:ushort;
 }
@@ -92,7 +85,6 @@ y:ushort;
 table SVActionMove
 {
 target_uid:uint;
-target_type:ActionMoveTarget;
 x:ushort;
 y:ushort;
 }
@@ -170,18 +162,10 @@ ESCAPE,
 KILL
 }
 
-enum ActionDuelTarget : byte
-{
-PLAYER,
-MONSTER
-}
-
 table CLActionDuel
 {
 target1_uid:uint;
-target1_type:ActionDuelTarget;
 target2_uid:uint;
-target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
 damage:ushort;
 }
@@ -189,9 +173,7 @@ damage:ushort;
 table SVActionDuel
 {
 target1_uid:uint;
-target1_type:ActionDuelTarget;
 target2_uid:uint;
-target2_type:ActionDuelTarget;
 act_type:ActionDuelType;
 damage:ushort;
 }
