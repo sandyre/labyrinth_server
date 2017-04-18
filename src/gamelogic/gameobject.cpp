@@ -13,7 +13,7 @@ m_eObjType(GameObject::Type::UNDEFINED),
 m_nUID(0),
 m_nAttributes(0)
 {
-    
+    m_nAttributes |= GameObject::Attributes::VISIBLE;
 }
 
 GameObject::~GameObject()

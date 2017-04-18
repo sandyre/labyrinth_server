@@ -25,7 +25,7 @@ EarthElementalist::EarthElementalist()
 }
 
 void
-EarthElementalist::CastSpell1()
+EarthElementalist::SpellCast1()
 {
         // no skill right now
 }

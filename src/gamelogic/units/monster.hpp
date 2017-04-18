@@ -16,7 +16,15 @@ class Monster : public Unit
 public:
     Monster();
     
-    virtual void    update(std::chrono::milliseconds) override {}
+    virtual void    update(std::chrono::milliseconds) override;
+    
+    virtual void    Spawn(Point2) override;
+protected:
+    std::chrono::milliseconds m_msMoveCD;;
+    std::chrono::milliseconds m_msMoveACD;
+    
+    std::chrono::milliseconds m_msAtkCD;;
+    std::chrono::milliseconds m_msAtkACD;
 };
 
 #endif /* monster_hpp */

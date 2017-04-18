@@ -25,7 +25,7 @@ FireElementalist::FireElementalist()
 }
 
 void
-FireElementalist::CastSpell1()
+FireElementalist::SpellCast1()
 {
         // does nothing
 }

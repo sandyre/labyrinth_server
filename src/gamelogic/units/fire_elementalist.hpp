@@ -19,7 +19,7 @@ class FireElementalist : public Hero
 public:
     FireElementalist();
     
-    virtual void    CastSpell1() override;
+    virtual void    SpellCast1() override;
 };
 
 #endif /* fire_elementalist_hpp */

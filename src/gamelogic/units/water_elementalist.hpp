@@ -22,7 +22,7 @@ public:
     
     virtual void    update(std::chrono::milliseconds) override;
     
-    virtual void    CastSpell1() override;
+    virtual void    SpellCast1() override;
     
 protected:
     bool    m_bDashing;

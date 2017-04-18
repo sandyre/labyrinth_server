@@ -30,7 +30,7 @@ WaterElementalist::WaterElementalist()
 }
 
 void
-WaterElementalist::CastSpell1()
+WaterElementalist::SpellCast1()
 {
     m_nSpell1ACD = m_nSpell1CD;
     m_nDashADuration = m_nDashDuration;
@@ -56,7 +56,7 @@ WaterElementalist::CastSpell1()
 void
 WaterElementalist::update(std::chrono::milliseconds delta)
 {
-    Hero::UpdateCDs(delta);
+    Hero::update(delta);
 
     if(m_bDashing &&
        m_nDashADuration > 0s)

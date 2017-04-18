@@ -22,6 +22,12 @@ m_nObjUIDSeq(1)
 }
 
 void
+GameWorld::SetLoggingSystem(LogSystem * sys)
+{
+    m_pLogSystem = sys;
+}
+
+void
 GameWorld::CreateGameMap(const GameMap::Configuration& _conf)
 {
     m_stMapConf = _conf;
@@ -112,6 +118,12 @@ GameWorld::InitialSpawn()
         m_apoObjects.push_back(key);
         ++m_nObjUIDSeq;
         
+            // Log key spawn event
+        m_oLogBuilder << "Key spawned at (" << key->GetLogicalPosition().x
+        << ";" << key->GetLogicalPosition().y << ")";
+        m_pLogSystem->Write(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
+        
         auto key_spawn = CreateSVSpawnItem(m_oFBuilder,
                                            key->GetUID(),
                                            ItemType_KEY,
@@ -131,22 +143,16 @@ GameWorld::InitialSpawn()
     {
             // spawn monster
         auto monster = new Monster();
-        monster->SetGameWorld(this);
-        monster->SetLogicalPosition(GetRandomPosition());
         monster->SetUID(m_nObjUIDSeq);
+        monster->SetGameWorld(this);
         m_apoObjects.push_back(monster);
+        monster->Spawn(GetRandomPosition());
         
-        auto monster_spawn = CreateSVSpawnMonster(m_oFBuilder,
-                                                  monster->GetUID(),
-                                                  monster->GetLogicalPosition().x,
-                                                  monster->GetLogicalPosition().y);
-        auto msg = CreateMessage(m_oFBuilder,
-                                 Events_SVSpawnMonster,
-                                 monster_spawn.Union());
-        m_oFBuilder.Finish(msg);
-        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
-                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
-        m_oFBuilder.Clear();
+            // Log monster spawn event
+        m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
+        << ";" << monster->GetLogicalPosition().y << ")";
+        m_pLogSystem->Write(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
         
         ++m_nObjUIDSeq; // dont forget!
     }
@@ -260,9 +266,12 @@ GameWorld::ApplyInputEvents()
                                 second = static_cast<Unit*>(object);
                             }
                         }
-
-                        first->StartDuel(second);
-                        second->StartDuel(first);
+                        
+                        if(first->GetAttributes() & second->GetAttributes() & GameObject::Attributes::DUELABLE)
+                        {
+                            first->StartDuel(second);
+                            second->StartDuel(first);
+                        }
                         break;
                     }
 
@@ -302,7 +311,7 @@ GameWorld::ApplyInputEvents()
                     }
                 }
                 
-//                player->CastSpell1;
+                player->SpellCast1();
                 break;
             }
                 

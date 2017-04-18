@@ -19,7 +19,7 @@ class AirElementalist : public Hero
 public:
     AirElementalist();
     
-    virtual void    CastSpell1() override;
+    virtual void    SpellCast1() override;
     
     virtual void    TakeItem(Item*) override;
     

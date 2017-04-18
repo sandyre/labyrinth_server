@@ -26,6 +26,9 @@ m_nMoveSpeed(0.5),
 m_pDuelTarget(nullptr)
 {
     m_eObjType = GameObject::Type::UNIT;
+    m_nAttributes |= GameObject::Attributes::DAMAGABLE;
+    m_nAttributes |= GameObject::Attributes::MOVABLE;
+    m_nAttributes |= GameObject::Attributes::DUELABLE;
 }
 
 Unit::Type
@@ -130,8 +133,9 @@ Unit::Spawn(Point2 log_pos)
 {
     m_eState = Unit::State::WALKING;
     m_nAttributes = GameObject::Attributes::MOVABLE |
-    GameObject::Attributes::VISIBLE |
-    GameObject::Attributes::DUELABLE;
+                    GameObject::Attributes::VISIBLE |
+                    GameObject::Attributes::DUELABLE |
+                    GameObject::Attributes::DAMAGABLE;
     m_nHealth = m_nMHealth;
     
     m_stLogPosition = log_pos;
@@ -176,6 +180,7 @@ Unit::Respawn(Point2 log_pos)
 void
 Unit::Die()
 {
+    EndDuel();
     m_eState = Unit::State::DEAD;
     m_nHealth = 0;
 }
@@ -192,6 +197,13 @@ Unit::Move(Point2 log_pos)
             return; // there is an unpassable object
         }
     }
+        // Log move event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " moved to (" << log_pos.x
+    << ";" << log_pos.y << ")";
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
     
     this->SetLogicalPosition(log_pos);
     
@@ -211,12 +223,61 @@ Unit::Move(Point2 log_pos)
 void
 Unit::Attack()
 {
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+        // Log duel start event
+    m_oLogBuilder << this->GetName() << " attacked " << m_pDuelTarget->GetName()
+    << " for " << m_nActualDamage;
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     m_pDuelTarget->TakeDamage(m_nActualDamage);
+    
+    flatbuffers::FlatBufferBuilder builder;
+    auto atk = GameEvent::CreateSVActionDuel(builder,
+                                             this->GetUID(),
+                                             m_pDuelTarget->GetUID(),
+                                             GameEvent::ActionDuelType_ATTACK);
+    auto msg = GameEvent::CreateMessage(builder,
+                                        GameEvent::Events_SVActionDuel,
+                                        atk.Union());
+    builder.Finish(msg);
+    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                        builder.GetBufferPointer() + builder.GetSize());
+    builder.Clear();
+    
+    if(m_pDuelTarget->GetState() == Unit::State::DEAD)
+    {
+            // Log duel end (kill)
+        m_oLogBuilder << this->GetName() << " killed " << m_pDuelTarget->GetName();
+        m_pLogSystem->Write(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
+        auto kill = GameEvent::CreateSVActionDuel(builder,
+                                                  this->GetUID(),
+                                                  m_pDuelTarget->GetUID(),
+                                                  GameEvent::ActionDuelType_KILL);
+        auto msg = GameEvent::CreateMessage(builder,
+                                            GameEvent::Events_SVActionDuel,
+                                            kill.Union());
+        builder.Finish(msg);
+        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                            builder.GetBufferPointer() + builder.GetSize());
+        builder.Clear();
+        EndDuel();
+    }
 }
 
 void
 Unit::TakeDamage(int16_t dmg)
 {
+        // log damage take
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " took damage from " << m_pDuelTarget->GetName()
+    << " for " << dmg;
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     if(m_nHealth - dmg <= 0)
     {
         Die();
@@ -234,6 +295,27 @@ Unit::StartDuel(Unit * enemy)
     m_nAttributes ^= Attributes::DUELABLE;
     
     m_pDuelTarget = enemy;
+    
+        // Log duel start event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << "Duel starts between " <<
+    this->GetName() << " and " << enemy->GetName();
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
+    flatbuffers::FlatBufferBuilder builder;
+    auto duel = GameEvent::CreateSVActionDuel(builder,
+                                              this->GetUID(),
+                                              enemy->GetUID(),
+                                              GameEvent::ActionDuelType_STARTED);
+    auto msg = GameEvent::CreateMessage(builder,
+                                        GameEvent::Events_SVActionDuel,
+                                        duel.Union());
+    builder.Finish(msg);
+    
+    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                        builder.GetBufferPointer() + builder.GetSize());
 }
 
 void

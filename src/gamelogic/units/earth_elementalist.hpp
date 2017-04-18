@@ -19,7 +19,7 @@ class EarthElementalist : public Hero
 public:
     EarthElementalist();
     
-    virtual void    CastSpell1() override;
+    virtual void    SpellCast1() override;
 };
 
 #endif /* earth_elementalist_hpp */

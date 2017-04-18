@@ -23,7 +23,7 @@ public:
         static const int MOVABLE = 0x01;
         static const int DUELABLE = 0x02;
         static const int VISIBLE = 0x04;
-        static const int INVULNERABLE = 0x08;
+        static const int DAMAGABLE = 0x08;
         static const int PASSABLE = 0x10;
     };
 public:

@@ -31,9 +31,9 @@ public:
     
     virtual void    update(std::chrono::milliseconds) override;
     
+    virtual void                SpellCast1() = 0;
     std::chrono::milliseconds   GetSpell1ACD() const;
     bool                        isSpellCast1Ready() const;
-    virtual void                CastSpell1() = 0;
 protected:
     Hero();
     

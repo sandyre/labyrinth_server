@@ -9,12 +9,15 @@
 #ifndef gameworld_hpp
 #define gameworld_hpp
 
+#include "logsystem.hpp"
+#include <sstream>
 #include "../globals.h"
 #include "gamemap.hpp"
 #include "gsnet_generated.h"
 #include "../player.hpp"
 #include "gameobject.hpp"
 #include "units/hero.hpp"
+#include "units/monster.hpp"
 #include "units/air_elementalist.hpp"
 #include "units/earth_elementalist.hpp"
 #include "units/fire_elementalist.hpp"
@@ -37,6 +40,7 @@ public:
 public:
     GameWorld();
     
+    virtual void SetLoggingSystem(LogSystem *);
     virtual void update(std::chrono::milliseconds);
     
     void    AddPlayer(Player);
@@ -65,8 +69,13 @@ protected:
     std::mt19937    m_oRandGen;
     std::uniform_int_distribution<> m_oRandDistr;
     
+        // logsystem from gameserver
+    LogSystem * m_pLogSystem;
+    std::ostringstream m_oLogBuilder;
+    
     friend GameMap;
     friend Unit;
+    friend Monster;
     friend Hero;
     friend WaterElementalist;
     friend FireElementalist;

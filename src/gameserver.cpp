@@ -290,6 +290,7 @@ GameServer::world_generation_stage()
         sets.nMapSize = 3;
         sets.nRoomSize = 10;
         m_pGameWorld = std::make_unique<GameWorld>();
+        m_pGameWorld->SetLoggingSystem(&m_oLogSys);
         m_pGameWorld->CreateGameMap(sets);
         
         for(int i = 0; i < m_aPlayers.size(); ++i)
