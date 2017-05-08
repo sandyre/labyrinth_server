@@ -65,6 +65,9 @@ protected:
     std::vector<GameObject*>    m_apoObjects;
     uint32_t                    m_nObjUIDSeq;
     
+        // contains objects that should be respawned
+    std::vector<std::pair<std::chrono::milliseconds, Unit*>> m_aRespawnQueue;
+    
         // just a random generator
     std::mt19937    m_oRandGen;
     std::uniform_int_distribution<> m_oRandDistr;

@@ -11,6 +11,9 @@
 #include "../gameworld.hpp"
 #include "../../gsnet_generated.h"
 
+#include <chrono>
+using namespace std::chrono_literals;
+
 using Attributes = GameObject::Attributes;
 
 Unit::Unit() :
@@ -131,6 +134,13 @@ Unit::TakeItem(Item * item)
 void
 Unit::Spawn(Point2 log_pos)
 {
+        // Log spawn event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     m_eState = Unit::State::WALKING;
     m_nAttributes = GameObject::Attributes::MOVABLE |
                     GameObject::Attributes::VISIBLE |
@@ -156,10 +166,18 @@ Unit::Spawn(Point2 log_pos)
 void
 Unit::Respawn(Point2 log_pos)
 {
+        // Log respawn event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")";
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     m_eState = Unit::State::WALKING;
     m_nAttributes = GameObject::Attributes::MOVABLE |
     GameObject::Attributes::VISIBLE |
-    GameObject::Attributes::DUELABLE;
+    GameObject::Attributes::DUELABLE |
+    GameObject::Attributes::DAMAGABLE;
     m_nHealth = m_nMHealth;
     
     m_stLogPosition = log_pos;
@@ -180,9 +198,20 @@ Unit::Respawn(Point2 log_pos)
 void
 Unit::Die()
 {
-    EndDuel();
+        // Log dead event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " DIED AT (" << m_stLogPosition.x << ";" << m_stLogPosition.y << ")";
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
+    if(m_pDuelTarget != nullptr)
+        EndDuel();
+    
     m_eState = Unit::State::DEAD;
+    m_nAttributes = GameObject::Attributes::PASSABLE;
     m_nHealth = 0;
+    m_poGameWorld->m_aRespawnQueue.push_back(std::make_pair(3s, this));
 }
 
 void
@@ -200,8 +229,8 @@ Unit::Move(Point2 log_pos)
         // Log move event
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " moved to (" << log_pos.x
-    << ";" << log_pos.y << ")";
+    m_oLogBuilder << this->GetName() << " MOVE (" << m_stLogPosition.x
+    << ";" << m_stLogPosition.y << ") -> (" << log_pos.x << ";" << log_pos.y << ")";
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
@@ -226,7 +255,7 @@ Unit::Attack()
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
         // Log duel start event
-    m_oLogBuilder << this->GetName() << " attacked " << m_pDuelTarget->GetName()
+    m_oLogBuilder << this->GetName() << " ATK TO " << m_pDuelTarget->GetName()
     << " for " << m_nActualDamage;
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
@@ -249,7 +278,7 @@ Unit::Attack()
     if(m_pDuelTarget->GetState() == Unit::State::DEAD)
     {
             // Log duel end (kill)
-        m_oLogBuilder << this->GetName() << " killed " << m_pDuelTarget->GetName();
+        m_oLogBuilder << this->GetName() << " DUEL KILL " << m_pDuelTarget->GetName();
         m_pLogSystem->Write(m_oLogBuilder.str());
         m_oLogBuilder.str("");
         auto kill = GameEvent::CreateSVActionDuel(builder,
@@ -273,8 +302,8 @@ Unit::TakeDamage(int16_t dmg)
         // log damage take
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " took damage from " << m_pDuelTarget->GetName()
-    << " for " << dmg;
+    m_oLogBuilder << this->GetName() << " ATK FROM " << m_pDuelTarget->GetName()
+    << " HP: " << m_nHealth << " -> " << m_nHealth - dmg;
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
@@ -291,18 +320,21 @@ Unit::TakeDamage(int16_t dmg)
 void
 Unit::StartDuel(Unit * enemy)
 {
-    m_eState = Unit::State::DUEL;
-    m_nAttributes ^= Attributes::DUELABLE;
-    
-    m_pDuelTarget = enemy;
+        // FIXME: each duel sends 2 msges about duel start.
+        // client now can eat it, but server should also be reworked
     
         // Log duel start event
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << "Duel starts between " <<
+    m_oLogBuilder << "DUEL START  " <<
     this->GetName() << " and " << enemy->GetName();
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
+    
+    m_eState = Unit::State::DUEL;
+    m_nAttributes ^= Attributes::DUELABLE;
+    
+    m_pDuelTarget = enemy;
     
     flatbuffers::FlatBufferBuilder builder;
     auto duel = GameEvent::CreateSVActionDuel(builder,
@@ -321,6 +353,13 @@ Unit::StartDuel(Unit * enemy)
 void
 Unit::EndDuel()
 {
+        // Log duel-end event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " DUEL END W " << m_pDuelTarget->GetName();
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     m_eState = Unit::State::WALKING;
     m_nAttributes ^= Attributes::DUELABLE;
     

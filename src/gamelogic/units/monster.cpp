@@ -23,7 +23,7 @@ Monster::Monster()
     m_nMHealth = m_nHealth = 50;
     
     m_msAtkCD = 3s;
-    m_msAtkACD = 0s;
+    m_msAtkACD = m_msAtkCD;
     
     m_msMoveCD = 2s;
     m_msMoveACD = 0s;
@@ -32,6 +32,22 @@ Monster::Monster()
 void
 Monster::update(std::chrono::milliseconds delta)
 {
+//    if(m_eState == Unit::State::WALKING)
+//    {
+//            // find closest available target
+//        for(auto obj : m_poGameWorld->m_apoObjects)
+//        {
+//            if(obj->GetObjType() == GameObject::Type::UNIT)
+//            {
+//                auto unit = static_cast<Unit*>(obj);
+//                if(unit->GetState() == Unit::State::WALKING &&
+//                   Distance(unit->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
+//                {
+//                    
+//                }
+//            }
+//        }
+//    }
         // TODO: add moving ability
     if(m_eState == Unit::State::DUEL)
     {

@@ -10,6 +10,7 @@
 #define globals_h
 
 #include <cstdint>
+#include <cmath>
 
 const int GAMEVERSION_MAJOR = 1;
 const int GAMEVERSION_MINOR = 0;
@@ -33,12 +34,17 @@ struct Point2
     
     bool operator==(const Point2& b)
     {
-        return (x == b.x) & (y == b.y);
+        return (x == b.x) && (y == b.y);
     }
     
     uint16_t x;
     uint16_t y;
 };
+
+inline double Distance(const Point2& a, const Point2& b)
+{
+    return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
+}
 
 using PlayerUID = uint32_t;
 

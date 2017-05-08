@@ -13,6 +13,9 @@
 #include "construction.hpp"
 #include "units/monster.hpp"
 
+#include <chrono>
+using namespace std::chrono_literals;
+
 using namespace GameEvent;
 
 GameWorld::GameWorld() :
@@ -136,8 +139,6 @@ GameWorld::InitialSpawn()
         m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
                              m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
         m_oFBuilder.Clear();
-        
-        ++m_nObjUIDSeq; // dont forget!
     }
     
     {
@@ -332,6 +333,25 @@ GameWorld::update(std::chrono::milliseconds delta)
     {
         object->update(delta);
     }
+        // respawn deads
+    m_aRespawnQueue.erase(
+                         std::remove_if(m_aRespawnQueue.begin(),
+                                        m_aRespawnQueue.end(),
+                                        [this, delta](auto& unit)
+                                        {
+                                            if(unit.first <= 0s)
+                                            {
+                                                unit.second->Respawn(GetRandomPosition());
+                                                return true;
+                                            }
+                                            else
+                                            {
+                                                unit.first -= delta;
+                                                return false;
+                                            }
+                                        }),
+                         m_aRespawnQueue.end()
+                         );
 }
 
 Point2
