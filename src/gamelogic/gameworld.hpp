@@ -18,10 +18,10 @@
 #include "gameobject.hpp"
 #include "units/hero.hpp"
 #include "units/monster.hpp"
-#include "units/air_elementalist.hpp"
-#include "units/earth_elementalist.hpp"
-#include "units/fire_elementalist.hpp"
-#include "units/water_elementalist.hpp"
+#include "units/rogue.hpp"
+#include "units/warrior.hpp"
+#include "units/priest.hpp"
+#include "units/mage.hpp"
 
 #include <chrono>
 #include <vector>
@@ -39,6 +39,7 @@ public:
     };
 public:
     GameWorld();
+    ~GameWorld();
     
     virtual void SetLoggingSystem(LogSystem *);
     virtual void update(std::chrono::milliseconds);
@@ -80,10 +81,10 @@ protected:
     friend Unit;
     friend Monster;
     friend Hero;
-    friend WaterElementalist;
-    friend FireElementalist;
-    friend EarthElementalist;
-    friend AirElementalist;
+    friend Mage;
+    friend Priest;
+    friend Warrior;
+    friend Rogue;
 };
 
 #endif /* gameworld_hpp */

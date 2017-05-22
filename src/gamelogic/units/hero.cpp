@@ -14,9 +14,7 @@
 using namespace std::chrono_literals;
 
 Hero::Hero() :
-m_eHero(Hero::Type::FIRST_HERO),
-m_nSpell1CD(0s),
-m_nSpell1ACD(0s)
+m_eHero(Hero::Type::FIRST_HERO)
 {
     m_eUnitType = Unit::Type::HERO;
 }
@@ -30,32 +28,23 @@ Hero::GetHero() const
 void
 Hero::update(std::chrono::milliseconds delta)
 {
+    Unit::update(delta);
     UpdateCDs(delta);
 }
 
 void
 Hero::UpdateCDs(std::chrono::milliseconds delta)
 {
-    if(m_nSpell1ACD > 0s)
+    for(int i = 0; i < m_aSpellCDs.size(); ++i)
     {
-        m_nSpell1ACD -= delta;
+        if(std::get<0>(m_aSpellCDs[i]) == false)
+        {
+            std::get<1>(m_aSpellCDs[i]) -= delta;
+        }
+        else
+        {
+            std::get<0>(m_aSpellCDs[i]) = true;
+            std::get<1>(m_aSpellCDs[i]) = 0s;
+        }
     }
-    else
-    {
-        m_nSpell1ACD = 0s;
-    }
-}
-
-bool
-Hero::isSpellCast1Ready() const
-{
-    if(m_nSpell1ACD == 0s)
-        return true;
-    return false;
-}
-
-std::chrono::milliseconds
-Hero::GetSpell1ACD() const
-{
-    return m_nSpell1ACD;
 }

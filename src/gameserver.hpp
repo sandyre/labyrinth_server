@@ -66,9 +66,9 @@ private:
     GameServer::State   m_eState;
     GameServer::Configuration m_stConfig;
     std::string         m_sServerName;
-    Poco::Net::DatagramSocket m_oSocket;
-    steady_clock::time_point          m_nStartTime;
-    std::chrono::milliseconds         m_msPerUpdate;
+    Poco::Net::DatagramSocket           m_oSocket;
+    steady_clock::time_point            m_nStartTime;
+    std::chrono::milliseconds           m_msPerUpdate;
     
     std::unique_ptr<GameWorld>  m_pGameWorld;
     std::vector<Player> m_aPlayers;

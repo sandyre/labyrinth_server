@@ -12,6 +12,7 @@
 #include <Poco/Net/SocketAddress.h>
 #include <vector>
 #include <cassert>
+#include <chrono>
 
 #include "globals.h"
 
@@ -77,10 +78,20 @@ public:
     {
         m_nHeroIndex = i;
     }
+    
+    std::chrono::steady_clock::time_point GetLastMsgTimepoint() const
+    {
+        return m_stLastMsgTimepoint;
+    }
+    void    SetLastMsgTimepoint(std::chrono::steady_clock::time_point tp)
+    {
+        m_stLastMsgTimepoint = tp;
+    }
 protected:
     Player::State               m_eState;
     PlayerUID                   m_nUID;
     std::string                 m_sNickname;
+    std::chrono::steady_clock::time_point m_stLastMsgTimepoint;
     Poco::Net::SocketAddress    m_stSocketAddr;
     
     int32_t                     m_nHeroIndex;

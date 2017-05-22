@@ -11,6 +11,7 @@
 
 #include "unit.hpp"
 #include "../item.hpp"
+#include "../../gsnet_generated.h"
 
 #include <vector>
 
@@ -20,10 +21,10 @@ public:
     enum Type : int
     {
         FIRST_HERO = 0x00,
-        AIR_ELEMENTALIST = 0x00,
-        WATER_ELEMENTALIST = 0x01,
-        FIRE_ELEMENTALIST = 0x02,
-        EARTH_ELEMENTALIST = 0x03,
+        WARRIOR = 0x00,
+        MAGE = 0x01,
+        ROGUE = 0x02,
+        PRIEST = 0x03,
         LAST_HERO = 0x03
     };
 public:
@@ -31,9 +32,8 @@ public:
     
     virtual void    update(std::chrono::milliseconds) override;
     
-    virtual void                SpellCast1() = 0;
-    std::chrono::milliseconds   GetSpell1ACD() const;
-    bool                        isSpellCast1Ready() const;
+    virtual void                SpellCast(const GameEvent::CLActionSpell*) = 0;
+
 protected:
     Hero();
     
@@ -42,8 +42,7 @@ protected:
 protected:
     Hero::Type          m_eHero;
     
-    std::chrono::milliseconds               m_nSpell1CD;
-    std::chrono::milliseconds               m_nSpell1ACD;
+    std::vector<std::tuple<bool, std::chrono::milliseconds, std::chrono::milliseconds>> m_aSpellCDs;
 };
 
 

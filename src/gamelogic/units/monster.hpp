@@ -11,6 +11,8 @@
 
 #include "unit.hpp"
 
+#include <queue>
+
 class Monster : public Unit
 {
 public:
@@ -25,6 +27,9 @@ protected:
     
     std::chrono::milliseconds m_msAtkCD;;
     std::chrono::milliseconds m_msAtkACD;
+    
+    Unit * m_pChasingUnit;
+    std::queue<Point2> m_pPathToUnit;
 };
 
 #endif /* monster_hpp */

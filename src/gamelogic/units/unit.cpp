@@ -10,6 +10,7 @@
 
 #include "../gameworld.hpp"
 #include "../../gsnet_generated.h"
+#include "effect.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
@@ -21,10 +22,12 @@ m_eUnitType(Unit::Type::UNDEFINED),
 m_eState(Unit::State::UNDEFINED),
 m_eOrientation(Unit::Orientation::DOWN),
 m_sName("Unit"),
-m_nBaseDamage(0),
-m_nActualDamage(0),
-m_nHealth(0),
-m_nMHealth(0),
+m_nBaseDamage(10),
+m_nActualDamage(10),
+m_nHealth(50),
+m_nMHealth(50),
+m_nArmor(2),
+m_nMResistance(2),
 m_nMoveSpeed(0.5),
 m_pDuelTarget(nullptr)
 {
@@ -82,6 +85,12 @@ Unit::GetMaxHealth() const
     return m_nMHealth;
 }
 
+int16_t
+Unit::GetArmor() const
+{
+    return m_nArmor;
+}
+
 Unit * const
 Unit::GetDuelTarget() const
 {
@@ -101,6 +110,38 @@ Unit::GetInventory()
  */
 
 void
+Unit::ApplyEffect(Effect * effect)
+{
+    effect->start();
+    m_aAppliedEffects.push_back(effect);
+}
+
+void
+Unit::update(std::chrono::milliseconds delta)
+{
+    for(auto effect : m_aAppliedEffects)
+    {
+        effect->update(delta);
+        if(effect->GetState() == Effect::State::OVER)
+        {
+            effect->stop();
+        }
+    }
+    m_aAppliedEffects.erase(std::remove_if(m_aAppliedEffects.begin(),
+                                           m_aAppliedEffects.end(),
+                                           [this](Effect * eff)
+                                           {
+                                               if(eff->GetState() == Effect::State::OVER)
+                                               {
+                                                   delete eff;
+                                                   return true;
+                                               }
+                                               return false;
+                                           }),
+                            m_aAppliedEffects.end());
+}
+
+void
 Unit::UpdateStats()
 {
     int new_dmg = m_nBaseDamage;
@@ -115,6 +156,13 @@ Unit::UpdateStats()
 void
 Unit::TakeItem(Item * item)
 {
+        // Log item drop event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " TOOK ITEM " << (int)item->GetType();
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
     item->SetCarrierID(this->GetUID());
     m_aInventory.push_back(item);
     
@@ -195,6 +243,27 @@ Unit::Respawn(Point2 log_pos)
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
+    // TODO: seems like it doesn't work
+void
+Unit::DropItem(int32_t index)
+{
+    auto item_iter = m_aInventory.begin() + index;
+    
+        // Log item drop event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType();
+    m_pLogSystem->Write(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
+        // make item visible and set its coords
+    (*item_iter)->SetCarrierID(0);
+    (*item_iter)->SetLogicalPosition(this->GetLogicalPosition());
+    
+        // delete item from inventory
+    m_aInventory.erase(item_iter);
+}
+
 void
 Unit::Die()
 {
@@ -204,6 +273,12 @@ Unit::Die()
     m_oLogBuilder << this->GetName() << " DIED AT (" << m_stLogPosition.x << ";" << m_stLogPosition.y << ")";
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
+    
+        // drop items
+    while(!m_aInventory.empty())
+    {
+        this->DropItem(0);
+    }
     
     if(m_pDuelTarget != nullptr)
         EndDuel();
@@ -250,7 +325,7 @@ Unit::Move(Point2 log_pos)
 }
 
 void
-Unit::Attack()
+Unit::Attack(const GameEvent::CLActionAttack*)
 {
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
@@ -260,15 +335,16 @@ Unit::Attack()
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    m_pDuelTarget->TakeDamage(m_nActualDamage);
+    m_pDuelTarget->TakeDamage(m_nActualDamage, 0);
     
     flatbuffers::FlatBufferBuilder builder;
-    auto atk = GameEvent::CreateSVActionDuel(builder,
-                                             this->GetUID(),
-                                             m_pDuelTarget->GetUID(),
-                                             GameEvent::ActionDuelType_ATTACK);
+    auto atk = GameEvent::CreateSVActionAttack(builder,
+                                               this->GetUID(),
+                                               m_pDuelTarget->GetUID(),
+                                               m_nActualDamage,
+                                               0);
     auto msg = GameEvent::CreateMessage(builder,
-                                        GameEvent::Events_SVActionDuel,
+                                        GameEvent::Events_SVActionAttack,
                                         atk.Union());
     builder.Finish(msg);
     m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
@@ -297,23 +373,25 @@ Unit::Attack()
 }
 
 void
-Unit::TakeDamage(int16_t dmg)
+Unit::TakeDamage(int16_t dmg, uint8_t mods)
 {
+    int16_t damage_taken = dmg;
+    if(mods != 1)
+    {
+        damage_taken -= m_nArmor;
+    }
         // log damage take
     auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
     auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
     m_oLogBuilder << this->GetName() << " ATK FROM " << m_pDuelTarget->GetName()
-    << " HP: " << m_nHealth << " -> " << m_nHealth - dmg;
+    << " HP: " << m_nHealth << " -> " << m_nHealth - damage_taken;
     m_pLogSystem->Write(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    if(m_nHealth - dmg <= 0)
+    m_nHealth -= damage_taken;
+    if(m_nHealth <= 0)
     {
         Die();
-    }
-    else
-    {
-        m_nHealth -= dmg;
     }
 }
 

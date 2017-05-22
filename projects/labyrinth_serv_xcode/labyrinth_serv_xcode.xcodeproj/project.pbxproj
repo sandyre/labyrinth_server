@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1F1651BB1E9E6D5A00F1181C /* libPocoDataMySQL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */; };
 		1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */; };
+		1F23AEC81EC51B060048C59A /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F23AEC61EC51B060048C59A /* effect.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
@@ -20,10 +21,10 @@
 		1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBDF1EA281EC00542178 /* unit.cpp */; };
 		1F5FFBE41EA2821400542178 /* hero.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE21EA2821400542178 /* hero.cpp */; };
 		1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE51EA2825A00542178 /* monster.cpp */; };
-		1F5FFBEA1EA2829700542178 /* air_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE81EA2829700542178 /* air_elementalist.cpp */; };
-		1F5FFBED1EA282C300542178 /* fire_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */; };
-		1F5FFBF01EA282F000542178 /* earth_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */; };
-		1F5FFBF31EA2830C00542178 /* water_elementalist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */; };
+		1F5FFBEA1EA2829700542178 /* rogue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBE81EA2829700542178 /* rogue.cpp */; };
+		1F5FFBED1EA282C300542178 /* priest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEB1EA282C300542178 /* priest.cpp */; };
+		1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBEE1EA282F000542178 /* warrior.cpp */; };
+		1F5FFBF31EA2830C00542178 /* mage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBF11EA2830C00542178 /* mage.cpp */; };
 		1F9203D81E60B637006DF25E /* logsystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F9203D61E60B637006DF25E /* logsystem.cpp */; };
 		1F9203EA1E63BD8B006DF25E /* libPocoData.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E71E63BD8B006DF25E /* libPocoData.a */; };
 		1F9203EB1E63BD8B006DF25E /* libPocoFoundation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F9203E81E63BD8B006DF25E /* libPocoFoundation.a */; };
@@ -48,6 +49,8 @@
 /* Begin PBXFileReference section */
 		1F1651BA1E9E6D5A00F1181C /* libPocoDataMySQL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataMySQL.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataMySQL.a; sourceTree = "<group>"; };
 		1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libmysqlcppconn-static.a"; path = "labyrinth_serv_xcode.xcodeproj/libmysqlcppconn-static.a"; sourceTree = "<group>"; };
+		1F23AEC61EC51B060048C59A /* effect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = effect.cpp; path = ../../../src/gamelogic/effect.cpp; sourceTree = "<group>"; };
+		1F23AEC71EC51B060048C59A /* effect.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = effect.hpp; path = ../../../src/gamelogic/effect.hpp; sourceTree = "<group>"; };
 		1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = msnet.fbs; path = ../../../src/msnet.fbs; sourceTree = "<group>"; };
 		1F3E69BF1E4A1D0A00A102C1 /* gsnet.fbs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gsnet.fbs; path = ../../../src/gsnet.fbs; sourceTree = "<group>"; };
 		1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gsnet_generated.h; path = ../../../src/gsnet_generated.h; sourceTree = "<group>"; };
@@ -73,14 +76,14 @@
 		1F5FFBE31EA2821400542178 /* hero.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hero.hpp; path = ../../../src/gamelogic/units/hero.hpp; sourceTree = "<group>"; };
 		1F5FFBE51EA2825A00542178 /* monster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = monster.cpp; path = ../../../src/gamelogic/units/monster.cpp; sourceTree = "<group>"; };
 		1F5FFBE61EA2825A00542178 /* monster.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = monster.hpp; path = ../../../src/gamelogic/units/monster.hpp; sourceTree = "<group>"; };
-		1F5FFBE81EA2829700542178 /* air_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = air_elementalist.cpp; path = ../../../src/gamelogic/units/air_elementalist.cpp; sourceTree = "<group>"; };
-		1F5FFBE91EA2829700542178 /* air_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = air_elementalist.hpp; path = ../../../src/gamelogic/units/air_elementalist.hpp; sourceTree = "<group>"; };
-		1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fire_elementalist.cpp; path = ../../../src/gamelogic/units/fire_elementalist.cpp; sourceTree = "<group>"; };
-		1F5FFBEC1EA282C300542178 /* fire_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fire_elementalist.hpp; path = ../../../src/gamelogic/units/fire_elementalist.hpp; sourceTree = "<group>"; };
-		1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = earth_elementalist.cpp; path = ../../../src/gamelogic/units/earth_elementalist.cpp; sourceTree = "<group>"; };
-		1F5FFBEF1EA282F000542178 /* earth_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = earth_elementalist.hpp; path = ../../../src/gamelogic/units/earth_elementalist.hpp; sourceTree = "<group>"; };
-		1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = water_elementalist.cpp; path = ../../../src/gamelogic/units/water_elementalist.cpp; sourceTree = "<group>"; };
-		1F5FFBF21EA2830C00542178 /* water_elementalist.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = water_elementalist.hpp; path = ../../../src/gamelogic/units/water_elementalist.hpp; sourceTree = "<group>"; };
+		1F5FFBE81EA2829700542178 /* rogue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rogue.cpp; path = ../../../src/gamelogic/units/rogue.cpp; sourceTree = "<group>"; };
+		1F5FFBE91EA2829700542178 /* rogue.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rogue.hpp; path = ../../../src/gamelogic/units/rogue.hpp; sourceTree = "<group>"; };
+		1F5FFBEB1EA282C300542178 /* priest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = priest.cpp; path = ../../../src/gamelogic/units/priest.cpp; sourceTree = "<group>"; };
+		1F5FFBEC1EA282C300542178 /* priest.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = priest.hpp; path = ../../../src/gamelogic/units/priest.hpp; sourceTree = "<group>"; };
+		1F5FFBEE1EA282F000542178 /* warrior.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = warrior.cpp; path = ../../../src/gamelogic/units/warrior.cpp; sourceTree = "<group>"; };
+		1F5FFBEF1EA282F000542178 /* warrior.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = warrior.hpp; path = ../../../src/gamelogic/units/warrior.hpp; sourceTree = "<group>"; };
+		1F5FFBF11EA2830C00542178 /* mage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mage.cpp; path = ../../../src/gamelogic/units/mage.cpp; sourceTree = "<group>"; };
+		1F5FFBF21EA2830C00542178 /* mage.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mage.hpp; path = ../../../src/gamelogic/units/mage.hpp; sourceTree = "<group>"; };
 		1F9203D61E60B637006DF25E /* logsystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logsystem.cpp; path = ../../../src/logsystem.cpp; sourceTree = "<group>"; };
 		1F9203D71E60B637006DF25E /* logsystem.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logsystem.hpp; path = ../../../src/logsystem.hpp; sourceTree = "<group>"; };
 		1F9203E61E63BD8B006DF25E /* libPocoDataSQLite.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoDataSQLite.a; path = labyrinth_serv_xcode.xcodeproj/libPocoDataSQLite.a; sourceTree = "<group>"; };
@@ -131,6 +134,8 @@
 				1F5FFBD91EA280ED00542178 /* mapblock.hpp */,
 				1F5FFBDB1EA2810D00542178 /* item.cpp */,
 				1F5FFBDC1EA2810D00542178 /* item.hpp */,
+				1F23AEC61EC51B060048C59A /* effect.cpp */,
+				1F23AEC71EC51B060048C59A /* effect.hpp */,
 			);
 			name = gamelogic;
 			sourceTree = "<group>";
@@ -138,20 +143,20 @@
 		1F5FFBDE1EA281C900542178 /* units */ = {
 			isa = PBXGroup;
 			children = (
-				1F5FFBDF1EA281EC00542178 /* unit.cpp */,
-				1F5FFBE01EA281EC00542178 /* unit.hpp */,
 				1F5FFBE21EA2821400542178 /* hero.cpp */,
 				1F5FFBE31EA2821400542178 /* hero.hpp */,
+				1F5FFBF11EA2830C00542178 /* mage.cpp */,
+				1F5FFBF21EA2830C00542178 /* mage.hpp */,
 				1F5FFBE51EA2825A00542178 /* monster.cpp */,
 				1F5FFBE61EA2825A00542178 /* monster.hpp */,
-				1F5FFBE81EA2829700542178 /* air_elementalist.cpp */,
-				1F5FFBE91EA2829700542178 /* air_elementalist.hpp */,
-				1F5FFBEB1EA282C300542178 /* fire_elementalist.cpp */,
-				1F5FFBEC1EA282C300542178 /* fire_elementalist.hpp */,
-				1F5FFBEE1EA282F000542178 /* earth_elementalist.cpp */,
-				1F5FFBEF1EA282F000542178 /* earth_elementalist.hpp */,
-				1F5FFBF11EA2830C00542178 /* water_elementalist.cpp */,
-				1F5FFBF21EA2830C00542178 /* water_elementalist.hpp */,
+				1F5FFBEB1EA282C300542178 /* priest.cpp */,
+				1F5FFBEC1EA282C300542178 /* priest.hpp */,
+				1F5FFBE81EA2829700542178 /* rogue.cpp */,
+				1F5FFBE91EA2829700542178 /* rogue.hpp */,
+				1F5FFBDF1EA281EC00542178 /* unit.cpp */,
+				1F5FFBE01EA281EC00542178 /* unit.hpp */,
+				1F5FFBEE1EA282F000542178 /* warrior.cpp */,
+				1F5FFBEF1EA282F000542178 /* warrior.hpp */,
 			);
 			name = units;
 			sourceTree = "<group>";
@@ -269,16 +274,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1F5FFBF31EA2830C00542178 /* water_elementalist.cpp in Sources */,
-				1F5FFBEA1EA2829700542178 /* air_elementalist.cpp in Sources */,
+				1F23AEC81EC51B060048C59A /* effect.cpp in Sources */,
+				1F5FFBF31EA2830C00542178 /* mage.cpp in Sources */,
+				1F5FFBEA1EA2829700542178 /* rogue.cpp in Sources */,
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
 				1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */,
 				1F5FFBDA1EA280ED00542178 /* mapblock.cpp in Sources */,
 				1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */,
 				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
 				1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */,
-				1F5FFBF01EA282F000542178 /* earth_elementalist.cpp in Sources */,
-				1F5FFBED1EA282C300542178 /* fire_elementalist.cpp in Sources */,
+				1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */,
+				1F5FFBED1EA282C300542178 /* priest.cpp in Sources */,
 				1F5FFBE41EA2821400542178 /* hero.cpp in Sources */,
 				1F5FFBDD1EA2810D00542178 /* item.cpp in Sources */,
 				1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */,

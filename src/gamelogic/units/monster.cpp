@@ -14,13 +14,15 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-Monster::Monster()
+Monster::Monster() :
+m_pChasingUnit(nullptr)
 {
     m_eUnitType = Unit::Type::MONSTER;
     m_sName = "Default monster";
     
     m_nBaseDamage = m_nActualDamage = 10;
     m_nMHealth = m_nHealth = 50;
+    m_nArmor = 2;
     
     m_msAtkCD = 3s;
     m_msAtkACD = m_msAtkCD;
@@ -32,22 +34,46 @@ Monster::Monster()
 void
 Monster::update(std::chrono::milliseconds delta)
 {
-//    if(m_eState == Unit::State::WALKING)
+//        // find target to chase
+//    if(m_pChasingUnit == nullptr)
 //    {
-//            // find closest available target
 //        for(auto obj : m_poGameWorld->m_apoObjects)
 //        {
-//            if(obj->GetObjType() == GameObject::Type::UNIT)
+//            if(obj->GetObjType() == GameObject::Type::UNIT &&
+//               (obj->GetAttributes() & GameObject::Attributes::DUELABLE) &&
+//               Distance(obj->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
 //            {
-//                auto unit = static_cast<Unit*>(obj);
-//                if(unit->GetState() == Unit::State::WALKING &&
-//                   Distance(unit->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
-//                {
-//                    
-//                }
+//                m_pChasingUnit = dynamic_cast<Unit*>(obj);
+//                break;
 //            }
 //        }
 //    }
+//    else
+//    {
+//            // firstly check that unit is still in chasable area
+//        if(Distance(m_pChasingUnit->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
+//        {
+//            auto map_size_width = m_poGameWorld->m_stMapConf.nMapSize * m_poGameWorld->m_stMapConf.nRoomSize + 2;
+//            std::vector<bool> map_as_flat(map_size_width * map_size_width, false);
+//            std::queue<int> path_in_flat;
+//            
+//                // calculate the path to it
+//            auto current_monster_pos = this->GetLogicalPosition().x * map_size_width + this->GetLogicalPosition().y;
+//            map_as_flat[current_monster_pos] = true;
+//            path_in_flat.push(current_monster_pos);
+//            
+//            while(!path_in_flat.empty())
+//            {
+//                m_pPathToUnit.push(Point2(path_in_flat.front() / map_size_width,
+//                                          path_in_flat.front() % map_size_width));
+//                
+//                path_in_flat.pop();
+//                
+//                    // check adjsmnt points
+//            }
+//        }
+//    }
+    
         // TODO: add moving ability
     if(m_eState == Unit::State::DUEL)
     {
@@ -58,7 +84,7 @@ Monster::update(std::chrono::milliseconds delta)
            m_msAtkACD <= 0s)
         {
             m_msAtkACD = m_msAtkCD;
-            this->Attack();
+            this->Attack(nullptr);
         }
     }
 }

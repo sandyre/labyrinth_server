@@ -24,6 +24,14 @@ m_nObjUIDSeq(1)
     
 }
 
+GameWorld::~GameWorld()
+{
+    for(auto obj : m_apoObjects)
+    {
+        delete obj;
+    }
+}
+
 void
 GameWorld::SetLoggingSystem(LogSystem * sys)
 {
@@ -58,40 +66,40 @@ GameWorld::AddPlayer(Player player)
 {
     switch(player.GetHeroPicked())
     {
-        case Hero::Type::AIR_ELEMENTALIST:
+        case Hero::Type::ROGUE:
         {
-            auto air_elem = new AirElementalist();
-            air_elem->SetGameWorld(this);
-            air_elem->SetUID(player.GetUID());
-            air_elem->SetName(player.GetNickname());
-            m_apoObjects.push_back(air_elem);
+            auto rogue = new Rogue();
+            rogue->SetGameWorld(this);
+            rogue->SetUID(player.GetUID());
+            rogue->SetName(player.GetNickname());
+            m_apoObjects.push_back(rogue);
             break;
         }
-        case Hero::Type::EARTH_ELEMENTALIST:
+        case Hero::Type::WARRIOR:
         {
-            auto earth_elem = new EarthElementalist();
-            earth_elem->SetGameWorld(this);
-            earth_elem->SetUID(player.GetUID());
-            earth_elem->SetName(player.GetNickname());
-            m_apoObjects.push_back(earth_elem);
+            auto warrior = new Warrior();
+            warrior->SetGameWorld(this);
+            warrior->SetUID(player.GetUID());
+            warrior->SetName(player.GetNickname());
+            m_apoObjects.push_back(warrior);
             break;
         }
-        case Hero::Type::WATER_ELEMENTALIST:
+        case Hero::Type::MAGE:
         {
-            auto water_elem = new WaterElementalist();
-            water_elem->SetGameWorld(this);
-            water_elem->SetUID(player.GetUID());
-            water_elem->SetName(player.GetNickname());
-            m_apoObjects.push_back(water_elem);
+            auto mage = new Mage();
+            mage->SetGameWorld(this);
+            mage->SetUID(player.GetUID());
+            mage->SetName(player.GetNickname());
+            m_apoObjects.push_back(mage);
             break;
         }
-        case Hero::Type::FIRE_ELEMENTALIST:
+        case Hero::Type::PRIEST:
         {
-            auto fire_elem = new FireElementalist();
-            fire_elem->SetGameWorld(this);
-            fire_elem->SetUID(player.GetUID());
-            fire_elem->SetName(player.GetNickname());
-            m_apoObjects.push_back(fire_elem);
+            auto priest = new Priest();
+            priest->SetGameWorld(this);
+            priest->SetUID(player.GetUID());
+            priest->SetName(player.GetNickname());
+            m_apoObjects.push_back(priest);
             break;
         }
         default:
@@ -114,8 +122,8 @@ GameWorld::InitialSpawn()
     }
     
         // spawn key
+    auto key = new Key();
     {
-        auto key = new Key();
         key->SetLogicalPosition(GetRandomPosition());
         key->SetUID(m_nObjUIDSeq);
         m_apoObjects.push_back(key);
@@ -148,6 +156,7 @@ GameWorld::InitialSpawn()
         monster->SetGameWorld(this);
         m_apoObjects.push_back(monster);
         monster->Spawn(GetRandomPosition());
+        monster->TakeItem(key);
         
             // Log monster spawn event
         m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
@@ -275,27 +284,27 @@ GameWorld::ApplyInputEvents()
                         }
                         break;
                     }
-
-                    case GameEvent::ActionDuelType_ATTACK:
-                    {
-                        Unit * attacker = nullptr;
-
-                        for(auto object : m_apoObjects)
-                        {
-                            if(object->GetUID() == sv_duel->target1_uid())
-                            {
-                                attacker = static_cast<Unit*>(object);
-                            }
-                        }
-
-                        attacker->Attack();
-                        break;
-                    }
                     default:
                         assert(false);
                         break;
                 }
+                break;
+            }
+            case GameEvent::Events_CLActionAttack:
+            {
+                auto atk = static_cast<const GameEvent::CLActionAttack*>(gs_event->event());
                 
+                Unit * attacker = nullptr;
+                
+                for(auto object : m_apoObjects)
+                {
+                    if(object->GetUID() == atk->target1_uid())
+                    {
+                        attacker = static_cast<Unit*>(object);
+                    }
+                }
+                
+                attacker->Attack(atk);
                 break;
             }
                 
@@ -312,7 +321,7 @@ GameWorld::ApplyInputEvents()
                     }
                 }
                 
-                player->SpellCast1();
+                player->SpellCast(gs_spell);
                 break;
             }
                 

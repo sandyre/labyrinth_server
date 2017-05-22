@@ -14,10 +14,10 @@ nickname:string;
 
 enum HeroType : byte
 {
-AIR_ELEMENTALIST = 0x00,
-WATER_ELEMENTALIST = 0x01,
-FIRE_ELEMENTALIST = 0x02,
-EARTH_ELEMENTALIST = 0x03
+WARRIOR = 0x00,
+MAGE = 0x01,
+ROGUE = 0x02,
+PRIEST = 0x03
 }
 
 table SVConnectionStatus
@@ -110,48 +110,40 @@ item_uid:ushort;
 act_type:ActionItemType;
 }
 
-enum ActionSpellTarget : byte
+table MageTeleport
 {
-TARGET_PLAYER,
-TARGET_MONSTER,
-TARGET_POINT
+x:ushort;
+y:ushort;
+}
+
+table MageFreeze
+{
+enemy_id:uint;
+}
+
+union Spells
+{
+MageTeleport,
+MageFreeze
+}
+
+table Spell
+{
+spell:Spells;
 }
 
 table CLActionSpell
 {
 player_uid:uint;
 spell_id:ushort;
-spell_target:ActionSpellTarget;
-x_or_id:uint; // also represents TARGET_ID
-y:uint;
+spell_info:Spell;
 }
 
 table SVActionSpell
 {
 player_uid:uint;
 spell_id:ushort;
-spell_target:ActionSpellTarget;
-point_x:uint; // also represents TARGET_ID
-point_y:uint;
-}
-
-enum ActionSwampStatus : byte
-{
-STARTED,
-ESCAPED,
-DIED
-}
-
-table CLActionSwamp
-{
-player_uid:uint;
-status:ActionSwampStatus;
-}
-
-table SVActionSwamp
-{
-player_uid:uint;
-status:ActionSwampStatus;
+spell_info:Spell;
 }
 
 enum ActionDuelType : byte
@@ -160,6 +152,22 @@ STARTED,
 ATTACK,
 ESCAPE,
 KILL
+}
+
+table CLActionAttack
+{
+target1_uid:uint;
+target2_uid:uint;
+damage:ushort;
+modificators:byte;
+}
+
+table SVActionAttack
+{
+target1_uid:uint;
+target2_uid:uint;
+damage:ushort;
+modificators:byte;
 }
 
 table CLActionDuel
@@ -281,8 +289,8 @@ SVActionMove,
 CLActionItem,
 SVActionItem,
 
-CLActionSwamp,
-SVActionSwamp,
+CLActionAttack,
+SVActionAttack,
 
 CLActionDuel,
 SVActionDuel,

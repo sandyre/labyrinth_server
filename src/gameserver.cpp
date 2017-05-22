@@ -22,7 +22,7 @@ GameServer::GameServer(const Configuration& config) :
 m_eState(GameServer::State::LOBBY_FORMING),
 m_stConfig(config),
 m_nStartTime(steady_clock::now()),
-m_msPerUpdate(0)
+m_msPerUpdate(2)
 {
     m_sServerName = "GS";
     m_sServerName += std::to_string(m_stConfig.nPort);
@@ -35,7 +35,6 @@ m_msPerUpdate(0)
     m_oMsgBuilder.str("");
     
     Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), m_stConfig.nPort);
-    m_oSocket.setReceiveTimeout(Poco::Timespan(20, 0)); // 180 sec timeout
     m_oSocket.bind(addr);
 }
 
@@ -62,7 +61,7 @@ GameServer::shutdown()
 {
     m_eState = GameServer::State::FINISHED;
     
-    m_oMsgBuilder << "Finished (timeout)";
+    m_oMsgBuilder << "Finished";
     m_oLogSys.Write(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
 }
@@ -83,6 +82,9 @@ GameServer::run()
     }
     catch(std::exception& e)
     {
+        m_oMsgBuilder << e.what();
+        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oMsgBuilder.str("");
         shutdown();
     }
 }
@@ -352,47 +354,29 @@ GameServer::world_generation_stage()
 void
 GameServer::running_game_stage()
 {
-    Poco::Net::SocketAddress sender_addr;
     char buf[256];
+    Poco::Net::SocketAddress sender_addr;
+    std::chrono::milliseconds time_no_receive = 0ms;
     
     while(m_eState == State::RUNNING_GAME)
     {
         auto frame_start = steady_clock::now();
         
-        bool event_received = false;
-        bool is_event_valid = false;
-        size_t bytes_read = 0;
+            // sleep for some time, then get all packets and pass it to the gameworld, update
+        std::this_thread::sleep_for(m_msPerUpdate);
         
-        auto& out_events = m_pGameWorld->GetOutgoingEvents();
-        while(out_events.size())
+        if(!m_oSocket.available())
         {
-            auto event = out_events.front();
-            SendToAll(event.data(), event.size());
-            out_events.pop();
+            time_no_receive += m_msPerUpdate;
         }
-//
-//            // if game ended
-//        if(m_pGameWorld->GetState() == GameWorld::State::FINISHED)
-//        {
-//            m_eState = GameServer::State::FINISHED;
-//        }
-        
-            // if event received, process it
-//        bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
-//        event_received = true;
-        if(m_oSocket.available())
+        while(m_oSocket.available())
         {
-            bytes_read = m_oSocket.receiveFrom(buf, 256, sender_addr);
-            event_received = true;
-        }
-        else // sleep and update gameworld overwise (50 updates ps)
-        {
-            std::this_thread::sleep_for(20ms);
-            event_received = false;
-        }
-        
-        if(event_received)
-        {
+            time_no_receive = 0ms;
+            bool event_valid = false;
+            auto pack_size = m_oSocket.receiveFrom(buf,
+                                                   256,
+                                                   sender_addr);
+            
             auto gs_event = GetMessage(buf);
             
             switch(gs_event->event_type())
@@ -408,7 +392,7 @@ GameServer::running_game_stage()
                         player->SetAddress(sender_addr);
                     }
                     
-                    is_event_valid = true;
+                    event_valid = true;
                     break;
                 }
                     
@@ -423,22 +407,7 @@ GameServer::running_game_stage()
                         player->SetAddress(sender_addr);
                     }
                     
-                    is_event_valid = true;
-                    break;
-                }
-                    
-                case Events_CLActionSwamp:
-                {
-                    auto cl_swamp = static_cast<const CLActionSwamp*>(gs_event->event());
-                    auto player = FindPlayerByUID(cl_swamp->player_uid());
-                    
-                    if(player != m_aPlayers.end() &&
-                       player->GetAddress() != sender_addr)
-                    {
-                        player->SetAddress(sender_addr);
-                    }
-                    
-                    is_event_valid = true;
+                    event_valid = true;
                     break;
                 }
                     
@@ -448,14 +417,20 @@ GameServer::running_game_stage()
                     
                         //FIXME: players validation needed?
                     
-                    is_event_valid = true;
+                    event_valid = true;
                     break;
                 }
                     
                 case Events_CLActionSpell:
                 {
                         //FIXME: validation needed, at least for players id
-                    is_event_valid = true;
+                    event_valid = true;
+                    break;
+                }
+                    
+                case Events_CLActionAttack:
+                {
+                    event_valid = true;
                     break;
                 }
                     
@@ -464,11 +439,11 @@ GameServer::running_game_stage()
                     break;
             }
             
-            if(is_event_valid) // add received event to the gameworld
+            if(event_valid) // add received event to the gameworld
             {
                 auto& in_events = m_pGameWorld->GetIncomingEvents();
                 std::vector<uint8_t> event(buf,
-                                           buf + bytes_read);
+                                           buf + pack_size);
                 in_events.emplace(event);
             }
         }
@@ -476,6 +451,22 @@ GameServer::running_game_stage()
         auto frame_end = steady_clock::now();
         
         m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
+        
+        auto& out_events = m_pGameWorld->GetOutgoingEvents();
+        while(out_events.size())
+        {
+            auto event = out_events.front();
+            SendToAll(event.data(), event.size());
+            out_events.pop();
+        }
+        
+        if(time_no_receive >= 30s)
+        {
+            m_oMsgBuilder << "Server timeout exceeded.";
+            m_oLogSys.Write(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+            shutdown();
+        }
     }
 }
 

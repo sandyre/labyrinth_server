@@ -38,13 +38,19 @@ struct CLActionItem;
 
 struct SVActionItem;
 
+struct MageTeleport;
+
+struct MageFreeze;
+
+struct Spell;
+
 struct CLActionSpell;
 
 struct SVActionSpell;
 
-struct CLActionSwamp;
+struct CLActionAttack;
 
-struct SVActionSwamp;
+struct SVActionAttack;
 
 struct CLActionDuel;
 
@@ -90,20 +96,20 @@ inline const char *EnumNameConnectionStatus(ConnectionStatus e) {
 }
 
 enum HeroType {
-  HeroType_AIR_ELEMENTALIST = 0,
-  HeroType_WATER_ELEMENTALIST = 1,
-  HeroType_FIRE_ELEMENTALIST = 2,
-  HeroType_EARTH_ELEMENTALIST = 3,
-  HeroType_MIN = HeroType_AIR_ELEMENTALIST,
-  HeroType_MAX = HeroType_EARTH_ELEMENTALIST
+  HeroType_WARRIOR = 0,
+  HeroType_MAGE = 1,
+  HeroType_ROGUE = 2,
+  HeroType_PRIEST = 3,
+  HeroType_MIN = HeroType_WARRIOR,
+  HeroType_MAX = HeroType_PRIEST
 };
 
 inline const char **EnumNamesHeroType() {
   static const char *names[] = {
-    "AIR_ELEMENTALIST",
-    "WATER_ELEMENTALIST",
-    "FIRE_ELEMENTALIST",
-    "EARTH_ELEMENTALIST",
+    "WARRIOR",
+    "MAGE",
+    "ROGUE",
+    "PRIEST",
     nullptr
   };
   return names;
@@ -137,51 +143,43 @@ inline const char *EnumNameActionItemType(ActionItemType e) {
   return EnumNamesActionItemType()[index];
 }
 
-enum ActionSpellTarget {
-  ActionSpellTarget_TARGET_PLAYER = 0,
-  ActionSpellTarget_TARGET_MONSTER = 1,
-  ActionSpellTarget_TARGET_POINT = 2,
-  ActionSpellTarget_MIN = ActionSpellTarget_TARGET_PLAYER,
-  ActionSpellTarget_MAX = ActionSpellTarget_TARGET_POINT
+enum Spells {
+  Spells_NONE = 0,
+  Spells_MageTeleport = 1,
+  Spells_MageFreeze = 2,
+  Spells_MIN = Spells_NONE,
+  Spells_MAX = Spells_MageFreeze
 };
 
-inline const char **EnumNamesActionSpellTarget() {
+inline const char **EnumNamesSpells() {
   static const char *names[] = {
-    "TARGET_PLAYER",
-    "TARGET_MONSTER",
-    "TARGET_POINT",
+    "NONE",
+    "MageTeleport",
+    "MageFreeze",
     nullptr
   };
   return names;
 }
 
-inline const char *EnumNameActionSpellTarget(ActionSpellTarget e) {
+inline const char *EnumNameSpells(Spells e) {
   const size_t index = static_cast<int>(e);
-  return EnumNamesActionSpellTarget()[index];
+  return EnumNamesSpells()[index];
 }
 
-enum ActionSwampStatus {
-  ActionSwampStatus_STARTED = 0,
-  ActionSwampStatus_ESCAPED = 1,
-  ActionSwampStatus_DIED = 2,
-  ActionSwampStatus_MIN = ActionSwampStatus_STARTED,
-  ActionSwampStatus_MAX = ActionSwampStatus_DIED
+template<typename T> struct SpellsTraits {
+  static const Spells enum_value = Spells_NONE;
 };
 
-inline const char **EnumNamesActionSwampStatus() {
-  static const char *names[] = {
-    "STARTED",
-    "ESCAPED",
-    "DIED",
-    nullptr
-  };
-  return names;
-}
+template<> struct SpellsTraits<MageTeleport> {
+  static const Spells enum_value = Spells_MageTeleport;
+};
 
-inline const char *EnumNameActionSwampStatus(ActionSwampStatus e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesActionSwampStatus()[index];
-}
+template<> struct SpellsTraits<MageFreeze> {
+  static const Spells enum_value = Spells_MageFreeze;
+};
+
+bool VerifySpells(flatbuffers::Verifier &verifier, const void *obj, Spells type);
+bool VerifySpellsVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
 
 enum ActionDuelType {
   ActionDuelType_STARTED = 0,
@@ -290,8 +288,8 @@ enum Events {
   Events_SVActionMove = 13,
   Events_CLActionItem = 14,
   Events_SVActionItem = 15,
-  Events_CLActionSwamp = 16,
-  Events_SVActionSwamp = 17,
+  Events_CLActionAttack = 16,
+  Events_SVActionAttack = 17,
   Events_CLActionDuel = 18,
   Events_SVActionDuel = 19,
   Events_CLActionSpell = 20,
@@ -326,8 +324,8 @@ inline const char **EnumNamesEvents() {
     "SVActionMove",
     "CLActionItem",
     "SVActionItem",
-    "CLActionSwamp",
-    "SVActionSwamp",
+    "CLActionAttack",
+    "SVActionAttack",
     "CLActionDuel",
     "SVActionDuel",
     "CLActionSpell",
@@ -414,12 +412,12 @@ template<> struct EventsTraits<SVActionItem> {
   static const Events enum_value = Events_SVActionItem;
 };
 
-template<> struct EventsTraits<CLActionSwamp> {
-  static const Events enum_value = Events_CLActionSwamp;
+template<> struct EventsTraits<CLActionAttack> {
+  static const Events enum_value = Events_CLActionAttack;
 };
 
-template<> struct EventsTraits<SVActionSwamp> {
-  static const Events enum_value = Events_SVActionSwamp;
+template<> struct EventsTraits<SVActionAttack> {
+  static const Events enum_value = Events_SVActionAttack;
 };
 
 template<> struct EventsTraits<CLActionDuel> {
@@ -716,7 +714,7 @@ struct CLHeroPickBuilder {
 inline flatbuffers::Offset<CLHeroPick> CreateCLHeroPick(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
-    HeroType hero_type = HeroType_AIR_ELEMENTALIST) {
+    HeroType hero_type = HeroType_WARRIOR) {
   CLHeroPickBuilder builder_(_fbb);
   builder_.add_player_uid(player_uid);
   builder_.add_hero_type(hero_type);
@@ -766,7 +764,7 @@ struct SVHeroPickBuilder {
 inline flatbuffers::Offset<SVHeroPick> CreateSVHeroPick(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
-    HeroType hero_type = HeroType_AIR_ELEMENTALIST) {
+    HeroType hero_type = HeroType_WARRIOR) {
   SVHeroPickBuilder builder_(_fbb);
   builder_.add_player_uid(player_uid);
   builder_.add_hero_type(hero_type);
@@ -1221,13 +1219,152 @@ inline flatbuffers::Offset<SVActionItem> CreateSVActionItem(
   return builder_.Finish();
 }
 
+struct MageTeleport FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_X = 4,
+    VT_Y = 6
+  };
+  uint16_t x() const {
+    return GetField<uint16_t>(VT_X, 0);
+  }
+  uint16_t y() const {
+    return GetField<uint16_t>(VT_Y, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint16_t>(verifier, VT_X) &&
+           VerifyField<uint16_t>(verifier, VT_Y) &&
+           verifier.EndTable();
+  }
+};
+
+struct MageTeleportBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_x(uint16_t x) {
+    fbb_.AddElement<uint16_t>(MageTeleport::VT_X, x, 0);
+  }
+  void add_y(uint16_t y) {
+    fbb_.AddElement<uint16_t>(MageTeleport::VT_Y, y, 0);
+  }
+  MageTeleportBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MageTeleportBuilder &operator=(const MageTeleportBuilder &);
+  flatbuffers::Offset<MageTeleport> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<MageTeleport>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MageTeleport> CreateMageTeleport(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint16_t x = 0,
+    uint16_t y = 0) {
+  MageTeleportBuilder builder_(_fbb);
+  builder_.add_y(y);
+  builder_.add_x(x);
+  return builder_.Finish();
+}
+
+struct MageFreeze FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ENEMY_ID = 4
+  };
+  uint32_t enemy_id() const {
+    return GetField<uint32_t>(VT_ENEMY_ID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENEMY_ID) &&
+           verifier.EndTable();
+  }
+};
+
+struct MageFreezeBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_enemy_id(uint32_t enemy_id) {
+    fbb_.AddElement<uint32_t>(MageFreeze::VT_ENEMY_ID, enemy_id, 0);
+  }
+  MageFreezeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MageFreezeBuilder &operator=(const MageFreezeBuilder &);
+  flatbuffers::Offset<MageFreeze> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<MageFreeze>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MageFreeze> CreateMageFreeze(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t enemy_id = 0) {
+  MageFreezeBuilder builder_(_fbb);
+  builder_.add_enemy_id(enemy_id);
+  return builder_.Finish();
+}
+
+struct Spell FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_SPELL_TYPE = 4,
+    VT_SPELL = 6
+  };
+  Spells spell_type() const {
+    return static_cast<Spells>(GetField<uint8_t>(VT_SPELL_TYPE, 0));
+  }
+  const void *spell() const {
+    return GetPointer<const void *>(VT_SPELL);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_SPELL_TYPE) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_SPELL) &&
+           VerifySpells(verifier, spell(), spell_type()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SpellBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_spell_type(Spells spell_type) {
+    fbb_.AddElement<uint8_t>(Spell::VT_SPELL_TYPE, static_cast<uint8_t>(spell_type), 0);
+  }
+  void add_spell(flatbuffers::Offset<void> spell) {
+    fbb_.AddOffset(Spell::VT_SPELL, spell);
+  }
+  SpellBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SpellBuilder &operator=(const SpellBuilder &);
+  flatbuffers::Offset<Spell> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<Spell>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Spell> CreateSpell(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    Spells spell_type = Spells_NONE,
+    flatbuffers::Offset<void> spell = 0) {
+  SpellBuilder builder_(_fbb);
+  builder_.add_spell(spell);
+  builder_.add_spell_type(spell_type);
+  return builder_.Finish();
+}
+
 struct CLActionSpell FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
     VT_SPELL_ID = 6,
-    VT_SPELL_TARGET = 8,
-    VT_X_OR_ID = 10,
-    VT_Y = 12
+    VT_SPELL_INFO = 8
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
@@ -1235,22 +1372,15 @@ struct CLActionSpell FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t spell_id() const {
     return GetField<uint16_t>(VT_SPELL_ID, 0);
   }
-  ActionSpellTarget spell_target() const {
-    return static_cast<ActionSpellTarget>(GetField<int8_t>(VT_SPELL_TARGET, 0));
-  }
-  uint32_t x_or_id() const {
-    return GetField<uint32_t>(VT_X_OR_ID, 0);
-  }
-  uint32_t y() const {
-    return GetField<uint32_t>(VT_Y, 0);
+  const Spell *spell_info() const {
+    return GetPointer<const Spell *>(VT_SPELL_INFO);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
            VerifyField<uint16_t>(verifier, VT_SPELL_ID) &&
-           VerifyField<int8_t>(verifier, VT_SPELL_TARGET) &&
-           VerifyField<uint32_t>(verifier, VT_X_OR_ID) &&
-           VerifyField<uint32_t>(verifier, VT_Y) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_SPELL_INFO) &&
+           verifier.VerifyTable(spell_info()) &&
            verifier.EndTable();
   }
 };
@@ -1264,14 +1394,8 @@ struct CLActionSpellBuilder {
   void add_spell_id(uint16_t spell_id) {
     fbb_.AddElement<uint16_t>(CLActionSpell::VT_SPELL_ID, spell_id, 0);
   }
-  void add_spell_target(ActionSpellTarget spell_target) {
-    fbb_.AddElement<int8_t>(CLActionSpell::VT_SPELL_TARGET, static_cast<int8_t>(spell_target), 0);
-  }
-  void add_x_or_id(uint32_t x_or_id) {
-    fbb_.AddElement<uint32_t>(CLActionSpell::VT_X_OR_ID, x_or_id, 0);
-  }
-  void add_y(uint32_t y) {
-    fbb_.AddElement<uint32_t>(CLActionSpell::VT_Y, y, 0);
+  void add_spell_info(flatbuffers::Offset<Spell> spell_info) {
+    fbb_.AddOffset(CLActionSpell::VT_SPELL_INFO, spell_info);
   }
   CLActionSpellBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1279,7 +1403,7 @@ struct CLActionSpellBuilder {
   }
   CLActionSpellBuilder &operator=(const CLActionSpellBuilder &);
   flatbuffers::Offset<CLActionSpell> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_, 3);
     auto o = flatbuffers::Offset<CLActionSpell>(end);
     return o;
   }
@@ -1289,15 +1413,11 @@ inline flatbuffers::Offset<CLActionSpell> CreateCLActionSpell(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
     uint16_t spell_id = 0,
-    ActionSpellTarget spell_target = ActionSpellTarget_TARGET_PLAYER,
-    uint32_t x_or_id = 0,
-    uint32_t y = 0) {
+    flatbuffers::Offset<Spell> spell_info = 0) {
   CLActionSpellBuilder builder_(_fbb);
-  builder_.add_y(y);
-  builder_.add_x_or_id(x_or_id);
+  builder_.add_spell_info(spell_info);
   builder_.add_player_uid(player_uid);
   builder_.add_spell_id(spell_id);
-  builder_.add_spell_target(spell_target);
   return builder_.Finish();
 }
 
@@ -1305,9 +1425,7 @@ struct SVActionSpell FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
     VT_SPELL_ID = 6,
-    VT_SPELL_TARGET = 8,
-    VT_POINT_X = 10,
-    VT_POINT_Y = 12
+    VT_SPELL_INFO = 8
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
@@ -1315,22 +1433,15 @@ struct SVActionSpell FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint16_t spell_id() const {
     return GetField<uint16_t>(VT_SPELL_ID, 0);
   }
-  ActionSpellTarget spell_target() const {
-    return static_cast<ActionSpellTarget>(GetField<int8_t>(VT_SPELL_TARGET, 0));
-  }
-  uint32_t point_x() const {
-    return GetField<uint32_t>(VT_POINT_X, 0);
-  }
-  uint32_t point_y() const {
-    return GetField<uint32_t>(VT_POINT_Y, 0);
+  const Spell *spell_info() const {
+    return GetPointer<const Spell *>(VT_SPELL_INFO);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
            VerifyField<uint16_t>(verifier, VT_SPELL_ID) &&
-           VerifyField<int8_t>(verifier, VT_SPELL_TARGET) &&
-           VerifyField<uint32_t>(verifier, VT_POINT_X) &&
-           VerifyField<uint32_t>(verifier, VT_POINT_Y) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_SPELL_INFO) &&
+           verifier.VerifyTable(spell_info()) &&
            verifier.EndTable();
   }
 };
@@ -1344,14 +1455,8 @@ struct SVActionSpellBuilder {
   void add_spell_id(uint16_t spell_id) {
     fbb_.AddElement<uint16_t>(SVActionSpell::VT_SPELL_ID, spell_id, 0);
   }
-  void add_spell_target(ActionSpellTarget spell_target) {
-    fbb_.AddElement<int8_t>(SVActionSpell::VT_SPELL_TARGET, static_cast<int8_t>(spell_target), 0);
-  }
-  void add_point_x(uint32_t point_x) {
-    fbb_.AddElement<uint32_t>(SVActionSpell::VT_POINT_X, point_x, 0);
-  }
-  void add_point_y(uint32_t point_y) {
-    fbb_.AddElement<uint32_t>(SVActionSpell::VT_POINT_Y, point_y, 0);
+  void add_spell_info(flatbuffers::Offset<Spell> spell_info) {
+    fbb_.AddOffset(SVActionSpell::VT_SPELL_INFO, spell_info);
   }
   SVActionSpellBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1359,7 +1464,7 @@ struct SVActionSpellBuilder {
   }
   SVActionSpellBuilder &operator=(const SVActionSpellBuilder &);
   flatbuffers::Offset<SVActionSpell> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
+    const auto end = fbb_.EndTable(start_, 3);
     auto o = flatbuffers::Offset<SVActionSpell>(end);
     return o;
   }
@@ -1369,115 +1474,151 @@ inline flatbuffers::Offset<SVActionSpell> CreateSVActionSpell(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
     uint16_t spell_id = 0,
-    ActionSpellTarget spell_target = ActionSpellTarget_TARGET_PLAYER,
-    uint32_t point_x = 0,
-    uint32_t point_y = 0) {
+    flatbuffers::Offset<Spell> spell_info = 0) {
   SVActionSpellBuilder builder_(_fbb);
-  builder_.add_point_y(point_y);
-  builder_.add_point_x(point_x);
+  builder_.add_spell_info(spell_info);
   builder_.add_player_uid(player_uid);
   builder_.add_spell_id(spell_id);
-  builder_.add_spell_target(spell_target);
   return builder_.Finish();
 }
 
-struct CLActionSwamp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct CLActionAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER_UID = 4,
-    VT_STATUS = 6
+    VT_TARGET1_UID = 4,
+    VT_TARGET2_UID = 6,
+    VT_DAMAGE = 8,
+    VT_MODIFICATORS = 10
   };
-  uint32_t player_uid() const {
-    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  uint32_t target1_uid() const {
+    return GetField<uint32_t>(VT_TARGET1_UID, 0);
   }
-  ActionSwampStatus status() const {
-    return static_cast<ActionSwampStatus>(GetField<int8_t>(VT_STATUS, 0));
+  uint32_t target2_uid() const {
+    return GetField<uint32_t>(VT_TARGET2_UID, 0);
+  }
+  uint16_t damage() const {
+    return GetField<uint16_t>(VT_DAMAGE, 0);
+  }
+  int8_t modificators() const {
+    return GetField<int8_t>(VT_MODIFICATORS, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
-           VerifyField<int8_t>(verifier, VT_STATUS) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
+           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
+           VerifyField<int8_t>(verifier, VT_MODIFICATORS) &&
            verifier.EndTable();
   }
 };
 
-struct CLActionSwampBuilder {
+struct CLActionAttackBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(CLActionSwamp::VT_PLAYER_UID, player_uid, 0);
+  void add_target1_uid(uint32_t target1_uid) {
+    fbb_.AddElement<uint32_t>(CLActionAttack::VT_TARGET1_UID, target1_uid, 0);
   }
-  void add_status(ActionSwampStatus status) {
-    fbb_.AddElement<int8_t>(CLActionSwamp::VT_STATUS, static_cast<int8_t>(status), 0);
+  void add_target2_uid(uint32_t target2_uid) {
+    fbb_.AddElement<uint32_t>(CLActionAttack::VT_TARGET2_UID, target2_uid, 0);
   }
-  CLActionSwampBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  void add_damage(uint16_t damage) {
+    fbb_.AddElement<uint16_t>(CLActionAttack::VT_DAMAGE, damage, 0);
+  }
+  void add_modificators(int8_t modificators) {
+    fbb_.AddElement<int8_t>(CLActionAttack::VT_MODIFICATORS, modificators, 0);
+  }
+  CLActionAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  CLActionSwampBuilder &operator=(const CLActionSwampBuilder &);
-  flatbuffers::Offset<CLActionSwamp> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<CLActionSwamp>(end);
+  CLActionAttackBuilder &operator=(const CLActionAttackBuilder &);
+  flatbuffers::Offset<CLActionAttack> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<CLActionAttack>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CLActionSwamp> CreateCLActionSwamp(
+inline flatbuffers::Offset<CLActionAttack> CreateCLActionAttack(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0,
-    ActionSwampStatus status = ActionSwampStatus_STARTED) {
-  CLActionSwampBuilder builder_(_fbb);
-  builder_.add_player_uid(player_uid);
-  builder_.add_status(status);
+    uint32_t target1_uid = 0,
+    uint32_t target2_uid = 0,
+    uint16_t damage = 0,
+    int8_t modificators = 0) {
+  CLActionAttackBuilder builder_(_fbb);
+  builder_.add_target2_uid(target2_uid);
+  builder_.add_target1_uid(target1_uid);
+  builder_.add_damage(damage);
+  builder_.add_modificators(modificators);
   return builder_.Finish();
 }
 
-struct SVActionSwamp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct SVActionAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_PLAYER_UID = 4,
-    VT_STATUS = 6
+    VT_TARGET1_UID = 4,
+    VT_TARGET2_UID = 6,
+    VT_DAMAGE = 8,
+    VT_MODIFICATORS = 10
   };
-  uint32_t player_uid() const {
-    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  uint32_t target1_uid() const {
+    return GetField<uint32_t>(VT_TARGET1_UID, 0);
   }
-  ActionSwampStatus status() const {
-    return static_cast<ActionSwampStatus>(GetField<int8_t>(VT_STATUS, 0));
+  uint32_t target2_uid() const {
+    return GetField<uint32_t>(VT_TARGET2_UID, 0);
+  }
+  uint16_t damage() const {
+    return GetField<uint16_t>(VT_DAMAGE, 0);
+  }
+  int8_t modificators() const {
+    return GetField<int8_t>(VT_MODIFICATORS, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
-           VerifyField<int8_t>(verifier, VT_STATUS) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
+           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
+           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
+           VerifyField<int8_t>(verifier, VT_MODIFICATORS) &&
            verifier.EndTable();
   }
 };
 
-struct SVActionSwampBuilder {
+struct SVActionAttackBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(SVActionSwamp::VT_PLAYER_UID, player_uid, 0);
+  void add_target1_uid(uint32_t target1_uid) {
+    fbb_.AddElement<uint32_t>(SVActionAttack::VT_TARGET1_UID, target1_uid, 0);
   }
-  void add_status(ActionSwampStatus status) {
-    fbb_.AddElement<int8_t>(SVActionSwamp::VT_STATUS, static_cast<int8_t>(status), 0);
+  void add_target2_uid(uint32_t target2_uid) {
+    fbb_.AddElement<uint32_t>(SVActionAttack::VT_TARGET2_UID, target2_uid, 0);
   }
-  SVActionSwampBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  void add_damage(uint16_t damage) {
+    fbb_.AddElement<uint16_t>(SVActionAttack::VT_DAMAGE, damage, 0);
+  }
+  void add_modificators(int8_t modificators) {
+    fbb_.AddElement<int8_t>(SVActionAttack::VT_MODIFICATORS, modificators, 0);
+  }
+  SVActionAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  SVActionSwampBuilder &operator=(const SVActionSwampBuilder &);
-  flatbuffers::Offset<SVActionSwamp> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
-    auto o = flatbuffers::Offset<SVActionSwamp>(end);
+  SVActionAttackBuilder &operator=(const SVActionAttackBuilder &);
+  flatbuffers::Offset<SVActionAttack> Finish() {
+    const auto end = fbb_.EndTable(start_, 4);
+    auto o = flatbuffers::Offset<SVActionAttack>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<SVActionSwamp> CreateSVActionSwamp(
+inline flatbuffers::Offset<SVActionAttack> CreateSVActionAttack(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0,
-    ActionSwampStatus status = ActionSwampStatus_STARTED) {
-  SVActionSwampBuilder builder_(_fbb);
-  builder_.add_player_uid(player_uid);
-  builder_.add_status(status);
+    uint32_t target1_uid = 0,
+    uint32_t target2_uid = 0,
+    uint16_t damage = 0,
+    int8_t modificators = 0) {
+  SVActionAttackBuilder builder_(_fbb);
+  builder_.add_target2_uid(target2_uid);
+  builder_.add_target1_uid(target1_uid);
+  builder_.add_damage(damage);
+  builder_.add_modificators(modificators);
   return builder_.Finish();
 }
 
@@ -2232,6 +2373,34 @@ inline flatbuffers::Offset<Message> CreateMessage(
   return builder_.Finish();
 }
 
+inline bool VerifySpells(flatbuffers::Verifier &verifier, const void *obj, Spells type) {
+  switch (type) {
+    case Spells_NONE: {
+      return true;
+    }
+    case Spells_MageTeleport: {
+      auto ptr = reinterpret_cast<const MageTeleport *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Spells_MageFreeze: {
+      auto ptr = reinterpret_cast<const MageFreeze *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return false;
+  }
+}
+
+inline bool VerifySpellsVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+  if (values->size() != types->size()) return false;
+  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+    if (!VerifySpells(
+        verifier,  values->Get(i), types->GetEnum<Spells>(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Events type) {
   switch (type) {
     case Events_NONE: {
@@ -2297,12 +2466,12 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
       auto ptr = reinterpret_cast<const SVActionItem *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Events_CLActionSwamp: {
-      auto ptr = reinterpret_cast<const CLActionSwamp *>(obj);
+    case Events_CLActionAttack: {
+      auto ptr = reinterpret_cast<const CLActionAttack *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Events_SVActionSwamp: {
-      auto ptr = reinterpret_cast<const SVActionSwamp *>(obj);
+    case Events_SVActionAttack: {
+      auto ptr = reinterpret_cast<const SVActionAttack *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Events_CLActionDuel: {
