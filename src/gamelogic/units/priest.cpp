@@ -39,7 +39,7 @@ Priest::SpellCast(const GameEvent::CLActionSpell*)
 }
 
 void
-Priest::update(std::chrono::milliseconds delta)
+Priest::update(std::chrono::microseconds delta)
 {
     Hero::update(delta);
     

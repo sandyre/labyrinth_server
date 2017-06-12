@@ -72,62 +72,7 @@ Rogue::TakeItem(Item * item)
 }
 
 void
-Rogue::Attack(const GameEvent::CLActionAttack* atk_msg)
-{
-    bool bIgnorArmor = false;
-        // calculate chance of ignoring the armor
-    if(m_oRandDistr(m_oRandGen) % 4 == 0)
-    {
-        bIgnorArmor = true;
-    }
-    
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-        // Log duel start event
-    m_oLogBuilder << this->GetName() << " ATK TO " << m_pDuelTarget->GetName()
-    << " for " << (bIgnorArmor ? m_nActualDamage : m_nActualDamage - m_pDuelTarget->GetArmor());
-    m_pLogSystem->Write(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
-    
-    m_pDuelTarget->TakeDamage(m_nActualDamage, bIgnorArmor);
-    
-    flatbuffers::FlatBufferBuilder builder;
-    auto atk = GameEvent::CreateSVActionAttack(builder,
-                                               this->GetUID(),
-                                               m_pDuelTarget->GetUID(),
-                                               m_nActualDamage,
-                                               bIgnorArmor ? 1 : 0); // FIXME: 1 means 'ignor armor'
-    auto msg = GameEvent::CreateMessage(builder,
-                                        GameEvent::Events_SVActionAttack,
-                                        atk.Union());
-    builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
-                                        builder.GetBufferPointer() + builder.GetSize());
-    builder.Clear();
-    
-    if(m_pDuelTarget->GetState() == Unit::State::DEAD)
-    {
-            // Log duel end (kill)
-        m_oLogBuilder << this->GetName() << " DUEL KILL " << m_pDuelTarget->GetName();
-        m_pLogSystem->Write(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
-        auto kill = GameEvent::CreateSVActionDuel(builder,
-                                                  this->GetUID(),
-                                                  m_pDuelTarget->GetUID(),
-                                                  GameEvent::ActionDuelType_KILL);
-        auto msg = GameEvent::CreateMessage(builder,
-                                            GameEvent::Events_SVActionDuel,
-                                            kill.Union());
-        builder.Finish(msg);
-        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
-        builder.Clear();
-        EndDuel();
-    }
-}
-
-void
-Rogue::update(std::chrono::milliseconds delta)
+Rogue::update(std::chrono::microseconds delta)
 {
     Hero::update(delta);
 }

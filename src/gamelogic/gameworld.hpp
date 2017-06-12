@@ -42,7 +42,7 @@ public:
     ~GameWorld();
     
     virtual void SetLoggingSystem(LogSystem *);
-    virtual void update(std::chrono::milliseconds);
+    virtual void update(std::chrono::microseconds);
     
     void    AddPlayer(Player);
     void    CreateGameMap(const GameMap::Configuration&);
@@ -52,6 +52,8 @@ public:
     std::queue<std::vector<uint8_t>>&   GetIncomingEvents();
 protected:
     void    ApplyInputEvents();
+    
+    Monster *   SpawnMonster();
     
     Point2  GetRandomPosition();
 protected:
@@ -67,11 +69,15 @@ protected:
     uint32_t                    m_nObjUIDSeq;
     
         // contains objects that should be respawned
-    std::vector<std::pair<std::chrono::milliseconds, Unit*>> m_aRespawnQueue;
+    std::vector<std::pair<std::chrono::microseconds, Unit*>> m_aRespawnQueue;
     
         // just a random generator
     std::mt19937    m_oRandGen;
     std::uniform_int_distribution<> m_oRandDistr;
+    
+        // monster spawning timer
+    std::chrono::microseconds   m_nMonsterSpawnInterval;
+    std::chrono::microseconds   m_nMonsterSpawnTimer;
     
         // logsystem from gameserver
     LogSystem * m_pLogSystem;

@@ -16,12 +16,16 @@
 #include <string>
 #include <vector>
 
+class Mage;
+class Warrior;
+
 class Effect;
 class WarriorDash;
 class WarriorArmorUp;
 class RogueInvisibility;
 class MageFreeze;
 class DuelInvulnerability;
+class RespawnInvulnerability;
 
 class Unit : public GameObject
 {
@@ -39,6 +43,13 @@ public:
         LEFT,
         RIGHT
     };
+    enum class MoveDirection
+    {
+        UP = 0x00,
+        DOWN = 0x01,
+        LEFT = 0x02,
+        RIGHT = 0x03
+    };
     enum class State
     {
         UNDEFINED,
@@ -47,10 +58,22 @@ public:
         DUEL,
         DEAD
     };
+    enum class DamageType
+    {
+        PHYSICAL = 0x00,
+        MAGICAL = 0x01
+    };
+    struct Attributes
+    {
+        static const int INPUT = 0x01;
+        static const int ATTACK = 0x02;
+        static const int DUELABLE = 0x04;
+    };
 public:
     Unit::Type          GetUnitType() const;
     Unit::State         GetState() const;
     Unit::Orientation   GetOrientation() const;
+    uint32_t            GetUnitAttributes() const;
     
     std::string         GetName() const;
     void                SetName(const std::string&);
@@ -64,31 +87,33 @@ public:
     std::vector<Item*>& GetInventory();
     virtual void        UpdateStats(); // based on inventory
 
+    virtual void    TakeDamage(int16_t, DamageType, Unit *);
     virtual void    Spawn(Point2);
     virtual void    Respawn(Point2);
-    virtual void    Move(Point2);
+    virtual void    Move(MoveDirection);
     virtual void    TakeItem(Item*);
     virtual void    DropItem(int32_t index);
     
     virtual void    StartDuel(Unit*);
-    virtual void    Attack(const GameEvent::CLActionAttack*);
-    virtual void    TakeDamage(int16_t, uint8_t);
     virtual void    EndDuel();
     
-    virtual void    Die();
+    virtual void    Die(Unit *);
     
         // additional funcs
     virtual void    ApplyEffect(Effect*);
 protected:
     Unit();
     
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void        update(std::chrono::microseconds) override;
+    virtual void        UpdateCDs(std::chrono::microseconds);
 protected:
     Unit::Type          m_eUnitType;
     Unit::State         m_eState;
     Unit::Orientation   m_eOrientation;
     
     std::string         m_sName;
+    
+    uint32_t            m_nUnitAttributes;
     
     int16_t             m_nBaseDamage;
     int16_t             m_nActualDamage;
@@ -98,6 +123,7 @@ protected:
     
     float   m_nMoveSpeed;
     
+    std::vector<std::tuple<bool, std::chrono::microseconds, std::chrono::microseconds>> m_aSpellCDs;
     std::vector<Item*>  m_aInventory;
         // Duel-data
     Unit *              m_pDuelTarget;
@@ -109,6 +135,10 @@ protected:
     friend RogueInvisibility;
     friend MageFreeze;
     friend DuelInvulnerability;
+    friend RespawnInvulnerability;
+    
+    friend Mage;
+    friend Warrior;
 };
 
 #endif /* unit_hpp */

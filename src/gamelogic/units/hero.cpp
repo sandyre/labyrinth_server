@@ -26,25 +26,7 @@ Hero::GetHero() const
 }
 
 void
-Hero::update(std::chrono::milliseconds delta)
+Hero::update(std::chrono::microseconds delta)
 {
     Unit::update(delta);
-    UpdateCDs(delta);
-}
-
-void
-Hero::UpdateCDs(std::chrono::milliseconds delta)
-{
-    for(int i = 0; i < m_aSpellCDs.size(); ++i)
-    {
-        if(std::get<0>(m_aSpellCDs[i]) == false)
-        {
-            std::get<1>(m_aSpellCDs[i]) -= delta;
-        }
-        else
-        {
-            std::get<0>(m_aSpellCDs[i]) = true;
-            std::get<1>(m_aSpellCDs[i]) = 0s;
-        }
-    }
 }

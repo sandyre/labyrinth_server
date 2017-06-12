@@ -25,6 +25,8 @@
 #include <Poco/Data/SessionFactory.h>
 #include "flatbuffers/flatbuffers.h"
 
+
+#include "shell.hpp"
 #include "player.hpp"
 #include "gameserver.hpp"
 #include "logsystem.hpp"
@@ -88,6 +90,11 @@ protected:
     
         // Labyrinth database
     std::unique_ptr<Poco::Data::Session> m_poDBSession;
+    
+        // Shell
+    std::unique_ptr<Shell> m_poShell;
+    
+    friend Shell;
 };
 
 #endif /* masterserver_hpp */

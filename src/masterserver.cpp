@@ -8,15 +8,21 @@
 
 #include "masterserver.hpp"
 
-#include <chrono>
-#include <limits>
-#include <memory>
-#include <utility>
+#include "msnet_generated.h"
+
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Data/MySQL/MySQLException.h>
 #include <Poco/Net/MailMessage.h>
 #include <Poco/Net/SMTPClientSession.h>
-#include "msnet_generated.h"
+#include <Poco/Net/HTTPClientSession.h>
+#include <Poco/Net/HTTPRequest.h>
+#include <Poco/Net/HTTPResponse.h>
+#include <Poco/URI.h>
+
+#include <chrono>
+#include <limits>
+#include <memory>
+#include <utility>
 
 using namespace MasterEvent;
 using namespace Poco::Data::Keywords;
@@ -38,7 +44,7 @@ MasterServer::~MasterServer()
     m_oLogSys.Close();
     m_oSocket.close();
     m_oMsgBuilder << "Shutdown";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Info(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
 }
 
@@ -46,36 +52,66 @@ void
 MasterServer::init(uint32_t Port)
 {
         // Init logging
-    m_oLogSys.Init("MS", LogSystem::Mode::STDIO);
+    m_oLogSys.Init("MasterServer", LogSystem::Mode::STDIO);
     m_nSystemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
     
-    m_oMsgBuilder << "Started at " << Port;
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder << "MasterServer booting starts";
+    m_oLogSys.Warning(m_oMsgBuilder.str());
+    m_oMsgBuilder.str("");
+    
+    m_oMsgBuilder << "Labyrinth core version: ";
+    m_oMsgBuilder << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
         // Init Net
     m_oMsgBuilder << "Initializing network...";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
+        // Check inet connection
     try
     {
-        Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
-        m_oSocket.bind(sock_addr);
+        Poco::Net::HTTPClientSession session("api.ipify.org");
+        session.setTimeout(Poco::Timespan(1, 0));
+        Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET,
+                                       "/");
+        Poco::Net::HTTPResponse response;
+        session.sendRequest(request);
         
-        m_nSystemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
-        m_oMsgBuilder << "DONE";
-        m_oLogSys.Write(m_oMsgBuilder.str());
-        m_oMsgBuilder.str("");
-    }
-    catch(std::exception& e)
+        std::istream& rs = session.receiveResponse(response);
+        if(response.getStatus() == Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK)
+        {
+            m_oMsgBuilder << "Public IP: " << rs.rdbuf();
+            m_oLogSys.Info(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+            
+            m_oMsgBuilder << "Binding to port " << Port;
+            m_oLogSys.Info(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+            
+            Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(), Port);
+            m_oSocket.bind(sock_addr);
+            
+            m_oMsgBuilder << "OK";
+            m_oLogSys.Info(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+            
+            m_nSystemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
+            
+            m_oMsgBuilder << "Network initialization done";
+            m_oLogSys.Info(m_oMsgBuilder.str());
+            m_oMsgBuilder.str("");
+        }
+    } catch(std::exception& e)
     {
-        m_oMsgBuilder << "FAILED";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oMsgBuilder << "FAILED. Reason: " << e.what();
+        m_oLogSys.Error(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     
-    for(uint32_t i = 1931; i < (1931 + 2000); ++i)
+        // Fill ports pool
+    for(uint32_t i = 1931; i < (1931 + 150); ++i)
     {
         Poco::Net::DatagramSocket socket;
         Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), i);
@@ -93,19 +129,19 @@ MasterServer::init(uint32_t Port)
     
         // Init gameservers threadpool
     m_oMsgBuilder << "Initializing gameservers threadpool...";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     m_oThreadPool = std::make_unique<Poco::ThreadPool>(10, // min
                                                        40, // max
                                                        120, // idle time
                                                        0); // stack size
-    m_oMsgBuilder << "DONE. Threads available: " << m_oThreadPool->available();
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder << "DONE";
+    m_oLogSys.Info(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
         // Init mail
     m_oMsgBuilder << "Initializing mail service...";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
     m_oMailService.init();
@@ -114,19 +150,19 @@ MasterServer::init(uint32_t Port)
     {
         m_nSystemStatus |= SystemStatus::EMAIL_SYSTEM_ACTIVE;
         m_oMsgBuilder << "DONE";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Info(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     else
     {
         m_oMsgBuilder << "FAILED";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Warning(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     
         // Init DB
     m_oMsgBuilder << "Initializing database service...";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
     try
@@ -138,13 +174,13 @@ MasterServer::init(uint32_t Port)
 
         m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
         m_oMsgBuilder << "DONE";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Info(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     catch(std::exception& e)
     {
         m_oMsgBuilder << "FAILED";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Error(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
     
@@ -152,15 +188,15 @@ MasterServer::init(uint32_t Port)
        !(SystemStatus::DATABASE_SYSTEM_ACTIVE & m_nSystemStatus))
     {
         m_oMsgBuilder << "Critical systems failed to start, aborting";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Error(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
         
         exit(1);
     }
     
         // Everything done
-    m_oMsgBuilder << "MasterServer started running";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oMsgBuilder << "MasterServer is running";
+    m_oLogSys.Warning(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
         // Advanced init - freement timer
@@ -241,7 +277,7 @@ MasterServer::ProcessIncomingMessage()
                     mail << "Thanks for your registration!\n";
                     mail << "Your email: " << email << "\n";
                     mail << "Your password: " << password << "\n";
-                    mail << "Best regards, \nhate-red";
+                    mail << "Best regards, \nHATE|RED";
                     notification.setContent(mail.str());
                     
                     m_oMailService.PushMessage(notification);
@@ -395,7 +431,7 @@ MasterServer::ProcessIncomingMessage()
                               std::string(""));
                 
                 m_oMsgBuilder << "Player connected, UID: " << finder->player_uid();
-                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oLogSys.Info(m_oMsgBuilder.str());
                 m_oMsgBuilder.str("");
                 
                 m_aPlayersPool.emplace_back(std::move(player));
@@ -406,7 +442,7 @@ MasterServer::ProcessIncomingMessage()
             
         default:
             m_oMsgBuilder << "Undefined packet received";
-            m_oLogSys.Write(m_oMsgBuilder.str());
+            m_oLogSys.Warning(m_oMsgBuilder.str());
             m_oMsgBuilder.str("");
             break;
     }
@@ -438,7 +474,7 @@ MasterServer::FreeResourcesAndSaveResults(Poco::Timer& timer)
                          );
     
     m_oMsgBuilder << servers_freed << " servers freed. " << m_aGameServers.size() << " remains.";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Info(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
 }
 

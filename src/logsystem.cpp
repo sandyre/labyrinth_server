@@ -7,11 +7,14 @@
 //
 
 #include "logsystem.hpp"
+#include "date.h"
 
-#include <ctime>
+#include <chrono>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+
+#include <Poco/Thread.h>
 
 LogSystem::LogSystem()
 {
@@ -47,15 +50,64 @@ LogSystem::Init(const std::string &service_name,
 }
 
 void
-LogSystem::Write(const std::string &msg)
+LogSystem::Info(const std::string& msg)
 {
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-    
+    using namespace date;
     std::ostringstream oss;
-    oss << std::put_time(&tm, "[%H-%M-%S]");
-    oss << "[" << m_oServiceName << "] ";
+    oss << cyan;
+    oss << "[" << std::chrono::system_clock::now() << "]";
+    oss << magenta;
+    oss << " {" << m_oServiceName << "} ";
+    oss << reset;
     oss << msg << "\n";
+    
+    if(m_eMode & Mode::FILE)
+    {
+        m_oFileStream << oss.str();
+        m_oFileStream.flush();
+    }
+    if(m_eMode & Mode::STDIO)
+    {
+        std::cout << oss.str();
+    }
+}
+
+void
+LogSystem::Warning(const std::string& msg)
+{
+    using namespace date;
+    std::ostringstream oss;
+    oss << cyan;
+    oss << "[" << std::chrono::system_clock::now() << "]";
+    oss << magenta;
+    oss << " {" << m_oServiceName << "} ";
+    oss << yellow;
+    oss << msg << "\n";
+    oss << reset;
+    
+    if(m_eMode & Mode::FILE)
+    {
+        m_oFileStream << oss.str();
+        m_oFileStream.flush();
+    }
+    if(m_eMode & Mode::STDIO)
+    {
+        std::cout << oss.str();
+    }
+}
+
+void
+LogSystem::Error(const std::string& msg)
+{
+    using namespace date;
+    std::ostringstream oss;
+    oss << cyan;
+    oss << "[" << std::chrono::system_clock::now() << "]";
+    oss << magenta;
+    oss << " {" << m_oServiceName << "} ";
+    oss << red;
+    oss << msg << "\n";
+    oss << reset;
     
     if(m_eMode & Mode::FILE)
     {

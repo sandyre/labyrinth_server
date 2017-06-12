@@ -26,7 +26,6 @@ MailService::init()
     {
         m_poSMTPSession = std::make_unique<Poco::Net::SMTPClientSession>("smtp.timeweb.ru",
                                                                         25);
-        
         m_poSMTPSession->login(Poco::Net::SMTPClientSession::LoginMethod::AUTH_LOGIN,
                               "noreply-labyrinth@hate-red.com",
                               "VdAysb4A");

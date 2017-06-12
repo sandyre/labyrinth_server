@@ -38,9 +38,19 @@ struct CLActionItem;
 
 struct SVActionItem;
 
+struct MageAttack;
+
 struct MageTeleport;
 
 struct MageFreeze;
+
+struct WarriorAttack;
+
+struct MonsterAttack;
+
+struct WarriorDash;
+
+struct WarriorArmorUp;
 
 struct Spell;
 
@@ -48,17 +58,11 @@ struct CLActionSpell;
 
 struct SVActionSpell;
 
-struct CLActionAttack;
-
-struct SVActionAttack;
-
 struct CLActionDuel;
 
 struct SVActionDuel;
 
-struct CLActionMap;
-
-struct SVActionMap;
+struct SVActionDeath;
 
 struct SVSpawnPlayer;
 
@@ -69,6 +73,8 @@ struct SVRespawnPlayer;
 struct SVSpawnItem;
 
 struct SVSpawnConstr;
+
+struct CLRequestWin;
 
 struct SVGameEnd;
 
@@ -145,17 +151,27 @@ inline const char *EnumNameActionItemType(ActionItemType e) {
 
 enum Spells {
   Spells_NONE = 0,
-  Spells_MageTeleport = 1,
-  Spells_MageFreeze = 2,
+  Spells_MageAttack = 1,
+  Spells_MageTeleport = 2,
+  Spells_MageFreeze = 3,
+  Spells_WarriorAttack = 4,
+  Spells_WarriorDash = 5,
+  Spells_WarriorArmorUp = 6,
+  Spells_MonsterAttack = 7,
   Spells_MIN = Spells_NONE,
-  Spells_MAX = Spells_MageFreeze
+  Spells_MAX = Spells_MonsterAttack
 };
 
 inline const char **EnumNamesSpells() {
   static const char *names[] = {
     "NONE",
+    "MageAttack",
     "MageTeleport",
     "MageFreeze",
+    "WarriorAttack",
+    "WarriorDash",
+    "WarriorArmorUp",
+    "MonsterAttack",
     nullptr
   };
   return names;
@@ -170,12 +186,32 @@ template<typename T> struct SpellsTraits {
   static const Spells enum_value = Spells_NONE;
 };
 
+template<> struct SpellsTraits<MageAttack> {
+  static const Spells enum_value = Spells_MageAttack;
+};
+
 template<> struct SpellsTraits<MageTeleport> {
   static const Spells enum_value = Spells_MageTeleport;
 };
 
 template<> struct SpellsTraits<MageFreeze> {
   static const Spells enum_value = Spells_MageFreeze;
+};
+
+template<> struct SpellsTraits<WarriorAttack> {
+  static const Spells enum_value = Spells_WarriorAttack;
+};
+
+template<> struct SpellsTraits<WarriorDash> {
+  static const Spells enum_value = Spells_WarriorDash;
+};
+
+template<> struct SpellsTraits<WarriorArmorUp> {
+  static const Spells enum_value = Spells_WarriorArmorUp;
+};
+
+template<> struct SpellsTraits<MonsterAttack> {
+  static const Spells enum_value = Spells_MonsterAttack;
 };
 
 bool VerifySpells(flatbuffers::Verifier &verifier, const void *obj, Spells type);
@@ -204,27 +240,6 @@ inline const char **EnumNamesActionDuelType() {
 inline const char *EnumNameActionDuelType(ActionDuelType e) {
   const size_t index = static_cast<int>(e);
   return EnumNamesActionDuelType()[index];
-}
-
-enum ActionMapType {
-  ActionMapType_CREATE_BLOCK = 0,
-  ActionMapType_DESTROY_BLOCK = 1,
-  ActionMapType_MIN = ActionMapType_CREATE_BLOCK,
-  ActionMapType_MAX = ActionMapType_DESTROY_BLOCK
-};
-
-inline const char **EnumNamesActionMapType() {
-  static const char *names[] = {
-    "CREATE_BLOCK",
-    "DESTROY_BLOCK",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameActionMapType(ActionMapType e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesActionMapType()[index];
 }
 
 enum ItemType {
@@ -288,20 +303,18 @@ enum Events {
   Events_SVActionMove = 13,
   Events_CLActionItem = 14,
   Events_SVActionItem = 15,
-  Events_CLActionAttack = 16,
-  Events_SVActionAttack = 17,
-  Events_CLActionDuel = 18,
-  Events_SVActionDuel = 19,
-  Events_CLActionSpell = 20,
-  Events_SVActionSpell = 21,
-  Events_CLActionMap = 22,
-  Events_SVActionMap = 23,
-  Events_SVSpawnPlayer = 24,
-  Events_SVRespawnPlayer = 25,
-  Events_SVSpawnMonster = 26,
-  Events_SVSpawnItem = 27,
-  Events_SVSpawnConstr = 28,
-  Events_SVGameEnd = 29,
+  Events_CLActionDuel = 16,
+  Events_SVActionDuel = 17,
+  Events_CLActionSpell = 18,
+  Events_SVActionSpell = 19,
+  Events_CLRequestWin = 20,
+  Events_SVActionDeath = 21,
+  Events_SVSpawnPlayer = 22,
+  Events_SVRespawnPlayer = 23,
+  Events_SVSpawnMonster = 24,
+  Events_SVSpawnItem = 25,
+  Events_SVSpawnConstr = 26,
+  Events_SVGameEnd = 27,
   Events_MIN = Events_NONE,
   Events_MAX = Events_SVGameEnd
 };
@@ -324,14 +337,12 @@ inline const char **EnumNamesEvents() {
     "SVActionMove",
     "CLActionItem",
     "SVActionItem",
-    "CLActionAttack",
-    "SVActionAttack",
     "CLActionDuel",
     "SVActionDuel",
     "CLActionSpell",
     "SVActionSpell",
-    "CLActionMap",
-    "SVActionMap",
+    "CLRequestWin",
+    "SVActionDeath",
     "SVSpawnPlayer",
     "SVRespawnPlayer",
     "SVSpawnMonster",
@@ -412,14 +423,6 @@ template<> struct EventsTraits<SVActionItem> {
   static const Events enum_value = Events_SVActionItem;
 };
 
-template<> struct EventsTraits<CLActionAttack> {
-  static const Events enum_value = Events_CLActionAttack;
-};
-
-template<> struct EventsTraits<SVActionAttack> {
-  static const Events enum_value = Events_SVActionAttack;
-};
-
 template<> struct EventsTraits<CLActionDuel> {
   static const Events enum_value = Events_CLActionDuel;
 };
@@ -436,12 +439,12 @@ template<> struct EventsTraits<SVActionSpell> {
   static const Events enum_value = Events_SVActionSpell;
 };
 
-template<> struct EventsTraits<CLActionMap> {
-  static const Events enum_value = Events_CLActionMap;
+template<> struct EventsTraits<CLRequestWin> {
+  static const Events enum_value = Events_CLRequestWin;
 };
 
-template<> struct EventsTraits<SVActionMap> {
-  static const Events enum_value = Events_SVActionMap;
+template<> struct EventsTraits<SVActionDeath> {
+  static const Events enum_value = Events_SVActionDeath;
 };
 
 template<> struct EventsTraits<SVSpawnPlayer> {
@@ -982,23 +985,18 @@ inline flatbuffers::Offset<SVGameStart> CreateSVGameStart(
 struct CLActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TARGET_UID = 4,
-    VT_X = 6,
-    VT_Y = 8
+    VT_MOV_DIR = 6
   };
   uint32_t target_uid() const {
     return GetField<uint32_t>(VT_TARGET_UID, 0);
   }
-  uint16_t x() const {
-    return GetField<uint16_t>(VT_X, 0);
-  }
-  uint16_t y() const {
-    return GetField<uint16_t>(VT_Y, 0);
+  int8_t mov_dir() const {
+    return GetField<int8_t>(VT_MOV_DIR, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_TARGET_UID) &&
-           VerifyField<uint16_t>(verifier, VT_X) &&
-           VerifyField<uint16_t>(verifier, VT_Y) &&
+           VerifyField<int8_t>(verifier, VT_MOV_DIR) &&
            verifier.EndTable();
   }
 };
@@ -1009,11 +1007,8 @@ struct CLActionMoveBuilder {
   void add_target_uid(uint32_t target_uid) {
     fbb_.AddElement<uint32_t>(CLActionMove::VT_TARGET_UID, target_uid, 0);
   }
-  void add_x(uint16_t x) {
-    fbb_.AddElement<uint16_t>(CLActionMove::VT_X, x, 0);
-  }
-  void add_y(uint16_t y) {
-    fbb_.AddElement<uint16_t>(CLActionMove::VT_Y, y, 0);
+  void add_mov_dir(int8_t mov_dir) {
+    fbb_.AddElement<int8_t>(CLActionMove::VT_MOV_DIR, mov_dir, 0);
   }
   CLActionMoveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1021,7 +1016,7 @@ struct CLActionMoveBuilder {
   }
   CLActionMoveBuilder &operator=(const CLActionMoveBuilder &);
   flatbuffers::Offset<CLActionMove> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 2);
     auto o = flatbuffers::Offset<CLActionMove>(end);
     return o;
   }
@@ -1030,23 +1025,25 @@ struct CLActionMoveBuilder {
 inline flatbuffers::Offset<CLActionMove> CreateCLActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t target_uid = 0,
-    uint16_t x = 0,
-    uint16_t y = 0) {
+    int8_t mov_dir = 0) {
   CLActionMoveBuilder builder_(_fbb);
   builder_.add_target_uid(target_uid);
-  builder_.add_y(y);
-  builder_.add_x(x);
+  builder_.add_mov_dir(mov_dir);
   return builder_.Finish();
 }
 
 struct SVActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TARGET_UID = 4,
-    VT_X = 6,
-    VT_Y = 8
+    VT_MOV_DIR = 6,
+    VT_X = 8,
+    VT_Y = 10
   };
   uint32_t target_uid() const {
     return GetField<uint32_t>(VT_TARGET_UID, 0);
+  }
+  int8_t mov_dir() const {
+    return GetField<int8_t>(VT_MOV_DIR, 0);
   }
   uint16_t x() const {
     return GetField<uint16_t>(VT_X, 0);
@@ -1057,6 +1054,7 @@ struct SVActionMove FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_TARGET_UID) &&
+           VerifyField<int8_t>(verifier, VT_MOV_DIR) &&
            VerifyField<uint16_t>(verifier, VT_X) &&
            VerifyField<uint16_t>(verifier, VT_Y) &&
            verifier.EndTable();
@@ -1068,6 +1066,9 @@ struct SVActionMoveBuilder {
   flatbuffers::uoffset_t start_;
   void add_target_uid(uint32_t target_uid) {
     fbb_.AddElement<uint32_t>(SVActionMove::VT_TARGET_UID, target_uid, 0);
+  }
+  void add_mov_dir(int8_t mov_dir) {
+    fbb_.AddElement<int8_t>(SVActionMove::VT_MOV_DIR, mov_dir, 0);
   }
   void add_x(uint16_t x) {
     fbb_.AddElement<uint16_t>(SVActionMove::VT_X, x, 0);
@@ -1081,7 +1082,7 @@ struct SVActionMoveBuilder {
   }
   SVActionMoveBuilder &operator=(const SVActionMoveBuilder &);
   flatbuffers::Offset<SVActionMove> Finish() {
-    const auto end = fbb_.EndTable(start_, 3);
+    const auto end = fbb_.EndTable(start_, 4);
     auto o = flatbuffers::Offset<SVActionMove>(end);
     return o;
   }
@@ -1090,12 +1091,14 @@ struct SVActionMoveBuilder {
 inline flatbuffers::Offset<SVActionMove> CreateSVActionMove(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t target_uid = 0,
+    int8_t mov_dir = 0,
     uint16_t x = 0,
     uint16_t y = 0) {
   SVActionMoveBuilder builder_(_fbb);
   builder_.add_target_uid(target_uid);
   builder_.add_y(y);
   builder_.add_x(x);
+  builder_.add_mov_dir(mov_dir);
   return builder_.Finish();
 }
 
@@ -1219,6 +1222,56 @@ inline flatbuffers::Offset<SVActionItem> CreateSVActionItem(
   return builder_.Finish();
 }
 
+struct MageAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ENEMY_ID = 4,
+    VT_DAMAGE = 6
+  };
+  uint32_t enemy_id() const {
+    return GetField<uint32_t>(VT_ENEMY_ID, 0);
+  }
+  uint16_t damage() const {
+    return GetField<uint16_t>(VT_DAMAGE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENEMY_ID) &&
+           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
+           verifier.EndTable();
+  }
+};
+
+struct MageAttackBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_enemy_id(uint32_t enemy_id) {
+    fbb_.AddElement<uint32_t>(MageAttack::VT_ENEMY_ID, enemy_id, 0);
+  }
+  void add_damage(uint16_t damage) {
+    fbb_.AddElement<uint16_t>(MageAttack::VT_DAMAGE, damage, 0);
+  }
+  MageAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MageAttackBuilder &operator=(const MageAttackBuilder &);
+  flatbuffers::Offset<MageAttack> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<MageAttack>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MageAttack> CreateMageAttack(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t enemy_id = 0,
+    uint16_t damage = 0) {
+  MageAttackBuilder builder_(_fbb);
+  builder_.add_enemy_id(enemy_id);
+  builder_.add_damage(damage);
+  return builder_.Finish();
+}
+
 struct MageTeleport FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_X = 4,
@@ -1306,6 +1359,162 @@ inline flatbuffers::Offset<MageFreeze> CreateMageFreeze(
     uint32_t enemy_id = 0) {
   MageFreezeBuilder builder_(_fbb);
   builder_.add_enemy_id(enemy_id);
+  return builder_.Finish();
+}
+
+struct WarriorAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ENEMY_ID = 4,
+    VT_DAMAGE = 6
+  };
+  uint32_t enemy_id() const {
+    return GetField<uint32_t>(VT_ENEMY_ID, 0);
+  }
+  uint16_t damage() const {
+    return GetField<uint16_t>(VT_DAMAGE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENEMY_ID) &&
+           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
+           verifier.EndTable();
+  }
+};
+
+struct WarriorAttackBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_enemy_id(uint32_t enemy_id) {
+    fbb_.AddElement<uint32_t>(WarriorAttack::VT_ENEMY_ID, enemy_id, 0);
+  }
+  void add_damage(uint16_t damage) {
+    fbb_.AddElement<uint16_t>(WarriorAttack::VT_DAMAGE, damage, 0);
+  }
+  WarriorAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  WarriorAttackBuilder &operator=(const WarriorAttackBuilder &);
+  flatbuffers::Offset<WarriorAttack> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<WarriorAttack>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<WarriorAttack> CreateWarriorAttack(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t enemy_id = 0,
+    uint16_t damage = 0) {
+  WarriorAttackBuilder builder_(_fbb);
+  builder_.add_enemy_id(enemy_id);
+  builder_.add_damage(damage);
+  return builder_.Finish();
+}
+
+struct MonsterAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ENEMY_ID = 4,
+    VT_DAMAGE = 6
+  };
+  uint32_t enemy_id() const {
+    return GetField<uint32_t>(VT_ENEMY_ID, 0);
+  }
+  uint16_t damage() const {
+    return GetField<uint16_t>(VT_DAMAGE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENEMY_ID) &&
+           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
+           verifier.EndTable();
+  }
+};
+
+struct MonsterAttackBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_enemy_id(uint32_t enemy_id) {
+    fbb_.AddElement<uint32_t>(MonsterAttack::VT_ENEMY_ID, enemy_id, 0);
+  }
+  void add_damage(uint16_t damage) {
+    fbb_.AddElement<uint16_t>(MonsterAttack::VT_DAMAGE, damage, 0);
+  }
+  MonsterAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MonsterAttackBuilder &operator=(const MonsterAttackBuilder &);
+  flatbuffers::Offset<MonsterAttack> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<MonsterAttack>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MonsterAttack> CreateMonsterAttack(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t enemy_id = 0,
+    uint16_t damage = 0) {
+  MonsterAttackBuilder builder_(_fbb);
+  builder_.add_enemy_id(enemy_id);
+  builder_.add_damage(damage);
+  return builder_.Finish();
+}
+
+struct WarriorDash FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct WarriorDashBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  WarriorDashBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  WarriorDashBuilder &operator=(const WarriorDashBuilder &);
+  flatbuffers::Offset<WarriorDash> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<WarriorDash>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<WarriorDash> CreateWarriorDash(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  WarriorDashBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct WarriorArmorUp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct WarriorArmorUpBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  WarriorArmorUpBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  WarriorArmorUpBuilder &operator=(const WarriorArmorUpBuilder &);
+  flatbuffers::Offset<WarriorArmorUp> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<WarriorArmorUp>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<WarriorArmorUp> CreateWarriorArmorUp(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  WarriorArmorUpBuilder builder_(_fbb);
   return builder_.Finish();
 }
 
@@ -1482,146 +1691,6 @@ inline flatbuffers::Offset<SVActionSpell> CreateSVActionSpell(
   return builder_.Finish();
 }
 
-struct CLActionAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_TARGET1_UID = 4,
-    VT_TARGET2_UID = 6,
-    VT_DAMAGE = 8,
-    VT_MODIFICATORS = 10
-  };
-  uint32_t target1_uid() const {
-    return GetField<uint32_t>(VT_TARGET1_UID, 0);
-  }
-  uint32_t target2_uid() const {
-    return GetField<uint32_t>(VT_TARGET2_UID, 0);
-  }
-  uint16_t damage() const {
-    return GetField<uint16_t>(VT_DAMAGE, 0);
-  }
-  int8_t modificators() const {
-    return GetField<int8_t>(VT_MODIFICATORS, 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
-           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
-           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
-           VerifyField<int8_t>(verifier, VT_MODIFICATORS) &&
-           verifier.EndTable();
-  }
-};
-
-struct CLActionAttackBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_target1_uid(uint32_t target1_uid) {
-    fbb_.AddElement<uint32_t>(CLActionAttack::VT_TARGET1_UID, target1_uid, 0);
-  }
-  void add_target2_uid(uint32_t target2_uid) {
-    fbb_.AddElement<uint32_t>(CLActionAttack::VT_TARGET2_UID, target2_uid, 0);
-  }
-  void add_damage(uint16_t damage) {
-    fbb_.AddElement<uint16_t>(CLActionAttack::VT_DAMAGE, damage, 0);
-  }
-  void add_modificators(int8_t modificators) {
-    fbb_.AddElement<int8_t>(CLActionAttack::VT_MODIFICATORS, modificators, 0);
-  }
-  CLActionAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  CLActionAttackBuilder &operator=(const CLActionAttackBuilder &);
-  flatbuffers::Offset<CLActionAttack> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<CLActionAttack>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<CLActionAttack> CreateCLActionAttack(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t target1_uid = 0,
-    uint32_t target2_uid = 0,
-    uint16_t damage = 0,
-    int8_t modificators = 0) {
-  CLActionAttackBuilder builder_(_fbb);
-  builder_.add_target2_uid(target2_uid);
-  builder_.add_target1_uid(target1_uid);
-  builder_.add_damage(damage);
-  builder_.add_modificators(modificators);
-  return builder_.Finish();
-}
-
-struct SVActionAttack FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_TARGET1_UID = 4,
-    VT_TARGET2_UID = 6,
-    VT_DAMAGE = 8,
-    VT_MODIFICATORS = 10
-  };
-  uint32_t target1_uid() const {
-    return GetField<uint32_t>(VT_TARGET1_UID, 0);
-  }
-  uint32_t target2_uid() const {
-    return GetField<uint32_t>(VT_TARGET2_UID, 0);
-  }
-  uint16_t damage() const {
-    return GetField<uint16_t>(VT_DAMAGE, 0);
-  }
-  int8_t modificators() const {
-    return GetField<int8_t>(VT_MODIFICATORS, 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_TARGET1_UID) &&
-           VerifyField<uint32_t>(verifier, VT_TARGET2_UID) &&
-           VerifyField<uint16_t>(verifier, VT_DAMAGE) &&
-           VerifyField<int8_t>(verifier, VT_MODIFICATORS) &&
-           verifier.EndTable();
-  }
-};
-
-struct SVActionAttackBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_target1_uid(uint32_t target1_uid) {
-    fbb_.AddElement<uint32_t>(SVActionAttack::VT_TARGET1_UID, target1_uid, 0);
-  }
-  void add_target2_uid(uint32_t target2_uid) {
-    fbb_.AddElement<uint32_t>(SVActionAttack::VT_TARGET2_UID, target2_uid, 0);
-  }
-  void add_damage(uint16_t damage) {
-    fbb_.AddElement<uint16_t>(SVActionAttack::VT_DAMAGE, damage, 0);
-  }
-  void add_modificators(int8_t modificators) {
-    fbb_.AddElement<int8_t>(SVActionAttack::VT_MODIFICATORS, modificators, 0);
-  }
-  SVActionAttackBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  SVActionAttackBuilder &operator=(const SVActionAttackBuilder &);
-  flatbuffers::Offset<SVActionAttack> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<SVActionAttack>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<SVActionAttack> CreateSVActionAttack(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t target1_uid = 0,
-    uint32_t target2_uid = 0,
-    uint16_t damage = 0,
-    int8_t modificators = 0) {
-  SVActionAttackBuilder builder_(_fbb);
-  builder_.add_target2_uid(target2_uid);
-  builder_.add_target1_uid(target1_uid);
-  builder_.add_damage(damage);
-  builder_.add_modificators(modificators);
-  return builder_.Finish();
-}
-
 struct CLActionDuel FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TARGET1_UID = 4,
@@ -1762,143 +1831,53 @@ inline flatbuffers::Offset<SVActionDuel> CreateSVActionDuel(
   return builder_.Finish();
 }
 
-struct CLActionMap FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct SVActionDeath FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
-    VT_ACT_TYPE = 6,
-    VT_X = 8,
-    VT_Y = 10
+    VT_KILLER_UID = 6
   };
   uint32_t player_uid() const {
     return GetField<uint32_t>(VT_PLAYER_UID, 0);
   }
-  ActionMapType act_type() const {
-    return static_cast<ActionMapType>(GetField<int8_t>(VT_ACT_TYPE, 0));
-  }
-  uint16_t x() const {
-    return GetField<uint16_t>(VT_X, 0);
-  }
-  uint16_t y() const {
-    return GetField<uint16_t>(VT_Y, 0);
+  uint32_t killer_uid() const {
+    return GetField<uint32_t>(VT_KILLER_UID, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
-           VerifyField<int8_t>(verifier, VT_ACT_TYPE) &&
-           VerifyField<uint16_t>(verifier, VT_X) &&
-           VerifyField<uint16_t>(verifier, VT_Y) &&
+           VerifyField<uint32_t>(verifier, VT_KILLER_UID) &&
            verifier.EndTable();
   }
 };
 
-struct CLActionMapBuilder {
+struct SVActionDeathBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(CLActionMap::VT_PLAYER_UID, player_uid, 0);
+    fbb_.AddElement<uint32_t>(SVActionDeath::VT_PLAYER_UID, player_uid, 0);
   }
-  void add_act_type(ActionMapType act_type) {
-    fbb_.AddElement<int8_t>(CLActionMap::VT_ACT_TYPE, static_cast<int8_t>(act_type), 0);
+  void add_killer_uid(uint32_t killer_uid) {
+    fbb_.AddElement<uint32_t>(SVActionDeath::VT_KILLER_UID, killer_uid, 0);
   }
-  void add_x(uint16_t x) {
-    fbb_.AddElement<uint16_t>(CLActionMap::VT_X, x, 0);
-  }
-  void add_y(uint16_t y) {
-    fbb_.AddElement<uint16_t>(CLActionMap::VT_Y, y, 0);
-  }
-  CLActionMapBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  SVActionDeathBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  CLActionMapBuilder &operator=(const CLActionMapBuilder &);
-  flatbuffers::Offset<CLActionMap> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<CLActionMap>(end);
+  SVActionDeathBuilder &operator=(const SVActionDeathBuilder &);
+  flatbuffers::Offset<SVActionDeath> Finish() {
+    const auto end = fbb_.EndTable(start_, 2);
+    auto o = flatbuffers::Offset<SVActionDeath>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<CLActionMap> CreateCLActionMap(
+inline flatbuffers::Offset<SVActionDeath> CreateSVActionDeath(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t player_uid = 0,
-    ActionMapType act_type = ActionMapType_CREATE_BLOCK,
-    uint16_t x = 0,
-    uint16_t y = 0) {
-  CLActionMapBuilder builder_(_fbb);
+    uint32_t killer_uid = 0) {
+  SVActionDeathBuilder builder_(_fbb);
+  builder_.add_killer_uid(killer_uid);
   builder_.add_player_uid(player_uid);
-  builder_.add_y(y);
-  builder_.add_x(x);
-  builder_.add_act_type(act_type);
-  return builder_.Finish();
-}
-
-struct SVActionMap FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  enum {
-    VT_PLAYER_UID = 4,
-    VT_ACT_TYPE = 6,
-    VT_X = 8,
-    VT_Y = 10
-  };
-  uint32_t player_uid() const {
-    return GetField<uint32_t>(VT_PLAYER_UID, 0);
-  }
-  ActionMapType act_type() const {
-    return static_cast<ActionMapType>(GetField<int8_t>(VT_ACT_TYPE, 0));
-  }
-  uint16_t x() const {
-    return GetField<uint16_t>(VT_X, 0);
-  }
-  uint16_t y() const {
-    return GetField<uint16_t>(VT_Y, 0);
-  }
-  bool Verify(flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
-           VerifyField<int8_t>(verifier, VT_ACT_TYPE) &&
-           VerifyField<uint16_t>(verifier, VT_X) &&
-           VerifyField<uint16_t>(verifier, VT_Y) &&
-           verifier.EndTable();
-  }
-};
-
-struct SVActionMapBuilder {
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_player_uid(uint32_t player_uid) {
-    fbb_.AddElement<uint32_t>(SVActionMap::VT_PLAYER_UID, player_uid, 0);
-  }
-  void add_act_type(ActionMapType act_type) {
-    fbb_.AddElement<int8_t>(SVActionMap::VT_ACT_TYPE, static_cast<int8_t>(act_type), 0);
-  }
-  void add_x(uint16_t x) {
-    fbb_.AddElement<uint16_t>(SVActionMap::VT_X, x, 0);
-  }
-  void add_y(uint16_t y) {
-    fbb_.AddElement<uint16_t>(SVActionMap::VT_Y, y, 0);
-  }
-  SVActionMapBuilder(flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  SVActionMapBuilder &operator=(const SVActionMapBuilder &);
-  flatbuffers::Offset<SVActionMap> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<SVActionMap>(end);
-    return o;
-  }
-};
-
-inline flatbuffers::Offset<SVActionMap> CreateSVActionMap(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t player_uid = 0,
-    ActionMapType act_type = ActionMapType_CREATE_BLOCK,
-    uint16_t x = 0,
-    uint16_t y = 0) {
-  SVActionMapBuilder builder_(_fbb);
-  builder_.add_player_uid(player_uid);
-  builder_.add_y(y);
-  builder_.add_x(x);
-  builder_.add_act_type(act_type);
   return builder_.Finish();
 }
 
@@ -2282,6 +2261,46 @@ inline flatbuffers::Offset<SVSpawnConstr> CreateSVSpawnConstr(
   return builder_.Finish();
 }
 
+struct CLRequestWin FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER_UID = 4
+  };
+  uint32_t player_uid() const {
+    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLRequestWinBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player_uid(uint32_t player_uid) {
+    fbb_.AddElement<uint32_t>(CLRequestWin::VT_PLAYER_UID, player_uid, 0);
+  }
+  CLRequestWinBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLRequestWinBuilder &operator=(const CLRequestWinBuilder &);
+  flatbuffers::Offset<CLRequestWin> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CLRequestWin>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLRequestWin> CreateCLRequestWin(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player_uid = 0) {
+  CLRequestWinBuilder builder_(_fbb);
+  builder_.add_player_uid(player_uid);
+  return builder_.Finish();
+}
+
 struct SVGameEnd FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4
@@ -2378,12 +2397,32 @@ inline bool VerifySpells(flatbuffers::Verifier &verifier, const void *obj, Spell
     case Spells_NONE: {
       return true;
     }
+    case Spells_MageAttack: {
+      auto ptr = reinterpret_cast<const MageAttack *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
     case Spells_MageTeleport: {
       auto ptr = reinterpret_cast<const MageTeleport *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Spells_MageFreeze: {
       auto ptr = reinterpret_cast<const MageFreeze *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Spells_WarriorAttack: {
+      auto ptr = reinterpret_cast<const WarriorAttack *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Spells_WarriorDash: {
+      auto ptr = reinterpret_cast<const WarriorDash *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Spells_WarriorArmorUp: {
+      auto ptr = reinterpret_cast<const WarriorArmorUp *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Spells_MonsterAttack: {
+      auto ptr = reinterpret_cast<const MonsterAttack *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;
@@ -2466,14 +2505,6 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
       auto ptr = reinterpret_cast<const SVActionItem *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Events_CLActionAttack: {
-      auto ptr = reinterpret_cast<const CLActionAttack *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
-    case Events_SVActionAttack: {
-      auto ptr = reinterpret_cast<const SVActionAttack *>(obj);
-      return verifier.VerifyTable(ptr);
-    }
     case Events_CLActionDuel: {
       auto ptr = reinterpret_cast<const CLActionDuel *>(obj);
       return verifier.VerifyTable(ptr);
@@ -2490,12 +2521,12 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
       auto ptr = reinterpret_cast<const SVActionSpell *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Events_CLActionMap: {
-      auto ptr = reinterpret_cast<const CLActionMap *>(obj);
+    case Events_CLRequestWin: {
+      auto ptr = reinterpret_cast<const CLRequestWin *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case Events_SVActionMap: {
-      auto ptr = reinterpret_cast<const SVActionMap *>(obj);
+    case Events_SVActionDeath: {
+      auto ptr = reinterpret_cast<const SVActionDeath *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Events_SVSpawnPlayer: {

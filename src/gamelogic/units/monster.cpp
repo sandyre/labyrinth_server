@@ -18,74 +18,112 @@ Monster::Monster() :
 m_pChasingUnit(nullptr)
 {
     m_eUnitType = Unit::Type::MONSTER;
-    m_sName = "Default monster";
+    m_sName = "Skeleton";
     
     m_nBaseDamage = m_nActualDamage = 10;
     m_nMHealth = m_nHealth = 50;
     m_nArmor = 2;
+    m_nMResistance = 2;
     
-    m_msAtkCD = 3s;
-    m_msAtkACD = m_msAtkCD;
+        // spell 1 cd
+    m_aSpellCDs.push_back(std::make_tuple(false, 3s, 3s));
+    
+        // spell 1 seq
+    InputSequence atk_seq(5);
+    m_aCastSequences.push_back(atk_seq);
+    
+    m_msCastTime = 600ms;
+    m_msACastTime = 0ms;
     
     m_msMoveCD = 2s;
     m_msMoveACD = 0s;
 }
 
 void
-Monster::update(std::chrono::milliseconds delta)
+Monster::update(std::chrono::microseconds delta)
 {
+    Unit::update(delta);
+    
+    m_msACastTime -= delta;
+    if(m_msACastTime < 0ms)
+        m_msACastTime = 0ms;
+    
 //        // find target to chase
 //    if(m_pChasingUnit == nullptr)
 //    {
 //        for(auto obj : m_poGameWorld->m_apoObjects)
 //        {
 //            if(obj->GetObjType() == GameObject::Type::UNIT &&
-//               (obj->GetAttributes() & GameObject::Attributes::DUELABLE) &&
-//               Distance(obj->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
+//               obj->GetUID() != this->GetUID() &&
+//               Distance(obj->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0 &&
+//               dynamic_cast<Unit*>(obj)->GetUnitAttributes() & Unit::Attributes::DUELABLE)
 //            {
 //                m_pChasingUnit = dynamic_cast<Unit*>(obj);
 //                break;
 //            }
 //        }
 //    }
-//    else
-//    {
-//            // firstly check that unit is still in chasable area
-//        if(Distance(m_pChasingUnit->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0)
-//        {
-//            auto map_size_width = m_poGameWorld->m_stMapConf.nMapSize * m_poGameWorld->m_stMapConf.nRoomSize + 2;
-//            std::vector<bool> map_as_flat(map_size_width * map_size_width, false);
-//            std::queue<int> path_in_flat;
-//            
-//                // calculate the path to it
-//            auto current_monster_pos = this->GetLogicalPosition().x * map_size_width + this->GetLogicalPosition().y;
-//            map_as_flat[current_monster_pos] = true;
-//            path_in_flat.push(current_monster_pos);
-//            
-//            while(!path_in_flat.empty())
-//            {
-//                m_pPathToUnit.push(Point2(path_in_flat.front() / map_size_width,
-//                                          path_in_flat.front() % map_size_width));
-//                
-//                path_in_flat.pop();
-//                
-//                    // check adjsmnt points
-//            }
-//        }
-//    }
+    if(!(m_nUnitAttributes & Unit::Attributes::INPUT))
+        return;
     
-        // TODO: add moving ability
-    if(m_eState == Unit::State::DUEL)
+    switch (m_eState)
     {
-        if(m_msAtkACD > 0s)
-            m_msAtkACD -= delta;
-        
-        if((m_pDuelTarget->GetAttributes() & GameObject::Attributes::DAMAGABLE) &&
-           m_msAtkACD <= 0s)
+        case Unit::State::DUEL:
         {
-            m_msAtkACD = m_msAtkCD;
-            this->Attack(nullptr);
+            if(m_msACastTime == 0ms)
+            {
+                m_aCastSequences[0].sequence.pop_back();
+                m_msACastTime = m_msCastTime;
+                
+                if(m_aCastSequences[0].sequence.empty())
+                {
+                    if(m_pDuelTarget == nullptr)
+                        return;
+                    
+                        // Log damage event
+                    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+                    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+                    m_oLogBuilder << this->GetName() << " " << m_nActualDamage << " PHYS DMG TO " << m_pDuelTarget->GetName();
+                    m_pLogSystem->Info(m_oLogBuilder.str());
+                    m_oLogBuilder.str("");
+                    
+                        // set up CD
+                    std::get<0>(m_aSpellCDs[0]) = false;
+                    std::get<1>(m_aSpellCDs[0]) = std::get<2>(m_aSpellCDs[0]);
+                    
+                    flatbuffers::FlatBufferBuilder builder;
+                    auto spell_info = GameEvent::CreateMonsterAttack(builder,
+                                                                     m_pDuelTarget->GetUID(),
+                                                                     m_nActualDamage);
+                    auto spell = GameEvent::CreateSpell(builder,
+                                                        GameEvent::Spells_MonsterAttack,
+                                                        spell_info.Union());
+                    auto spell1 = GameEvent::CreateSVActionSpell(builder,
+                                                                 this->GetUID(),
+                                                                 0,
+                                                                 spell);
+                    auto event = GameEvent::CreateMessage(builder,
+                                                          GameEvent::Events_SVActionSpell,
+                                                          spell1.Union());
+                    builder.Finish(event);
+                    
+                    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                                        builder.GetBufferPointer() + builder.GetSize());
+                    
+                        // deal PHYSICAL damage
+                    m_pDuelTarget->TakeDamage(m_nActualDamage,
+                                              Unit::DamageType::PHYSICAL,
+                                              this);
+                    
+                    m_aCastSequences[0].Refresh();
+                }
+            }
+            
+            break;
         }
+            
+        default:
+            break;
     }
 }
 
@@ -93,10 +131,12 @@ void
 Monster::Spawn(Point2 log_pos)
 {
     m_eState = Unit::State::WALKING;
-    m_nAttributes = GameObject::Attributes::MOVABLE |
+    m_nObjAttributes = GameObject::Attributes::MOVABLE |
     GameObject::Attributes::VISIBLE |
-    GameObject::Attributes::DUELABLE |
     GameObject::Attributes::DAMAGABLE;
+    m_nUnitAttributes = Unit::Attributes::INPUT |
+    Unit::Attributes::ATTACK |
+    Unit::Attributes::DUELABLE;
     m_nHealth = m_nMHealth;
     
     m_stLogPosition = log_pos;
@@ -112,4 +152,44 @@ Monster::Spawn(Point2 log_pos)
     builder.Finish(msg);
     m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
+}
+
+void
+Monster::Die(Unit * killer)
+{
+    if(killer->GetDuelTarget() == this)
+    {
+        killer->EndDuel();
+    }
+        // Log dead event
+    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << m_stLogPosition.x << ";" << m_stLogPosition.y << ")";
+    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
+    
+        // drop items
+    while(!m_aInventory.empty())
+    {
+        this->DropItem(0);
+    }
+    
+    if(m_pDuelTarget != nullptr)
+        EndDuel();
+    
+    flatbuffers::FlatBufferBuilder builder;
+    auto move = GameEvent::CreateSVActionDeath(builder,
+                                               this->GetUID(),
+                                               killer->GetUID());
+    auto msg = GameEvent::CreateMessage(builder,
+                                        GameEvent::Events_SVActionDeath,
+                                        move.Union());
+    builder.Finish(msg);
+    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                        builder.GetBufferPointer() + builder.GetSize());
+    
+    m_eState = Unit::State::DEAD;
+    m_nObjAttributes = GameObject::Attributes::PASSABLE;
+    m_nUnitAttributes = 0;
+    m_nHealth = 0;
 }

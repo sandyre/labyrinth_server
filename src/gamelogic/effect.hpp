@@ -31,22 +31,22 @@ public:
     
     void    SetTargetUnit(Unit*);
     virtual void start() = 0;
-    virtual void update(std::chrono::milliseconds) = 0; // called each frame by unit its applied to
+    virtual void update(std::chrono::microseconds) = 0; // called each frame by unit its applied to
     virtual void stop() = 0;
 protected:
     State m_eEffState;
-    std::chrono::milliseconds m_nADuration;
+    std::chrono::microseconds m_nADuration;
     Unit * m_pTargetUnit;
 };
 
 class WarriorDash : public Effect
 {
 public:
-    WarriorDash(std::chrono::milliseconds duration,
+    WarriorDash(std::chrono::microseconds duration,
                 float bonus_movespeed);
     
     virtual void start() override;
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 protected:
     float m_nBonusMovespeed;
@@ -55,11 +55,11 @@ protected:
 class WarriorArmorUp : public Effect
 {
 public:
-    WarriorArmorUp(std::chrono::milliseconds duration,
+    WarriorArmorUp(std::chrono::microseconds duration,
                    int16_t bonus_armor);
     
     virtual void start() override;
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 protected:
     int16_t m_nBonusArmor;
@@ -68,30 +68,40 @@ protected:
 class RogueInvisibility : public Effect
 {
 public:
-    RogueInvisibility(std::chrono::milliseconds duration);
+    RogueInvisibility(std::chrono::microseconds duration);
     
     virtual void start() override;
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 };
 
 class MageFreeze : public Effect
 {
 public:
-    MageFreeze(std::chrono::milliseconds duration);
+    MageFreeze(std::chrono::microseconds duration);
     
     virtual void start() override;
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 };
 
 class DuelInvulnerability : public Effect
 {
 public:
-    DuelInvulnerability(std::chrono::milliseconds duration);
+    DuelInvulnerability(std::chrono::microseconds duration);
     
     virtual void start() override;
-    virtual void update(std::chrono::milliseconds) override;
+    virtual void update(std::chrono::microseconds) override;
+    virtual void stop() override;
+};
+
+class RespawnInvulnerability : public Effect
+{
+public:
+    RespawnInvulnerability(std::chrono::microseconds duration);
+    
+    virtual void start() override;
+    virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 };
 

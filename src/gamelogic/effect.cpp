@@ -35,7 +35,7 @@ Effect::SetTargetUnit(Unit * target)
     m_pTargetUnit = target;
 }
 
-WarriorDash::WarriorDash(std::chrono::milliseconds duration,
+WarriorDash::WarriorDash(std::chrono::microseconds duration,
                          float bonus_movespeed) :
 m_nBonusMovespeed(bonus_movespeed)
 {
@@ -49,7 +49,7 @@ WarriorDash::start()
 }
 
 void
-WarriorDash::update(std::chrono::milliseconds delta)
+WarriorDash::update(std::chrono::microseconds delta)
 {
     if(m_eEffState == Effect::State::ACTIVE)
     {
@@ -73,7 +73,7 @@ WarriorArmorUp::start()
     m_pTargetUnit->m_nArmor += m_nBonusArmor;
 }
 
-WarriorArmorUp::WarriorArmorUp(std::chrono::milliseconds duration,
+WarriorArmorUp::WarriorArmorUp(std::chrono::microseconds duration,
                                int16_t bonus_armor) :
 m_nBonusArmor(bonus_armor)
 {
@@ -81,7 +81,7 @@ m_nBonusArmor(bonus_armor)
 }
 
 void
-WarriorArmorUp::update(std::chrono::milliseconds delta)
+WarriorArmorUp::update(std::chrono::microseconds delta)
 {
     if(m_eEffState == Effect::State::ACTIVE)
     {
@@ -99,7 +99,7 @@ WarriorArmorUp::stop()
     m_pTargetUnit->m_nArmor -= m_nBonusArmor;
 }
 
-RogueInvisibility::RogueInvisibility(std::chrono::milliseconds duration)
+RogueInvisibility::RogueInvisibility(std::chrono::microseconds duration)
 {
     m_nADuration = duration;
 }
@@ -107,11 +107,11 @@ RogueInvisibility::RogueInvisibility(std::chrono::milliseconds duration)
 void
 RogueInvisibility::start()
 {
-    m_pTargetUnit->m_nAttributes ^= (GameObject::Attributes::VISIBLE | GameObject::Attributes::DUELABLE);
-}
+    m_pTargetUnit->m_nObjAttributes &= ~(GameObject::Attributes::VISIBLE);
+    m_pTargetUnit->m_nUnitAttributes &= ~(Unit::Attributes::DUELABLE);}
 
 void
-RogueInvisibility::update(std::chrono::milliseconds delta)
+RogueInvisibility::update(std::chrono::microseconds delta)
 {
     if(m_eEffState == Effect::State::ACTIVE)
     {
@@ -126,10 +126,11 @@ RogueInvisibility::update(std::chrono::milliseconds delta)
 void
 RogueInvisibility::stop()
 {
-    m_pTargetUnit->m_nAttributes |= (GameObject::Attributes::VISIBLE | GameObject::Attributes::DUELABLE);
+    m_pTargetUnit->m_nObjAttributes |= (GameObject::Attributes::VISIBLE);
+    m_pTargetUnit->m_nUnitAttributes |= (Unit::Attributes::DUELABLE);
 }
 
-MageFreeze::MageFreeze(std::chrono::milliseconds duration)
+MageFreeze::MageFreeze(std::chrono::microseconds duration)
 {
     m_nADuration = duration;
 }
@@ -137,11 +138,11 @@ MageFreeze::MageFreeze(std::chrono::milliseconds duration)
 void
 MageFreeze::start()
 {
-        // TODO: new Attribute - inputable ?
+    m_pTargetUnit->m_nUnitAttributes &= ~(Unit::Attributes::INPUT);
 }
 
 void
-MageFreeze::update(std::chrono::milliseconds delta)
+MageFreeze::update(std::chrono::microseconds delta)
 {
     if(m_eEffState == Effect::State::ACTIVE)
     {
@@ -156,10 +157,10 @@ MageFreeze::update(std::chrono::milliseconds delta)
 void
 MageFreeze::stop()
 {
-    
+    m_pTargetUnit->m_nUnitAttributes |= Unit::Attributes::INPUT;
 }
 
-DuelInvulnerability::DuelInvulnerability(std::chrono::milliseconds duration)
+DuelInvulnerability::DuelInvulnerability(std::chrono::microseconds duration)
 {
     m_nADuration = duration;
 }
@@ -167,11 +168,10 @@ DuelInvulnerability::DuelInvulnerability(std::chrono::milliseconds duration)
 void
 DuelInvulnerability::start()
 {
-    m_pTargetUnit->m_nAttributes &= ~(GameObject::Attributes::DUELABLE);
-}
+    m_pTargetUnit->m_nUnitAttributes &= ~(Unit::Attributes::DUELABLE);}
 
 void
-DuelInvulnerability::update(std::chrono::milliseconds delta)
+DuelInvulnerability::update(std::chrono::microseconds delta)
 {
     if(m_eEffState == Effect::State::ACTIVE)
     {
@@ -186,5 +186,37 @@ DuelInvulnerability::update(std::chrono::milliseconds delta)
 void
 DuelInvulnerability::stop()
 {
-    m_pTargetUnit->m_nAttributes |= GameObject::Attributes::DUELABLE;
+    m_pTargetUnit->m_nUnitAttributes |= Unit::Attributes::DUELABLE;
+}
+
+RespawnInvulnerability::RespawnInvulnerability(std::chrono::microseconds duration)
+{
+    m_nADuration = duration;
+}
+
+void
+RespawnInvulnerability::start()
+{
+    m_pTargetUnit->m_nUnitAttributes &= ~(Unit::Attributes::DUELABLE);
+    m_pTargetUnit->m_nObjAttributes &= ~(GameObject::Attributes::PASSABLE);
+}
+
+void
+RespawnInvulnerability::update(std::chrono::microseconds delta)
+{
+    if(m_eEffState == Effect::State::ACTIVE)
+    {
+        m_nADuration -= delta;
+        if(m_nADuration < 0s)
+        {
+            m_eEffState = Effect::State::OVER;
+        }
+    }
+}
+
+void
+RespawnInvulnerability::stop()
+{
+    m_pTargetUnit->m_nUnitAttributes |= Unit::Attributes::DUELABLE;
+    m_pTargetUnit->m_nObjAttributes |= ~(GameObject::Attributes::PASSABLE);
 }

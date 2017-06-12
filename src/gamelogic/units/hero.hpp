@@ -30,19 +30,15 @@ public:
 public:
     Hero::Type      GetHero() const;
     
-    virtual void    update(std::chrono::milliseconds) override;
+    virtual void    update(std::chrono::microseconds) override;
     
     virtual void                SpellCast(const GameEvent::CLActionSpell*) = 0;
 
 protected:
     Hero();
     
-    virtual void        UpdateCDs(std::chrono::milliseconds);
-    
 protected:
     Hero::Type          m_eHero;
-    
-    std::vector<std::tuple<bool, std::chrono::milliseconds, std::chrono::milliseconds>> m_aSpellCDs;
 };
 
 

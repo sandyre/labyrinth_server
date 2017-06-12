@@ -19,7 +19,9 @@ using namespace std::chrono_literals;
 using namespace GameEvent;
 
 GameWorld::GameWorld() :
-m_nObjUIDSeq(1)
+m_nObjUIDSeq(1),
+m_nMonsterSpawnInterval(30s),
+m_nMonsterSpawnTimer(30s)
 {
     
 }
@@ -132,7 +134,7 @@ GameWorld::InitialSpawn()
             // Log key spawn event
         m_oLogBuilder << "Key spawned at (" << key->GetLogicalPosition().x
         << ";" << key->GetLogicalPosition().y << ")";
-        m_pLogSystem->Write(m_oLogBuilder.str());
+        m_pLogSystem->Info(m_oLogBuilder.str());
         m_oLogBuilder.str("");
         
         auto key_spawn = CreateSVSpawnItem(m_oFBuilder,
@@ -149,6 +151,62 @@ GameWorld::InitialSpawn()
         m_oFBuilder.Clear();
     }
     
+        // spawn door
+    {
+        auto door = new Door();
+        door->SetLogicalPosition(GetRandomPosition());
+        door->SetUID(m_nObjUIDSeq);
+        m_apoObjects.push_back(door);
+        ++m_nObjUIDSeq;
+        
+            // Log key spawn event
+        m_oLogBuilder << "Door spawned at (" << door->GetLogicalPosition().x
+        << ";" << door->GetLogicalPosition().y << ")";
+        m_pLogSystem->Info(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
+        
+        auto door_spawn = CreateSVSpawnConstr(m_oFBuilder,
+                                              door->GetUID(),
+                                              ConstrType_DOOR,
+                                              door->GetLogicalPosition().x,
+                                              door->GetLogicalPosition().y);
+        auto msg = CreateMessage(m_oFBuilder,
+                                 Events_SVSpawnConstr,
+                                 door_spawn.Union());
+        m_oFBuilder.Finish(msg);
+        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
+                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
+        m_oFBuilder.Clear();
+    }
+    
+        // spawn graveyard
+    {
+        auto grave = new Graveyard();
+        grave->SetLogicalPosition(GetRandomPosition());
+        grave->SetUID(m_nObjUIDSeq);
+        m_apoObjects.push_back(grave);
+        ++m_nObjUIDSeq;
+        
+            // Log key spawn event
+        m_oLogBuilder << "Graveyard spawned at (" << grave->GetLogicalPosition().x
+        << ";" << grave->GetLogicalPosition().y << ")";
+        m_pLogSystem->Info(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
+        
+        auto grave_spawn = CreateSVSpawnConstr(m_oFBuilder,
+                                               grave->GetUID(),
+                                               ConstrType_GRAVEYARD,
+                                               grave->GetLogicalPosition().x,
+                                               grave->GetLogicalPosition().y);
+        auto msg = CreateMessage(m_oFBuilder,
+                                 Events_SVSpawnConstr,
+                                 grave_spawn.Union());
+        m_oFBuilder.Finish(msg);
+        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
+                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
+        m_oFBuilder.Clear();
+    }
+    
     {
             // spawn monster
         auto monster = new Monster();
@@ -156,12 +214,11 @@ GameWorld::InitialSpawn()
         monster->SetGameWorld(this);
         m_apoObjects.push_back(monster);
         monster->Spawn(GetRandomPosition());
-        monster->TakeItem(key);
         
             // Log monster spawn event
         m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
         << ";" << monster->GetLogicalPosition().y << ")";
-        m_pLogSystem->Write(m_oLogBuilder.str());
+        m_pLogSystem->Info(m_oLogBuilder.str());
         m_oLogBuilder.str("");
         
         ++m_nObjUIDSeq; // dont forget!
@@ -181,17 +238,16 @@ GameWorld::ApplyInputEvents()
             case GameEvent::Events_CLActionMove:
             {
                 auto cl_mov = static_cast<const GameEvent::CLActionMove*>(gs_event->event());
-
+                
                 for(auto object : m_apoObjects)
                 {
                     if(object->GetObjType() == GameObject::Type::UNIT)
                     {
-                        auto unit = static_cast<Unit*>(object);
+                        auto unit = dynamic_cast<Unit*>(object);
 
                         if(unit->GetUID() == cl_mov->target_uid())
                         {
-                            unit->Move(Point2(cl_mov->x(),
-                                              cl_mov->y()));
+                            unit->Move((Unit::MoveDirection)cl_mov->mov_dir());
                             break;
                         }
                     }
@@ -269,15 +325,18 @@ GameWorld::ApplyInputEvents()
                         {
                             if(object->GetUID() == sv_duel->target1_uid())
                             {
-                                first = static_cast<Unit*>(object);
+                                first = dynamic_cast<Unit*>(object);
                             }
                             else if(object->GetUID() == sv_duel->target2_uid())
                             {
-                                second = static_cast<Unit*>(object);
+                                second = dynamic_cast<Unit*>(object);
                             }
                         }
                         
-                        if(first->GetAttributes() & second->GetAttributes() & GameObject::Attributes::DUELABLE)
+                        if(first->GetState() == Unit::State::WALKING &&
+                           second->GetState() == Unit::State::WALKING &&
+                           first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
+                           Distance(first->GetLogicalPosition(), second->GetLogicalPosition()) <= 1.0)
                         {
                             first->StartDuel(second);
                             second->StartDuel(first);
@@ -290,24 +349,7 @@ GameWorld::ApplyInputEvents()
                 }
                 break;
             }
-            case GameEvent::Events_CLActionAttack:
-            {
-                auto atk = static_cast<const GameEvent::CLActionAttack*>(gs_event->event());
-                
-                Unit * attacker = nullptr;
-                
-                for(auto object : m_apoObjects)
-                {
-                    if(object->GetUID() == atk->target1_uid())
-                    {
-                        attacker = static_cast<Unit*>(object);
-                    }
-                }
-                
-                attacker->Attack(atk);
-                break;
-            }
-                
+            
             case GameEvent::Events_CLActionSpell:
             {
                 auto gs_spell = static_cast<const GameEvent::CLActionSpell*>(gs_event->event());
@@ -318,10 +360,72 @@ GameWorld::ApplyInputEvents()
                     if(object->GetUID() == gs_spell->player_uid())
                     {
                         player = static_cast<Hero*>(object);
+                        break;
                     }
                 }
                 
                 player->SpellCast(gs_spell);
+                break;
+            }
+                
+            case GameEvent::Events_CLRequestWin:
+            {
+                auto gs_win = static_cast<const GameEvent::CLRequestWin*>(gs_event->event());
+                
+                Hero * player = nullptr;
+                for(auto obj : m_apoObjects)
+                {
+                    if(obj->GetUID() == gs_win->player_uid())
+                    {
+                        player = static_cast<Hero*>(obj);
+                        break;
+                    }
+                }
+                
+                bool has_key = false;
+                for(auto& item : player->GetInventory())
+                {
+                    if(item->GetType() == Item::Type::KEY)
+                    {
+                        has_key = true;
+                        break;
+                    }
+                }
+                
+                bool at_the_door = false;
+                for(auto obj : m_apoObjects)
+                {
+                    if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
+                       static_cast<Construction*>(obj)->GetType() == Construction::Type::DOOR)
+                    {
+                        if(Distance(player->GetLogicalPosition(), obj->GetLogicalPosition()) <= 1.0)
+                        {
+                            at_the_door = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if(has_key && at_the_door)
+                {
+                        // GAME ENDS
+                    auto game_end = CreateSVGameEnd(m_oFBuilder,
+                                                    player->GetUID());
+                    auto msg = CreateMessage(m_oFBuilder,
+                                             Events_SVGameEnd,
+                                             game_end.Union());
+                    m_oFBuilder.Finish(msg);
+                    m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
+                                         m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
+                    m_oFBuilder.Clear();
+                    
+                        // Log key spawn event
+                    m_oLogBuilder << "Player with name '" << player->GetName()
+                    << "' won the escaped from LABYRINTH!";
+                    m_pLogSystem->Info(m_oLogBuilder.str());
+                    m_oLogBuilder.str("");
+                }
+                
                 break;
             }
                 
@@ -335,7 +439,7 @@ GameWorld::ApplyInputEvents()
 }
 
 void
-GameWorld::update(std::chrono::milliseconds delta)
+GameWorld::update(std::chrono::microseconds delta)
 {
     ApplyInputEvents();
     for(auto object : m_apoObjects)
@@ -343,14 +447,24 @@ GameWorld::update(std::chrono::milliseconds delta)
         object->update(delta);
     }
         // respawn deads
+    Graveyard * grave = nullptr;
+    for(auto& obj : m_apoObjects)
+    {
+        if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
+           dynamic_cast<Construction*>(obj)->GetType() == Construction::GRAVEYARD)
+        {
+            grave = dynamic_cast<Graveyard*>(obj);
+        }
+    }
+    
     m_aRespawnQueue.erase(
                          std::remove_if(m_aRespawnQueue.begin(),
                                         m_aRespawnQueue.end(),
-                                        [this, delta](auto& unit)
+                                        [this, delta, grave](auto& unit)
                                         {
                                             if(unit.first <= 0s)
                                             {
-                                                unit.second->Respawn(GetRandomPosition());
+                                                unit.second->Respawn(grave->GetLogicalPosition());
                                                 return true;
                                             }
                                             else
@@ -361,6 +475,28 @@ GameWorld::update(std::chrono::milliseconds delta)
                                         }),
                          m_aRespawnQueue.end()
                          );
+    
+        // update monster spawning timer
+    m_nMonsterSpawnTimer -= delta;
+    if(m_nMonsterSpawnTimer <= 0s)
+    {
+            // spawn monster
+        auto monster = new Monster();
+        monster->SetUID(m_nObjUIDSeq);
+        monster->SetGameWorld(this);
+        m_apoObjects.push_back(monster);
+        monster->Spawn(GetRandomPosition());
+        
+            // Log monster spawn event
+        m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
+        << ";" << monster->GetLogicalPosition().y << ")";
+        m_pLogSystem->Info(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
+        
+        ++m_nObjUIDSeq; // dont forget!
+        
+        m_nMonsterSpawnTimer = m_nMonsterSpawnInterval;
+    }
 }
 
 Point2

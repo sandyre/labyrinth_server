@@ -8,6 +8,8 @@
 
 #include "masterserver.hpp"
 
+#include <Poco/Thread.h>
+
 int main(int argc, const char * argv[])
 {
     MasterServer server;

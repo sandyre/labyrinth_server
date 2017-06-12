@@ -23,10 +23,9 @@ public:
     
     virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
     
-    virtual void    Attack(const GameEvent::CLActionAttack*) override;
     virtual void    TakeItem(Item*) override;
     
-    virtual void    update(std::chrono::milliseconds) override;
+    virtual void    update(std::chrono::microseconds) override;
 protected:
     std::mt19937 m_oRandGen;
     std::uniform_int_distribution<> m_oRandDistr;

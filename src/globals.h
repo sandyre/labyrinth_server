@@ -13,7 +13,7 @@
 #include <cmath>
 
 const int GAMEVERSION_MAJOR = 1;
-const int GAMEVERSION_MINOR = 0;
+const int GAMEVERSION_MINOR = 1;
 const int GAMEVERSION_BUILD = 0;
 
 struct Point2

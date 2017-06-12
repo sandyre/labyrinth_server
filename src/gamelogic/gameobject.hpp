@@ -21,10 +21,9 @@ public:
     struct Attributes
     {
         static const int MOVABLE = 0x01;
-        static const int DUELABLE = 0x02;
-        static const int VISIBLE = 0x04;
-        static const int DAMAGABLE = 0x08;
-        static const int PASSABLE = 0x10;
+        static const int VISIBLE = 0x02;
+        static const int DAMAGABLE = 0x04;
+        static const int PASSABLE = 0x08;
     };
 public:
     enum Type
@@ -38,7 +37,7 @@ public:
     GameObject();
     ~GameObject();
     
-    virtual void        update(std::chrono::milliseconds) {}
+    virtual void        update(std::chrono::microseconds) {}
     
     GameObject::Type    GetObjType() const;
     uint32_t        GetAttributes() const;
@@ -55,7 +54,7 @@ protected:
     GameWorld *     m_poGameWorld;
     
     GameObject::Type    m_eObjType;
-    uint32_t            m_nAttributes;
+    uint32_t            m_nObjAttributes;
     uint32_t            m_nUID;
     Point2              m_stLogPosition;
 };

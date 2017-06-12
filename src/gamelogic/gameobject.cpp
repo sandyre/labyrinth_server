@@ -11,9 +11,9 @@
 GameObject::GameObject() :
 m_eObjType(GameObject::Type::UNDEFINED),
 m_nUID(0),
-m_nAttributes(0)
+m_nObjAttributes(0)
 {
-    m_nAttributes |= GameObject::Attributes::VISIBLE;
+    m_nObjAttributes |= GameObject::Attributes::VISIBLE;
 }
 
 GameObject::~GameObject()
@@ -30,7 +30,7 @@ GameObject::GetObjType() const
 uint32_t
 GameObject::GetAttributes() const
 {
-    return m_nAttributes;
+    return m_nObjAttributes;
 }
 
 void

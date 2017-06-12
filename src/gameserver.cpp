@@ -15,6 +15,8 @@
 
 #include "gamelogic/gamemap.hpp"
 
+#include <Poco/Thread.h>
+
 using namespace GameEvent;
 using namespace std::chrono;
 
@@ -24,14 +26,14 @@ m_stConfig(config),
 m_nStartTime(steady_clock::now()),
 m_msPerUpdate(2)
 {
-    m_sServerName = "GS";
+    m_sServerName = "GameServer ";
     m_sServerName += std::to_string(m_stConfig.nPort);
     
     m_oLogSys.Init(m_sServerName, LogSystem::Mode::STDIO);
     
     m_oMsgBuilder << "Started. Configuration: {SEED:" << m_stConfig.nRandomSeed;
     m_oMsgBuilder << "; PLAYERS_COUNT: " << m_stConfig.nPlayers << "}";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Info(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
     
     Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), m_stConfig.nPort);
@@ -62,7 +64,7 @@ GameServer::shutdown()
     m_eState = GameServer::State::FINISHED;
     
     m_oMsgBuilder << "Finished";
-    m_oLogSys.Write(m_oMsgBuilder.str());
+    m_oLogSys.Info(m_oMsgBuilder.str());
     m_oMsgBuilder.str("");
 }
 
@@ -83,7 +85,7 @@ GameServer::run()
     catch(std::exception& e)
     {
         m_oMsgBuilder << e.what();
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Error(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
         shutdown();
     }
@@ -125,8 +127,9 @@ GameServer::lobby_forming_stage()
                                   sender_addr,
                                   con_info->nickname()->c_str());
                 
-                m_oMsgBuilder << "Player \'" << new_player.GetNickname() << "\' connected";
-                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oMsgBuilder << "Player \'" << new_player.GetNickname() << "\' [" <<
+                sender_addr.toString() << "]" << " connected";
+                m_oLogSys.Info(m_oMsgBuilder.str());
                 m_oMsgBuilder.str("");
                 
                 m_aPlayers.emplace_back(std::move(new_player));
@@ -267,7 +270,7 @@ GameServer::hero_picking_stage()
             m_eState = GameServer::State::GENERATING_WORLD;
             
             m_oMsgBuilder << "Generating world";
-            m_oLogSys.Write(m_oMsgBuilder.str());
+            m_oLogSys.Info(m_oMsgBuilder.str());
             m_oMsgBuilder.str("");
             
             for(auto& player : m_aPlayers)
@@ -327,7 +330,7 @@ GameServer::world_generation_stage()
                 
                 m_oMsgBuilder << "Player " << cl_gen_ok->player_uid();
                 m_oMsgBuilder << " generated map";
-                m_oLogSys.Write(m_oMsgBuilder.str());
+                m_oLogSys.Info(m_oMsgBuilder.str());
                 m_oMsgBuilder.str("");
                 
                 --players_ungenerated;
@@ -346,7 +349,7 @@ GameServer::world_generation_stage()
         m_oBuilder.Clear();
         
         m_oMsgBuilder << "Game begins";
-        m_oLogSys.Write(m_oMsgBuilder.str());
+        m_oLogSys.Info(m_oMsgBuilder.str());
         m_oMsgBuilder.str("");
     }
 }
@@ -428,7 +431,7 @@ GameServer::running_game_stage()
                     break;
                 }
                     
-                case Events_CLActionAttack:
+                case Events_CLRequestWin:
                 {
                     event_valid = true;
                     break;
@@ -448,10 +451,6 @@ GameServer::running_game_stage()
             }
         }
         
-        auto frame_end = steady_clock::now();
-        
-        m_pGameWorld->update(duration_cast<milliseconds>(frame_end-frame_start));
-        
         auto& out_events = m_pGameWorld->GetOutgoingEvents();
         while(out_events.size())
         {
@@ -460,13 +459,17 @@ GameServer::running_game_stage()
             out_events.pop();
         }
         
-        if(time_no_receive >= 30s)
+        if(time_no_receive >= 180s)
         {
             m_oMsgBuilder << "Server timeout exceeded.";
-            m_oLogSys.Write(m_oMsgBuilder.str());
+            m_oLogSys.Warning(m_oMsgBuilder.str());
             m_oMsgBuilder.str("");
             shutdown();
         }
+        
+        auto frame_end = steady_clock::now();
+        
+        m_pGameWorld->update(duration_cast<microseconds>(frame_end-frame_start));
     }
 }
 

@@ -78,13 +78,13 @@ table SVGameStart
 table CLActionMove
 {
 target_uid:uint;
-x:ushort;
-y:ushort;
+mov_dir:byte;
 }
 
 table SVActionMove
 {
 target_uid:uint;
+mov_dir:byte;
 x:ushort;
 y:ushort;
 }
@@ -110,6 +110,12 @@ item_uid:ushort;
 act_type:ActionItemType;
 }
 
+table MageAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
 table MageTeleport
 {
 x:ushort;
@@ -121,10 +127,37 @@ table MageFreeze
 enemy_id:uint;
 }
 
+table WarriorAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
+table MonsterAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
+table WarriorDash
+{
+}
+
+table WarriorArmorUp
+{
+}
+
 union Spells
 {
+MageAttack,
 MageTeleport,
-MageFreeze
+MageFreeze,
+
+WarriorAttack,
+WarriorDash,
+WarriorArmorUp,
+
+MonsterAttack
 }
 
 table Spell
@@ -154,22 +187,6 @@ ESCAPE,
 KILL
 }
 
-table CLActionAttack
-{
-target1_uid:uint;
-target2_uid:uint;
-damage:ushort;
-modificators:byte;
-}
-
-table SVActionAttack
-{
-target1_uid:uint;
-target2_uid:uint;
-damage:ushort;
-modificators:byte;
-}
-
 table CLActionDuel
 {
 target1_uid:uint;
@@ -186,26 +203,10 @@ act_type:ActionDuelType;
 damage:ushort;
 }
 
-enum ActionMapType : byte
-{
-CREATE_BLOCK,
-DESTROY_BLOCK
-}
-
-table CLActionMap
+table SVActionDeath
 {
 player_uid:uint;
-act_type:ActionMapType;
-x:ushort;
-y:ushort;
-}
-
-table SVActionMap
-{
-player_uid:uint;
-act_type:ActionMapType;
-x:ushort;
-y:ushort;
+killer_uid:uint;
 }
 
 table SVSpawnPlayer
@@ -264,6 +265,11 @@ x:ushort;
 y:ushort;
 }
 
+table CLRequestWin
+{
+player_uid:uint;
+}
+
 table SVGameEnd
 {
 player_uid:uint;
@@ -289,18 +295,15 @@ SVActionMove,
 CLActionItem,
 SVActionItem,
 
-CLActionAttack,
-SVActionAttack,
-
 CLActionDuel,
 SVActionDuel,
 
 CLActionSpell,
 SVActionSpell,
 
-CLActionMap,
-SVActionMap,
+CLRequestWin,
 
+SVActionDeath,
 SVSpawnPlayer,
 SVRespawnPlayer,
 SVSpawnMonster,

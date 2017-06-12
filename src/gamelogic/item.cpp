@@ -12,7 +12,7 @@ Item::Item() :
 m_nCarrierID(0)
 {
     m_eObjType = GameObject::Type::ITEM;
-    m_nAttributes |= GameObject::Attributes::PASSABLE;
+    m_nObjAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 Item::Type

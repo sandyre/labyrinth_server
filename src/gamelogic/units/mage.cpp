@@ -29,6 +29,9 @@ Mage::Mage()
     m_aSpellCDs.push_back(std::make_tuple(true, 0s, 30s));
     
         // spell 2 cd
+    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 0s));
+    
+        // spell 3 cd
     m_aSpellCDs.push_back(std::make_tuple(true, 0s, 10s));
 }
 
@@ -47,7 +50,6 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         while(Distance(this->GetLogicalPosition(), new_pos = m_poGameWorld->GetRandomPosition()) > 10.0)
         {
         }
-        this->SetLogicalPosition(new_pos);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameEvent::CreateMageTeleport(builder,
@@ -67,19 +69,61 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         
         m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
+        
+        this->SetLogicalPosition(new_pos);
     }
-        // frostbolt casted (1 spell)
+        // attack cast (1 spell)
     else if(spell->spell_id() == 1 &&
             std::get<0>(m_aSpellCDs[1]) == true)
     {
-            // apply freeze effect
-        MageFreeze * pFreeze = new MageFreeze(3s);
-        pFreeze->SetTargetUnit(m_pDuelTarget);
-        m_pDuelTarget->ApplyEffect(pFreeze);
+        if(m_pDuelTarget == nullptr)
+            return;
+        
+            // Log damage event
+        auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
+        auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+        m_oLogBuilder << this->GetName() << " " << m_nActualDamage << " MAG DMG TO " << m_pDuelTarget->GetName();
+        m_pLogSystem->Info(m_oLogBuilder.str());
+        m_oLogBuilder.str("");
         
             // set up CD
         std::get<0>(m_aSpellCDs[1]) = false;
         std::get<1>(m_aSpellCDs[1]) = std::get<2>(m_aSpellCDs[1]);
+        
+        flatbuffers::FlatBufferBuilder builder;
+        auto spell_info = GameEvent::CreateMageAttack(builder,
+                                                      m_pDuelTarget->GetUID(),
+                                                      m_nActualDamage);
+        auto spell = GameEvent::CreateSpell(builder,
+                                            GameEvent::Spells_MageAttack,
+                                            spell_info.Union());
+        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+                                                     this->GetUID(),
+                                                     1,
+                                                     spell);
+        auto event = GameEvent::CreateMessage(builder,
+                                              GameEvent::Events_SVActionSpell,
+                                              spell1.Union());
+        builder.Finish(event);
+        
+        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                                            builder.GetBufferPointer() + builder.GetSize());
+        
+            // deal MAGIC damage
+        m_pDuelTarget->TakeDamage(m_nActualDamage,
+                                  Unit::DamageType::MAGICAL,
+                                  this);
+    }
+        // frostbolt casted (2 spell)
+    else if(spell->spell_id() == 2 &&
+            std::get<0>(m_aSpellCDs[2]) == true)
+    {
+        if(m_pDuelTarget == nullptr)
+            return;
+        
+            // set up CD
+        std::get<0>(m_aSpellCDs[2]) = false;
+        std::get<1>(m_aSpellCDs[2]) = std::get<2>(m_aSpellCDs[2]);
         
         
         flatbuffers::FlatBufferBuilder builder;
@@ -90,7 +134,7 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                             spell1.Union());
         auto cl_spell = GameEvent::CreateSVActionSpell(builder,
                                                        this->GetUID(),
-                                                       1,
+                                                       2,
                                                        spell);
         auto event = GameEvent::CreateMessage(builder,
                                               GameEvent::Events_SVActionSpell,
@@ -99,11 +143,16 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         
         m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
+        
+            // apply freeze effect
+        MageFreeze * pFreeze = new MageFreeze(3s);
+        pFreeze->SetTargetUnit(m_pDuelTarget);
+        m_pDuelTarget->ApplyEffect(pFreeze);
     }
 }
 
 void
-Mage::update(std::chrono::milliseconds delta)
+Mage::update(std::chrono::microseconds delta)
 {
     Hero::update(delta);
 }
