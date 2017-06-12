@@ -9,7 +9,7 @@
 #ifndef gameobject_hpp
 #define gameobject_hpp
 
-#include "globals.h"
+#include "../globals.h"
 
 #include <chrono>
 

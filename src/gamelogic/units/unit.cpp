@@ -10,7 +10,7 @@
 
 #include "../gameworld.hpp"
 #include "../../gsnet_generated.h"
-#include "effect.hpp"
+#include "../effect.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;

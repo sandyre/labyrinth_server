@@ -9,11 +9,11 @@
 #ifndef gameworld_hpp
 #define gameworld_hpp
 
-#include "logsystem.hpp"
+#include "../logsystem.hpp"
 #include <sstream>
 #include "../globals.h"
 #include "gamemap.hpp"
-#include "gsnet_generated.h"
+#include "../gsnet_generated.h"
 #include "../player.hpp"
 #include "gameobject.hpp"
 #include "units/hero.hpp"

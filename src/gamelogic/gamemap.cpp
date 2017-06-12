@@ -10,7 +10,7 @@
 
 #include <random>
 #include "mapblock.hpp"
-#include "globals.h"
+#include "../globals.h"
 #include "gameworld.hpp"
 
 GameMap::GameMap()

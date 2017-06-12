@@ -9,7 +9,7 @@
 #include "warrior.hpp"
 
 #include "../gameworld.hpp"
-#include "gsnet_generated.h"
+#include "../../gsnet_generated.h"
 #include "../effect.hpp"
 
 #include <chrono>

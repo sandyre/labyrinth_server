@@ -8,7 +8,7 @@
 
 #include "priest.hpp"
 
-#include "gsnet_generated.h"
+#include "../../gsnet_generated.h"
 
 #include <chrono>
 using namespace std::chrono_literals;
