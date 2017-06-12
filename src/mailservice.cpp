@@ -29,6 +29,7 @@ MailService::init()
         m_poSMTPSession->login(Poco::Net::SMTPClientSession::LoginMethod::AUTH_LOGIN,
                               "noreply-labyrinth@hate-red.com",
                               "VdAysb4A");
+        m_poSMTPSession->setTimeout(Poco::Timespan(3,0));
         
         m_eState = State::ESTABLISHED;
     }
