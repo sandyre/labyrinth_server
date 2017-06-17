@@ -138,6 +138,7 @@ GameWorld::InitialSpawn()
                                            key->GetLogicalPosition().x,
                                            key->GetLogicalPosition().y);
         auto msg = CreateMessage(_flatBuilder,
+                                 0,
                                  Events_SVSpawnItem,
                                  key_spawn.Union());
         _flatBuilder.Finish(msg);
@@ -166,6 +167,7 @@ GameWorld::InitialSpawn()
                                               door->GetLogicalPosition().x,
                                               door->GetLogicalPosition().y);
         auto msg = CreateMessage(_flatBuilder,
+                                 0,
                                  Events_SVSpawnConstr,
                                  door_spawn.Union());
         _flatBuilder.Finish(msg);
@@ -194,6 +196,7 @@ GameWorld::InitialSpawn()
                                                grave->GetLogicalPosition().x,
                                                grave->GetLogicalPosition().y);
         auto msg = CreateMessage(_flatBuilder,
+                                 0,
                                  Events_SVSpawnConstr,
                                  grave_spawn.Union());
         _flatBuilder.Finish(msg);
@@ -263,7 +266,7 @@ GameWorld::ApplyInputEvents()
                     {
                         item = static_cast<Item*>(object);
                     }
-                    else if(object->GetUID() == gs_item->player_uid())
+                    else if(object->GetUID() == gs_event->sender_id())
                     {
                         player = static_cast<Hero*>(object);
                     }
@@ -407,6 +410,7 @@ GameWorld::ApplyInputEvents()
                     auto game_end = CreateSVGameEnd(_flatBuilder,
                                                     player->GetUID());
                     auto msg = CreateMessage(_flatBuilder,
+                                             0,
                                              Events_SVGameEnd,
                                              game_end.Union());
                     _flatBuilder.Finish(msg);

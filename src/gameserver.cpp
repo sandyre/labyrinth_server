@@ -8,31 +8,27 @@
 
 #include "gameserver.hpp"
 
-#include "gsnet_generated.h"
-#include "gamelogic/gamemap.hpp"
-
 #include <Poco/Thread.h>
 
-#include <algorithm>
 #include <iostream>
-#include <memory>
 
 using namespace GameEvent;
 using namespace std::chrono;
 
 GameServer::GameServer(const Configuration& config) :
 _state(GameServer::State::LOBBY_FORMING),
-_config(config), _startTime(steady_clock::now()),
-_msPerUpdate(2)
+_config(config),
+_startTime(steady_clock::now()),
+_msPerUpdate(4)
 {
-    _serverName = "GameServer ";
+    _serverName = "GS";
     _serverName += std::to_string(_config.Port);
 
     _logSystem.Init(_serverName,
                     LogSystem::Mode::STDIO);
 
-    _msgBuilder << "Started. Configuration: {SEED:" << _config.RandomSeed;
-    _msgBuilder << "; PLAYERS_COUNT: " << _config.Players << "}";
+    _msgBuilder << "Launch configuration {random_seed = " << _config.RandomSeed;
+    _msgBuilder << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
     _logSystem.Info(_msgBuilder.str());
     _msgBuilder.str("");
 
@@ -45,16 +41,6 @@ GameServer::~GameServer()
 {
     _socket.close();
     _logSystem.Close();
-}
-
-GameServer::State GameServer::GetState() const
-{
-    return _state;
-}
-
-GameServer::Configuration GameServer::GetConfig() const
-{
-    return _config;
 }
 
 void GameServer::shutdown()
@@ -86,15 +72,14 @@ void GameServer::run()
     }
 }
 
-void GameServer::SendToAll(uint8_t * buf,
-                           size_t size)
+void GameServer::SendMulticast(const std::vector<uint8_t>& msg)
 {
     std::for_each(_players.cbegin(),
                   _players.cend(),
-                  [buf, size, this](const Player& player)
+                  [&msg, this](const Player& player)
                   {
-                      _socket.sendTo(buf,
-                                     size,
+                      _socket.sendTo(msg.data(),
+                                     msg.size(),
                                      player.GetAddress());
                   });
 }
@@ -116,10 +101,10 @@ void GameServer::lobby_forming_stage()
         {
             auto con_info = static_cast<const CLConnection *>(gs_event->event());
 
-            auto player = FindPlayerByUID(con_info->player_uid());
+            auto player = FindPlayerByUID(gs_event->sender_id());
             if(player == _players.end())
             {
-                Player new_player(con_info->player_uid(),
+                Player new_player(gs_event->sender_id(),
                                   sender_addr,
                                   con_info->nickname()->c_str());
 
@@ -134,6 +119,7 @@ void GameServer::lobby_forming_stage()
                 auto gs_accept = CreateSVConnectionStatus(_flatBuilder,
                                                           ConnectionStatus_ACCEPTED);
                 auto gs_event  = CreateMessage(_flatBuilder,
+                                               0,
                                                Events_SVConnectionStatus,
                                                gs_accept.Union());
                 _flatBuilder.Finish(gs_event);
@@ -151,6 +137,7 @@ void GameServer::lobby_forming_stage()
                                                                player.GetUID(),
                                                                nick);
                     gs_event = CreateMessage(_flatBuilder,
+                                             0,
                                              Events_SVPlayerConnected,
                                              player_info.Union());
                     _flatBuilder.Finish(gs_event);
@@ -168,12 +155,13 @@ void GameServer::lobby_forming_stage()
                                                              con_info->player_uid(),
                                                              nick);
                 gs_event = CreateMessage(_flatBuilder,
+                                         0,
                                          Events_SVPlayerConnected,
                                          gs_new_player.Union());
                 _flatBuilder.Finish(gs_event);
-
-                SendToAll(_flatBuilder.GetBufferPointer(),
-                          _flatBuilder.GetSize());
+                SendMulticast(std::vector<uint8_t>(
+                        _flatBuilder.GetBufferPointer(),
+                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
                 _flatBuilder.Clear();
             }
         }
@@ -188,12 +176,13 @@ void GameServer::lobby_forming_stage()
             
             auto gs_heropick = CreateSVHeroPickStage(_flatBuilder);
             auto gs_event    = CreateMessage(_flatBuilder,
+                                             0,
                                              Events_SVHeroPickStage,
                                              gs_heropick.Union());
             _flatBuilder.Finish(gs_event);
-
-            SendToAll(_flatBuilder.GetBufferPointer(),
-                      _flatBuilder.GetSize());
+            SendMulticast(std::vector<uint8_t>(
+                    _flatBuilder.GetBufferPointer(),
+                    _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
             _flatBuilder.Clear();
         }
     }
@@ -218,18 +207,20 @@ void GameServer::hero_picking_stage()
             {
                 auto cl_pick = static_cast<const CLHeroPick *>(gs_event->event());
 
-                auto player = FindPlayerByUID(cl_pick->player_uid());
+                auto player = FindPlayerByUID(gs_event->sender_id());
                 player->SetHeroPicked((Hero::Type) cl_pick->hero_type());
 
                 auto sv_pick  = CreateSVHeroPick(_flatBuilder,
-                                                 cl_pick->player_uid(),
+                                                 gs_event->sender_id(),
                                                  cl_pick->hero_type());
                 auto sv_event = CreateMessage(_flatBuilder,
+                                              0,
                                               Events_SVHeroPick,
                                               sv_pick.Union());
                 _flatBuilder.Finish(sv_event);
-                SendToAll(_flatBuilder.GetBufferPointer(),
-                          _flatBuilder.GetSize());
+                SendMulticast(std::vector<uint8_t>(
+                        _flatBuilder.GetBufferPointer(),
+                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
                 _flatBuilder.Clear();
 
                 break;
@@ -245,11 +236,13 @@ void GameServer::hero_picking_stage()
                 auto sv_ready = CreateSVReadyToStart(_flatBuilder,
                                                      cl_ready->player_uid());
                 auto sv_event = CreateMessage(_flatBuilder,
+                                              0,
                                               Events_SVReadyToStart,
                                               sv_ready.Union());
                 _flatBuilder.Finish(sv_event);
-                SendToAll(_flatBuilder.GetBufferPointer(),
-                          _flatBuilder.GetSize());
+                SendMulticast(std::vector<uint8_t>(
+                        _flatBuilder.GetBufferPointer(),
+                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
                 _flatBuilder.Clear();
                 
                 _msgBuilder << "Player " << player->GetNickname() << " is ready";
@@ -315,12 +308,13 @@ void GameServer::world_generation_stage()
                                               sets.RoomSize,
                                               sets.Seed);
         auto gs_event   = CreateMessage(_flatBuilder,
+                                        0,
                                         Events_SVGenerateMap,
                                         gs_gen_map.Union());
         _flatBuilder.Finish(gs_event);
-
-        SendToAll(_flatBuilder.GetBufferPointer(),
-                  _flatBuilder.GetSize());
+        SendMulticast(std::vector<uint8_t>(
+                _flatBuilder.GetBufferPointer(),
+                _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
         _flatBuilder.Clear();
 
         auto players_ungenerated = _players.size();
@@ -349,11 +343,13 @@ void GameServer::world_generation_stage()
         // notify players that game starts!
         auto game_start = CreateSVGameStart(_flatBuilder);
         gs_event = CreateMessage(_flatBuilder,
+                                 0,
                                  Events_SVGameStart,
                                  game_start.Union());
         _flatBuilder.Finish(gs_event);
-        SendToAll(_flatBuilder.GetBufferPointer(),
-                  _flatBuilder.GetSize());
+        SendMulticast(std::vector<uint8_t>(
+                _flatBuilder.GetBufferPointer(),
+                _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
         _flatBuilder.Clear();
 
         _msgBuilder << "Game begins";
@@ -382,77 +378,32 @@ void GameServer::running_game_stage()
         while(_socket.available())
         {
             time_no_receive = 0ms;
-            bool event_valid = false;
             auto pack_size   = _socket.receiveFrom(buf,
                                                    256,
                                                    sender_addr);
 
             auto gs_event = GetMessage(buf);
-
-            switch(gs_event->event_type())
+            
+            auto sender = FindPlayerByUID(gs_event->sender_id());
+            if(sender != _players.end())
             {
-                case Events_CLActionMove:
+                if(sender->GetAddress() != sender_addr)
                 {
-                    auto cl_mov = static_cast<const CLActionMove *>(gs_event->event());
-                    auto player = FindPlayerByUID(cl_mov->target_uid());
-
-                    if(player != _players.end() && player->GetAddress() != sender_addr)
-                    {
-                        player->SetAddress(sender_addr);
-                    }
-
-                    event_valid = true;
-                    break;
+                    _msgBuilder << "Player" << sender->GetNickname() << " dynamic change IP to " << sender_addr.toString();
+                    _logSystem.Warning(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                    sender->SetAddress(sender_addr);
                 }
-
-                case Events_CLActionItem:
-                {
-                    auto cl_item = static_cast<const CLActionItem *>(gs_event->event());
-                    auto player  = FindPlayerByUID(cl_item->player_uid());
-
-                    if(player != _players.end() && player->GetAddress() != sender_addr)
-                    {
-                        player->SetAddress(sender_addr);
-                    }
-
-                    event_valid = true;
-                    break;
-                }
-
-                case Events_CLActionDuel:
-                {
-                    auto cl_duel = static_cast<const CLActionDuel *>(gs_event->event());
-
-                    //FIXME: players validation needed?
-
-                    event_valid = true;
-                    break;
-                }
-
-                case Events_CLActionSpell:
-                {
-                    //FIXME: validation needed, at least for players id
-                    event_valid = true;
-                    break;
-                }
-
-                case Events_CLRequestWin:
-                {
-                    event_valid = true;
-                    break;
-                }
-
-                default:
-                    assert(false);
-                    break;
+                
+                _gameWorld->GetIncomingEvents().emplace(buf,
+                                                        buf + pack_size);
             }
-
-            if(event_valid) // add received event to the gameworld
+            else
             {
-                auto& in_events = _gameWorld->GetIncomingEvents();
-                std::vector<uint8_t> event(buf,
-                                           buf + pack_size);
-                in_events.emplace(event);
+                _msgBuilder << "Received packet from unexisting player with IP [" << sender_addr.toString() << "]";
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
             }
         }
 
@@ -460,8 +411,7 @@ void GameServer::running_game_stage()
         while(out_events.size())
         {
             auto event = out_events.front();
-            SendToAll(event.data(),
-                      event.size());
+            SendMulticast(event);
             out_events.pop();
         }
 
@@ -476,20 +426,6 @@ void GameServer::running_game_stage()
         auto frame_end = steady_clock::now();
 
         _gameWorld->update(duration_cast<microseconds>(frame_end - frame_start));
-    }
-}
-
-void GameServer::SendToOne(uint32_t player_id,
-                           uint8_t * buf,
-                           size_t size)
-{
-    auto player = FindPlayerByUID(player_id);
-
-    if(player != _players.end())
-    {
-        _socket.sendTo(buf,
-                       size,
-                       player->GetAddress());
     }
 }
 

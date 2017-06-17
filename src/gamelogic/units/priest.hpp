@@ -21,10 +21,11 @@ public:
     
     virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
     virtual void    update(std::chrono::microseconds) override;
+
 protected:
-    std::chrono::microseconds m_nRegenInterval;
-    std::chrono::microseconds m_nRegenTimer;
-    int16_t m_nRegenAmount;
+    std::chrono::microseconds   _regenInterval;
+    std::chrono::microseconds   _regenTimer;
+    int16_t                     _regenAmount;
 };
 
 #endif /* priest_hpp */

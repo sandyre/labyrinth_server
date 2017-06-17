@@ -211,6 +211,7 @@ Unit::TakeItem(Item * item)
                                               item->GetUID(),
                                               GameEvent::ActionItemType_TAKE);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVActionItem,
                                         take.Union());
     builder.Finish(msg);
@@ -245,6 +246,7 @@ Unit::Spawn(Point2 log_pos)
                                                 log_pos.x,
                                                 log_pos.y);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVSpawnPlayer,
                                         spawn.Union());
     builder.Finish(msg);
@@ -283,6 +285,7 @@ Unit::Respawn(Point2 log_pos)
                                                  log_pos.x,
                                                  log_pos.y);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVRespawnPlayer,
                                         resp.Union());
     builder.Finish(msg);
@@ -338,6 +341,7 @@ Unit::Die(Unit * killer)
                                                this->GetUID(),
                                                killer->GetUID());
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
@@ -390,6 +394,7 @@ Unit::Move(MoveDirection dir)
                                               new_coord.x,
                                               new_coord.y);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVActionMove,
                                         move.Union());
     builder.Finish(msg);
@@ -449,6 +454,7 @@ Unit::StartDuel(Unit * enemy)
                                               enemy->GetUID(),
                                               GameEvent::ActionDuelType_STARTED);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVActionDuel,
                                         duel.Union());
     builder.Finish(msg);

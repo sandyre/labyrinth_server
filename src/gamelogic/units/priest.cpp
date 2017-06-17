@@ -27,9 +27,9 @@ Priest::Priest()
         // spell 2 cd
     _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
     
-    m_nRegenInterval = 2s;
-    m_nRegenTimer = 0s;
-    m_nRegenAmount = 1;
+    _regenInterval = 2s;
+    _regenTimer = 0s;
+    _regenAmount = 1;
 }
 
 void
@@ -46,14 +46,14 @@ Priest::update(std::chrono::microseconds delta)
         // passive regen works only in duel mode
     if(_state == Unit::State::DUEL)
     {
-        m_nRegenTimer -= delta;
-        if(m_nRegenTimer < 0s &&
+        _regenTimer -= delta;
+        if(_regenTimer < 0s &&
            _health <= _maxHealth)
         {
-            _health += m_nRegenAmount;
+            _health += _regenAmount;
             if(_health > _maxHealth)
                 _health = _maxHealth;
-            m_nRegenTimer = m_nRegenInterval;
+            _regenTimer = _regenInterval;
         }
     }
 }

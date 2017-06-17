@@ -44,14 +44,18 @@ public:
         uint32_t RandomSeed;
         uint16_t Players;
     };
+
 public:
     GameServer(const Configuration&);
     ~GameServer();
 
     virtual void run();
 
-    GameServer::State GetState() const;
-    GameServer::Configuration GetConfig() const;
+    GameServer::State GetState() const
+    { return _state; }
+    GameServer::Configuration GetConfig() const
+    { return _config; }
+
 private:
     void shutdown();
 
@@ -60,10 +64,11 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
-    void SendToOne(uint32_t, uint8_t *, size_t);
-    void SendToAll(uint8_t *, size_t);
+    void SendMulticast();
+    void SendMulticast(const std::vector<uint8_t>&);
 
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
+
 private:
     GameServer::State         _state;
     GameServer::Configuration _config;

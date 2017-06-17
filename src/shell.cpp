@@ -35,7 +35,6 @@ Shell::run()
         if(command == "status")
         {
             m_oMsgBuilder << "System status";
-            m_oMsgBuilder << "\nPlayers in queue: " << m_oMasterServer._playersPool.size();
             m_oMsgBuilder << "\nServers online: " << m_oMasterServer._gameServers.size();
             m_oLogSys.Info(m_oMsgBuilder.str());
             m_oMsgBuilder.str("");

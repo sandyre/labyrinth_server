@@ -51,16 +51,17 @@ public:
     
     virtual void    Spawn(Point2) override;
     virtual void    Die(Unit * killer) override;
+    
 protected:
-    std::chrono::microseconds m_msMoveCD;;
-    std::chrono::microseconds m_msMoveACD;
+    std::chrono::microseconds   _moveCD;;
+    std::chrono::microseconds   _moveACD;
     
-    Unit * m_pChasingUnit;
-    std::queue<Point2> m_pPathToUnit;
-    
-    std::chrono::microseconds m_msCastTime;
-    std::chrono::microseconds m_msACastTime;
-    std::vector<InputSequence> m_aCastSequences;
+    Unit *                      _chasingUnit;
+    std::queue<Point2>          _pathToUnit;
+
+    std::chrono::microseconds   _castTime;
+    std::chrono::microseconds   _castATime;
+    std::vector<InputSequence>  _castSequence;
 };
 
 #endif /* monster_hpp */

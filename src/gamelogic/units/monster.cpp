@@ -15,7 +15,7 @@
 using namespace std::chrono_literals;
 
 Monster::Monster() :
-m_pChasingUnit(nullptr)
+_chasingUnit(nullptr)
 {
     _unitType = Unit::Type::MONSTER;
     _name = "Skeleton";
@@ -30,13 +30,13 @@ m_pChasingUnit(nullptr)
     
         // spell 1 seq
     InputSequence atk_seq(5);
-    m_aCastSequences.push_back(atk_seq);
+    _castSequence.push_back(atk_seq);
     
-    m_msCastTime = 600ms;
-    m_msACastTime = 0ms;
+    _castTime = 600ms;
+    _castATime = 0ms;
     
-    m_msMoveCD = 2s;
-    m_msMoveACD = 0s;
+    _moveCD = 2s;
+    _moveACD = 0s;
 }
 
 void
@@ -44,12 +44,12 @@ Monster::update(std::chrono::microseconds delta)
 {
     Unit::update(delta);
     
-    m_msACastTime -= delta;
-    if(m_msACastTime < 0ms)
-        m_msACastTime = 0ms;
+    _castATime -= delta;
+    if(_castATime < 0ms)
+        _castATime = 0ms;
     
 //        // find target to chase
-//    if(m_pChasingUnit == nullptr)
+//    if(_chasingUnit == nullptr)
 //    {
 //        for(auto obj : m_poGameWorld->m_apoObjects)
 //        {
@@ -58,7 +58,7 @@ Monster::update(std::chrono::microseconds delta)
 //               Distance(obj->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0 &&
 //               dynamic_cast<Unit*>(obj)->GetUnitAttributes() & Unit::Attributes::DUELABLE)
 //            {
-//                m_pChasingUnit = dynamic_cast<Unit*>(obj);
+//                _chasingUnit = dynamic_cast<Unit*>(obj);
 //                break;
 //            }
 //        }
@@ -70,12 +70,12 @@ Monster::update(std::chrono::microseconds delta)
     {
         case Unit::State::DUEL:
         {
-            if(m_msACastTime == 0ms)
+            if(_castATime == 0ms)
             {
-                m_aCastSequences[0].sequence.pop_back();
-                m_msACastTime = m_msCastTime;
+                _castSequence[0].sequence.pop_back();
+                _castATime = _castTime;
                 
-                if(m_aCastSequences[0].sequence.empty())
+                if(_castSequence[0].sequence.empty())
                 {
                     if(_duelTarget == nullptr)
                         return;
@@ -103,6 +103,7 @@ Monster::update(std::chrono::microseconds delta)
                                                                  0,
                                                                  spell);
                     auto event = GameEvent::CreateMessage(builder,
+                                                          0,
                                                           GameEvent::Events_SVActionSpell,
                                                           spell1.Union());
                     builder.Finish(event);
@@ -115,7 +116,7 @@ Monster::update(std::chrono::microseconds delta)
                                               Unit::DamageType::PHYSICAL,
                                               this);
                     
-                    m_aCastSequences[0].Refresh();
+                    _castSequence[0].Refresh();
                 }
             }
             
@@ -147,6 +148,7 @@ Monster::Spawn(Point2 log_pos)
                                                  log_pos.x,
                                                  log_pos.y);
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVSpawnMonster,
                                         spawn.Union());
     builder.Finish(msg);
@@ -182,6 +184,7 @@ Monster::Die(Unit * killer)
                                                this->GetUID(),
                                                killer->GetUID());
     auto msg = GameEvent::CreateMessage(builder,
+                                        0,
                                         GameEvent::Events_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);

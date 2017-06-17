@@ -17,21 +17,13 @@
 #include <vector>
 
 class Mage;
-
 class Warrior;
-
 class Effect;
-
 class WarriorDash;
-
 class WarriorArmorUp;
-
 class RogueInvisibility;
-
 class MageFreeze;
-
 class DuelInvulnerability;
-
 class RespawnInvulnerability;
 
 class Unit : public GameObject
@@ -77,9 +69,9 @@ public:
     int16_t GetMaxHealth() const;
     int16_t GetArmor() const;
 
-    Unit * const GetDuelTarget() const;
-    std::vector<Item *>& GetInventory();
-    virtual void UpdateStats(); // based on inventory
+    Unit * const        GetDuelTarget() const;
+    std::vector<Item*>& GetInventory();
+    virtual void        UpdateStats(); // based on inventory
 
     virtual void TakeDamage(int16_t, DamageType, Unit *);
     virtual void Spawn(Point2);

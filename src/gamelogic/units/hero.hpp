@@ -32,13 +32,13 @@ public:
     
     virtual void    update(std::chrono::microseconds) override;
     
-    virtual void                SpellCast(const GameEvent::CLActionSpell*) = 0;
+    virtual void    SpellCast(const GameEvent::CLActionSpell*) = 0;
 
 protected:
     Hero();
     
 protected:
-    Hero::Type          _heroType;
+    Hero::Type      _heroType;
 };
 
 

@@ -53,14 +53,12 @@ protected:
     void service_loop();
     
     void ProcessIncomingMessage();
-    void CommutatePlayers();
     void FreeResourcesAndSaveResults(Poco::Timer&);
 
     std::mt19937                    _randGenerator;
     std::uniform_int_distribution<> _randDistr;
 
     std::queue<uint32_t> _availablePorts;
-    std::deque<Player>   _playersPool;
 
     uint32_t m_nSystemStatus;
 
@@ -71,7 +69,6 @@ protected:
 
     // System timers and flags
     std::unique_ptr<Poco::Timer> _freementTimer;
-    bool                         _commutationNeeded;
 
     // Network
     Poco::Net::DatagramSocket      _socket;

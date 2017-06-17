@@ -2343,9 +2343,13 @@ inline flatbuffers::Offset<SVGameEnd> CreateSVGameEnd(
 
 struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_EVENT_TYPE = 4,
-    VT_EVENT = 6
+    VT_SENDER_ID = 4,
+    VT_EVENT_TYPE = 6,
+    VT_EVENT = 8
   };
+  uint32_t sender_id() const {
+    return GetField<uint32_t>(VT_SENDER_ID, 0);
+  }
   Events event_type() const {
     return static_cast<Events>(GetField<uint8_t>(VT_EVENT_TYPE, 0));
   }
@@ -2354,6 +2358,7 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_SENDER_ID) &&
            VerifyField<uint8_t>(verifier, VT_EVENT_TYPE) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_EVENT) &&
            VerifyEvents(verifier, event(), event_type()) &&
@@ -2364,6 +2369,9 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct MessageBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_sender_id(uint32_t sender_id) {
+    fbb_.AddElement<uint32_t>(Message::VT_SENDER_ID, sender_id, 0);
+  }
   void add_event_type(Events event_type) {
     fbb_.AddElement<uint8_t>(Message::VT_EVENT_TYPE, static_cast<uint8_t>(event_type), 0);
   }
@@ -2376,7 +2384,7 @@ struct MessageBuilder {
   }
   MessageBuilder &operator=(const MessageBuilder &);
   flatbuffers::Offset<Message> Finish() {
-    const auto end = fbb_.EndTable(start_, 2);
+    const auto end = fbb_.EndTable(start_, 3);
     auto o = flatbuffers::Offset<Message>(end);
     return o;
   }
@@ -2384,10 +2392,12 @@ struct MessageBuilder {
 
 inline flatbuffers::Offset<Message> CreateMessage(
     flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t sender_id = 0,
     Events event_type = Events_NONE,
     flatbuffers::Offset<void> event = 0) {
   MessageBuilder builder_(_fbb);
   builder_.add_event(event);
+  builder_.add_sender_id(sender_id);
   builder_.add_event_type(event_type);
   return builder_.Finish();
 }

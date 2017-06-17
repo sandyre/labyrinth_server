@@ -50,6 +50,7 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                                      this->GetUID(),
                                                      0);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
@@ -91,6 +92,7 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                                      1,
                                                      spell);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
@@ -116,6 +118,7 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                                      this->GetUID(),
                                                      2);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);

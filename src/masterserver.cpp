@@ -27,10 +27,11 @@ using namespace Poco::Data::Keywords;
 using namespace std::chrono_literals;
 using Poco::Data::Statement;
 
-MasterServer::MasterServer() : m_nSystemStatus(0), _randGenerator(228), // FIXME: random should always be random!
-                               _randDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
-                                                                          std::numeric_limits<int32_t>::max())),
-                               _commutationNeeded(false)
+MasterServer::MasterServer() :
+m_nSystemStatus(0),
+_randGenerator(228),
+_randDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
+                                           std::numeric_limits<int32_t>::max()))
 {
 
 }
@@ -91,7 +92,7 @@ void MasterServer::init(uint32_t Port)
                                                Port);
             _socket.bind(sock_addr);
 
-            _msgBuilder << "OK";
+            _msgBuilder << "Binded";
             _logSystem.Info(_msgBuilder.str());
             _msgBuilder.str("");
 
@@ -132,8 +133,8 @@ void MasterServer::init(uint32_t Port)
     _msgBuilder << "Initializing gameservers threadpool...";
     _logSystem.Warning(_msgBuilder.str());
     _msgBuilder.str("");
-    _threadPool = std::make_unique<Poco::ThreadPool>(10, // min
-                                                     40, // max
+    _threadPool = std::make_unique<Poco::ThreadPool>(std::thread::hardware_concurrency(), // min
+                                                     std::thread::hardware_concurrency() * 4, // max
                                                      120, // idle time
                                                      0); // stack size
     _msgBuilder << "DONE";
@@ -155,12 +156,12 @@ void MasterServer::init(uint32_t Port)
                                                con_params);
 
         m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
-        _msgBuilder << "DONE";
+        _msgBuilder << "Database initialization done";
         _logSystem.Info(_msgBuilder.str());
         _msgBuilder.str("");
     } catch(std::exception& e)
     {
-        _msgBuilder << "FAILED";
+        _msgBuilder << "FAILED. Reason: " << e.what();
         _logSystem.Error(_msgBuilder.str());
         _msgBuilder.str("");
     }
@@ -182,9 +183,9 @@ void MasterServer::init(uint32_t Port)
 
     // Advanced init - freement timer
     _freementTimer = std::make_unique<Poco::Timer>(0,
-                                                   30000);
-    Poco::TimerCallback<MasterServer> free_callback(* this,
-                                                    & MasterServer::FreeResourcesAndSaveResults);
+                                                   10000);
+    Poco::TimerCallback<MasterServer> free_callback(*this,
+                                                    &MasterServer::FreeResourcesAndSaveResults);
     _freementTimer->start(free_callback);
 }
 
@@ -199,8 +200,6 @@ void MasterServer::service_loop()
     while(true)
     {
         ProcessIncomingMessage();
-        if(_commutationNeeded)
-            CommutatePlayers();
     }
 }
 
@@ -244,8 +243,12 @@ void MasterServer::ProcessIncomingMessage()
             // New user, add him
             if(mail_presented == 0)
             {
+                _msgBuilder << "Player registered: {" << email << ";" << password << "}";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+                
                 // Add to DB
-                Poco::Data::Statement insert(* _dbSession);
+                Poco::Data::Statement insert(*_dbSession);
                 insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(email), use(password), now;
 
                 // Send response to client
@@ -263,6 +266,10 @@ void MasterServer::ProcessIncomingMessage()
             }
             else // email already taken
             {
+                _msgBuilder << "Player tried to register: " << email << " already taken";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+                
                 // Send response to client
                 auto response = CreateSVRegister(_flatBuilder,
                                                  RegistrationStatus_EMAIL_TAKEN);
@@ -282,14 +289,14 @@ void MasterServer::ProcessIncomingMessage()
 
         case Messages_CLLogin:
         {
-            auto registr = static_cast<const CLLogin *>(msg->message());
+            auto registr = static_cast<const CLLogin*>(msg->message());
 
             Poco::Nullable<std::string> stored_pass;
             std::string                 email(registr->email()->c_str());
             std::string                 password(registr->password()->c_str());
 
             // Check that player isnt registered already
-            Poco::Data::Statement select(* _dbSession);
+            Poco::Data::Statement select(*_dbSession);
             select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(stored_pass), use(email), now;
 
             if(!stored_pass.isNull())
@@ -297,6 +304,10 @@ void MasterServer::ProcessIncomingMessage()
                 // password is correct, notify player
                 if(stored_pass == password)
                 {
+                    _msgBuilder << "Player " << email << " logged in";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
                     // Send response to client
                     auto response = CreateSVLogin(_flatBuilder,
                                                   LoginStatus_SUCCESS);
@@ -311,6 +322,10 @@ void MasterServer::ProcessIncomingMessage()
                     _flatBuilder.Clear();
                 } else // password is wrong
                 {
+                    _msgBuilder << "Player " << email << " failed to log in: wrong password";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
                     // Send response to client
                     auto response = CreateSVLogin(_flatBuilder,
                                                   LoginStatus_WRONG_INPUT);
@@ -326,9 +341,11 @@ void MasterServer::ProcessIncomingMessage()
                 }
             } else // player is not registered, or wrong password
             {
+                _msgBuilder << "Player " << email << " failed to log in: wrong pass or email";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+                
                 // Send response to client
-
-                // FIXME: when debug is done, set to WRONG_INPUT
                 auto response = CreateSVLogin(_flatBuilder,
                                               LoginStatus_WRONG_INPUT);
                 auto msg      = CreateMessage(_flatBuilder,
@@ -347,10 +364,14 @@ void MasterServer::ProcessIncomingMessage()
 
         case Messages_CLFindGame:
         {
-            auto finder = static_cast<const CLFindGame *>(msg->message());
+            auto finder = static_cast<const CLFindGame*>(msg->message());
 
             if(finder->cl_version_major() == GAMEVERSION_MAJOR)
             {
+                _msgBuilder << "Player " << finder->player_uid() << " version is OK";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+                
                 auto gs_accepted = CreateSVFindGame(_flatBuilder,
                                                     finder->player_uid(),
                                                     ConnectionResponse_ACCEPTED);
@@ -364,6 +385,10 @@ void MasterServer::ProcessIncomingMessage()
                 _flatBuilder.Clear();
             } else
             {
+                _msgBuilder << "Player " << finder->player_uid() << " connection refused: old client version";
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                
                 auto gs_refused = CreateSVFindGame(_flatBuilder,
                                                    finder->player_uid(),
                                                    ConnectionResponse_REFUSED);
@@ -377,28 +402,45 @@ void MasterServer::ProcessIncomingMessage()
                 _flatBuilder.Clear();
                 break;
             }
-            // check that player isnt already in pool
-            auto iter   = std::find_if(_playersPool.begin(),
-                                       _playersPool.end(),
-                                       [finder](Player& player)
-                                       {
-                                           return player.GetUID() == finder->player_uid();
-                                       });
-
-            // player is not in pool already, add him
-            if(iter == _playersPool.end())
+            
+            std::lock_guard<std::mutex> lock(_serversMutex);
+            auto server_available = std::find_if(_gameServers.cbegin(),
+                                                 _gameServers.cend(),
+                                                 [this](std::unique_ptr<GameServer> const& gs)
+                                                 {
+                                                     return gs->GetState() == GameServer::State::LOBBY_FORMING;
+                                                 });
+            if(server_available == _gameServers.cend())
             {
-                Player player(finder->player_uid(),
-                              sender_addr,
-                              std::string(""));
-
-                _msgBuilder << "Player connected, UID: " << finder->player_uid();
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
-
-                _playersPool.emplace_back(std::move(player));
+                GameServer::Configuration config;
+                config.Players    = 1; // +-
+                config.RandomSeed = _randDistr(_randGenerator);
+                config.Port       = _availablePorts.front();
+                _availablePorts.pop();
+                
+                _gameServers.emplace_back(std::make_unique<GameServer>(config));
+                _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
+                                               *_gameServers.back(),
+                                               "GameServer");
+                server_available = _gameServers.end()-1;
             }
-            _commutationNeeded = true; // player asked game, need to recompute commutation
+            
+            _msgBuilder << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
+            _logSystem.Info(_msgBuilder.str());
+            _msgBuilder.str("");
+            
+                // transfer player to GS
+            auto game_found = CreateSVGameFound(_flatBuilder,
+                                                (*server_available)->GetConfig().Port);
+            auto ms_event = CreateMessage(_flatBuilder,
+                                          Messages_SVGameFound,
+                                          game_found.Union());
+            _flatBuilder.Finish(ms_event);
+            
+            _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                           _flatBuilder.GetSize(),
+                           sender_addr);
+            _flatBuilder.Clear();
             break;
         }
 
@@ -429,70 +471,4 @@ void MasterServer::FreeResourcesAndSaveResults(Poco::Timer& timer)
                                           return false;
                                       }),
                        _gameServers.end());
-}
-
-void MasterServer::CommutatePlayers()
-{
-    std::lock_guard<std::mutex> lock(_serversMutex);
-    // if there are some players, check that there is a server for them
-    if(_playersPool.size() != 0)
-    {
-        auto servers_available = std::count_if(_gameServers.begin(),
-                                               _gameServers.end(),
-                                               [this](std::unique_ptr<GameServer> const& gs)
-                                               {
-                                                   return gs->GetState() == GameServer::State::LOBBY_FORMING;
-                                               });
-
-        // no servers? start a new
-        if(servers_available == 0)
-        {
-            uint32_t nGSPort = _availablePorts.front();
-            _availablePorts.pop();
-
-            GameServer::Configuration config;
-            config.Players    = 1; // +-
-            config.RandomSeed = _randDistr(_randGenerator);
-            config.Port       = nGSPort;
-
-            _gameServers.emplace_back(std::make_unique<GameServer>(config));
-            _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
-                                           *_gameServers.back(),
-                                           "GameServer");
-        }
-    }
-
-    // FIXME: on a big amount of gameservers, may not run correctly
-    for(auto& gs : _gameServers)
-    {
-        if(_playersPool.size() == 0) // optimization (no need to loop more through gss)
-            break;
-
-        if(gs->GetState() == GameServer::State::LOBBY_FORMING)
-        {
-            auto serv_config = gs->GetConfig();
-            // transfer player to GS
-            auto game_found  = CreateSVGameFound(_flatBuilder,
-                                                 serv_config.Port);
-            auto ms_event    = CreateMessage(_flatBuilder,
-                                             Messages_SVGameFound,
-                                             game_found.Union());
-            _flatBuilder.Finish(ms_event);
-
-            auto& player = _playersPool.front();
-            
-            _msgBuilder << "TRANSFER: Player " << player.GetUID() << " -> GS" << serv_config.Port;
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
-
-            _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                           _flatBuilder.GetSize(),
-                           player.GetAddress());
-
-            _flatBuilder.Clear();
-            _playersPool.pop_front(); // remove a player from queue
-        }
-    }
-
-    _commutationNeeded = false;
 }

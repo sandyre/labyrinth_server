@@ -8,11 +8,6 @@
 
 #include "hero.hpp"
 
-#include "../../gsnet_generated.h"
-
-#include <chrono>
-using namespace std::chrono_literals;
-
 Hero::Hero() :
 _heroType(Hero::Type::FIRST_HERO)
 {

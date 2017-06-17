@@ -63,6 +63,7 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                                      0,
                                                      spell);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
@@ -102,6 +103,7 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                                      1,
                                                      spell);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
@@ -137,6 +139,7 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                                        2,
                                                        spell);
         auto event = GameEvent::CreateMessage(builder,
+                                              0,
                                               GameEvent::Events_SVActionSpell,
                                               cl_spell.Union());
         builder.Finish(event);
