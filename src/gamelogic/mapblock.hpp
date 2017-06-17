@@ -29,7 +29,7 @@ public:
 protected:
     MapBlock();
     
-    MapBlock::Type  m_eType;
+    MapBlock::Type  _blockType;
 };
 
 class NoBlock : public MapBlock

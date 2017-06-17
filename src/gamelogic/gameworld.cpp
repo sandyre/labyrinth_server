@@ -8,10 +8,10 @@
 
 #include "gameworld.hpp"
 
-#include "../player.hpp"
-#include "item.hpp"
 #include "construction.hpp"
+#include "item.hpp"
 #include "units/monster.hpp"
+#include "../player.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
@@ -19,25 +19,20 @@ using namespace std::chrono_literals;
 using namespace GameEvent;
 
 GameWorld::GameWorld() :
-m_nObjUIDSeq(1),
-m_nMonsterSpawnInterval(30s),
-m_nMonsterSpawnTimer(30s)
+_objUIDSeq(1),
+_monsterSpawnInterval(30s),
+_monsterSpawnTimer(30s)
 {
-    
+    _logSystem.Init("GameWorld",
+                    LogSystem::Mode::STDIO);
 }
 
 GameWorld::~GameWorld()
 {
-    for(auto obj : m_apoObjects)
+    for(auto obj : _objects)
     {
         delete obj;
     }
-}
-
-void
-GameWorld::SetLoggingSystem(LogSystem * sys)
-{
-    m_pLogSystem = sys;
 }
 
 void
@@ -47,20 +42,20 @@ GameWorld::CreateGameMap(const GameMap::Configuration& _conf)
     
     GameMap gamemap;
     gamemap.GenerateMap(m_stMapConf, this);
-    m_nObjUIDSeq = m_apoObjects.back()->GetUID();
-    ++m_nObjUIDSeq;
+    _objUIDSeq = _objects.back()->GetUID();
+    ++_objUIDSeq;
 }
 
 std::queue<std::vector<uint8_t>>&
 GameWorld::GetIncomingEvents()
 {
-    return m_aInEvents;
+    return _inputEvents;
 }
 
 std::queue<std::vector<uint8_t>>&
 GameWorld::GetOutgoingEvents()
 {
-    return m_aOutEvents;
+    return _outputEvents;
 }
 
 void
@@ -74,7 +69,7 @@ GameWorld::AddPlayer(Player player)
             rogue->SetGameWorld(this);
             rogue->SetUID(player.GetUID());
             rogue->SetName(player.GetNickname());
-            m_apoObjects.push_back(rogue);
+            _objects.push_back(rogue);
             break;
         }
         case Hero::Type::WARRIOR:
@@ -83,7 +78,7 @@ GameWorld::AddPlayer(Player player)
             warrior->SetGameWorld(this);
             warrior->SetUID(player.GetUID());
             warrior->SetName(player.GetNickname());
-            m_apoObjects.push_back(warrior);
+            _objects.push_back(warrior);
             break;
         }
         case Hero::Type::MAGE:
@@ -92,7 +87,7 @@ GameWorld::AddPlayer(Player player)
             mage->SetGameWorld(this);
             mage->SetUID(player.GetUID());
             mage->SetName(player.GetNickname());
-            m_apoObjects.push_back(mage);
+            _objects.push_back(mage);
             break;
         }
         case Hero::Type::PRIEST:
@@ -101,7 +96,7 @@ GameWorld::AddPlayer(Player player)
             priest->SetGameWorld(this);
             priest->SetUID(player.GetUID());
             priest->SetName(player.GetNickname());
-            m_apoObjects.push_back(priest);
+            _objects.push_back(priest);
             break;
         }
         default:
@@ -113,7 +108,7 @@ GameWorld::AddPlayer(Player player)
 void
 GameWorld::InitialSpawn()
 {
-    for(auto object : m_apoObjects)
+    for(auto object : _objects)
     {
             // spawn players first
         if(object->GetObjType() == GameObject::Type::UNIT)
@@ -127,110 +122,110 @@ GameWorld::InitialSpawn()
     auto key = new Key();
     {
         key->SetLogicalPosition(GetRandomPosition());
-        key->SetUID(m_nObjUIDSeq);
-        m_apoObjects.push_back(key);
-        ++m_nObjUIDSeq;
+        key->SetUID(_objUIDSeq);
+        _objects.push_back(key);
+        ++_objUIDSeq;
         
             // Log key spawn event
-        m_oLogBuilder << "Key spawned at (" << key->GetLogicalPosition().x
+        _logBuilder << "Key spawned at (" << key->GetLogicalPosition().x
         << ";" << key->GetLogicalPosition().y << ")";
-        m_pLogSystem->Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        _logSystem.Info(_logBuilder.str());
+        _logBuilder.str("");
         
-        auto key_spawn = CreateSVSpawnItem(m_oFBuilder,
+        auto key_spawn = CreateSVSpawnItem(_flatBuilder,
                                            key->GetUID(),
                                            ItemType_KEY,
                                            key->GetLogicalPosition().x,
                                            key->GetLogicalPosition().y);
-        auto msg = CreateMessage(m_oFBuilder,
+        auto msg = CreateMessage(_flatBuilder,
                                  Events_SVSpawnItem,
                                  key_spawn.Union());
-        m_oFBuilder.Finish(msg);
-        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
-                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
-        m_oFBuilder.Clear();
+        _flatBuilder.Finish(msg);
+        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
+                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
+        _flatBuilder.Clear();
     }
     
         // spawn door
     {
         auto door = new Door();
         door->SetLogicalPosition(GetRandomPosition());
-        door->SetUID(m_nObjUIDSeq);
-        m_apoObjects.push_back(door);
-        ++m_nObjUIDSeq;
+        door->SetUID(_objUIDSeq);
+        _objects.push_back(door);
+        ++_objUIDSeq;
         
             // Log key spawn event
-        m_oLogBuilder << "Door spawned at (" << door->GetLogicalPosition().x
+        _logBuilder << "Door spawned at (" << door->GetLogicalPosition().x
         << ";" << door->GetLogicalPosition().y << ")";
-        m_pLogSystem->Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        _logSystem.Info(_logBuilder.str());
+        _logBuilder.str("");
         
-        auto door_spawn = CreateSVSpawnConstr(m_oFBuilder,
+        auto door_spawn = CreateSVSpawnConstr(_flatBuilder,
                                               door->GetUID(),
                                               ConstrType_DOOR,
                                               door->GetLogicalPosition().x,
                                               door->GetLogicalPosition().y);
-        auto msg = CreateMessage(m_oFBuilder,
+        auto msg = CreateMessage(_flatBuilder,
                                  Events_SVSpawnConstr,
                                  door_spawn.Union());
-        m_oFBuilder.Finish(msg);
-        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
-                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
-        m_oFBuilder.Clear();
+        _flatBuilder.Finish(msg);
+        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
+                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
+        _flatBuilder.Clear();
     }
     
         // spawn graveyard
     {
         auto grave = new Graveyard();
         grave->SetLogicalPosition(GetRandomPosition());
-        grave->SetUID(m_nObjUIDSeq);
-        m_apoObjects.push_back(grave);
-        ++m_nObjUIDSeq;
+        grave->SetUID(_objUIDSeq);
+        _objects.push_back(grave);
+        ++_objUIDSeq;
         
             // Log key spawn event
-        m_oLogBuilder << "Graveyard spawned at (" << grave->GetLogicalPosition().x
+        _logBuilder << "Graveyard spawned at (" << grave->GetLogicalPosition().x
         << ";" << grave->GetLogicalPosition().y << ")";
-        m_pLogSystem->Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        _logSystem.Info(_logBuilder.str());
+        _logBuilder.str("");
         
-        auto grave_spawn = CreateSVSpawnConstr(m_oFBuilder,
+        auto grave_spawn = CreateSVSpawnConstr(_flatBuilder,
                                                grave->GetUID(),
                                                ConstrType_GRAVEYARD,
                                                grave->GetLogicalPosition().x,
                                                grave->GetLogicalPosition().y);
-        auto msg = CreateMessage(m_oFBuilder,
+        auto msg = CreateMessage(_flatBuilder,
                                  Events_SVSpawnConstr,
                                  grave_spawn.Union());
-        m_oFBuilder.Finish(msg);
-        m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
-                             m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
-        m_oFBuilder.Clear();
+        _flatBuilder.Finish(msg);
+        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
+                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
+        _flatBuilder.Clear();
     }
     
     {
             // spawn monster
         auto monster = new Monster();
-        monster->SetUID(m_nObjUIDSeq);
+        monster->SetUID(_objUIDSeq);
         monster->SetGameWorld(this);
-        m_apoObjects.push_back(monster);
+        _objects.push_back(monster);
         monster->Spawn(GetRandomPosition());
         
             // Log monster spawn event
-        m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
+        _logBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
         << ";" << monster->GetLogicalPosition().y << ")";
-        m_pLogSystem->Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        _logSystem.Info(_logBuilder.str());
+        _logBuilder.str("");
         
-        ++m_nObjUIDSeq; // dont forget!
+        ++_objUIDSeq; // dont forget!
     }
 }
 
 void
 GameWorld::ApplyInputEvents()
 {
-    while(!m_aInEvents.empty())
+    while(!_inputEvents.empty())
     {
-        auto& event = m_aInEvents.front();
+        auto& event = _inputEvents.front();
         auto gs_event = GameEvent::GetMessage(event.data());
 
         switch(gs_event->event_type())
@@ -239,7 +234,7 @@ GameWorld::ApplyInputEvents()
             {
                 auto cl_mov = static_cast<const GameEvent::CLActionMove*>(gs_event->event());
                 
-                for(auto object : m_apoObjects)
+                for(auto object : _objects)
                 {
                     if(object->GetObjType() == GameObject::Type::UNIT)
                     {
@@ -262,7 +257,7 @@ GameWorld::ApplyInputEvents()
                 Hero * player = nullptr;
 
                 auto key_id = gs_item->item_uid();
-                for(auto object : m_apoObjects)
+                for(auto object : _objects)
                 {
                     if(object->GetUID() == gs_item->item_uid())
                     {
@@ -321,7 +316,7 @@ GameWorld::ApplyInputEvents()
                         Unit * first = nullptr;
                         Unit * second = nullptr;
 
-                        for(auto object : m_apoObjects)
+                        for(auto object : _objects)
                         {
                             if(object->GetUID() == sv_duel->target1_uid())
                             {
@@ -355,7 +350,7 @@ GameWorld::ApplyInputEvents()
                 auto gs_spell = static_cast<const GameEvent::CLActionSpell*>(gs_event->event());
                 
                 Hero * player = nullptr;
-                for(auto object : m_apoObjects)
+                for(auto object : _objects)
                 {
                     if(object->GetUID() == gs_spell->player_uid())
                     {
@@ -373,7 +368,7 @@ GameWorld::ApplyInputEvents()
                 auto gs_win = static_cast<const GameEvent::CLRequestWin*>(gs_event->event());
                 
                 Hero * player = nullptr;
-                for(auto obj : m_apoObjects)
+                for(auto obj : _objects)
                 {
                     if(obj->GetUID() == gs_win->player_uid())
                     {
@@ -393,7 +388,7 @@ GameWorld::ApplyInputEvents()
                 }
                 
                 bool at_the_door = false;
-                for(auto obj : m_apoObjects)
+                for(auto obj : _objects)
                 {
                     if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
                        static_cast<Construction*>(obj)->GetType() == Construction::Type::DOOR)
@@ -409,21 +404,21 @@ GameWorld::ApplyInputEvents()
                 if(has_key && at_the_door)
                 {
                         // GAME ENDS
-                    auto game_end = CreateSVGameEnd(m_oFBuilder,
+                    auto game_end = CreateSVGameEnd(_flatBuilder,
                                                     player->GetUID());
-                    auto msg = CreateMessage(m_oFBuilder,
+                    auto msg = CreateMessage(_flatBuilder,
                                              Events_SVGameEnd,
                                              game_end.Union());
-                    m_oFBuilder.Finish(msg);
-                    m_aOutEvents.emplace(m_oFBuilder.GetCurrentBufferPointer(),
-                                         m_oFBuilder.GetBufferPointer() + m_oFBuilder.GetSize());
-                    m_oFBuilder.Clear();
+                    _flatBuilder.Finish(msg);
+                    _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
+                                         _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
+                    _flatBuilder.Clear();
                     
                         // Log key spawn event
-                    m_oLogBuilder << "Player with name '" << player->GetName()
+                    _logBuilder << "Player with name '" << player->GetName()
                     << "' won the escaped from LABYRINTH!";
-                    m_pLogSystem->Info(m_oLogBuilder.str());
-                    m_oLogBuilder.str("");
+                    _logSystem.Info(_logBuilder.str());
+                    _logBuilder.str("");
                 }
                 
                 break;
@@ -434,7 +429,7 @@ GameWorld::ApplyInputEvents()
                 break;
         }
         
-        m_aInEvents.pop();
+        _inputEvents.pop();
     }
 }
 
@@ -442,13 +437,13 @@ void
 GameWorld::update(std::chrono::microseconds delta)
 {
     ApplyInputEvents();
-    for(auto object : m_apoObjects)
+    for(auto object : _objects)
     {
         object->update(delta);
     }
         // respawn deads
     Graveyard * grave = nullptr;
-    for(auto& obj : m_apoObjects)
+    for(auto& obj : _objects)
     {
         if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
            dynamic_cast<Construction*>(obj)->GetType() == Construction::GRAVEYARD)
@@ -457,9 +452,9 @@ GameWorld::update(std::chrono::microseconds delta)
         }
     }
     
-    m_aRespawnQueue.erase(
-                         std::remove_if(m_aRespawnQueue.begin(),
-                                        m_aRespawnQueue.end(),
+    _respawnQueue.erase(
+                         std::remove_if(_respawnQueue.begin(),
+                                        _respawnQueue.end(),
                                         [this, delta, grave](auto& unit)
                                         {
                                             if(unit.first <= 0s)
@@ -473,29 +468,29 @@ GameWorld::update(std::chrono::microseconds delta)
                                                 return false;
                                             }
                                         }),
-                         m_aRespawnQueue.end()
+                         _respawnQueue.end()
                          );
     
         // update monster spawning timer
-    m_nMonsterSpawnTimer -= delta;
-    if(m_nMonsterSpawnTimer <= 0s)
+    _monsterSpawnTimer -= delta;
+    if(_monsterSpawnTimer <= 0s)
     {
             // spawn monster
         auto monster = new Monster();
-        monster->SetUID(m_nObjUIDSeq);
+        monster->SetUID(_objUIDSeq);
         monster->SetGameWorld(this);
-        m_apoObjects.push_back(monster);
+        _objects.push_back(monster);
         monster->Spawn(GetRandomPosition());
         
             // Log monster spawn event
-        m_oLogBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
+        _logBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
         << ";" << monster->GetLogicalPosition().y << ")";
-        m_pLogSystem->Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        _logSystem.Info(_logBuilder.str());
+        _logBuilder.str("");
         
-        ++m_nObjUIDSeq; // dont forget!
+        ++_objUIDSeq; // dont forget!
         
-        m_nMonsterSpawnTimer = m_nMonsterSpawnInterval;
+        _monsterSpawnTimer = _monsterSpawnInterval;
     }
 }
 
@@ -507,11 +502,11 @@ GameWorld::GetRandomPosition()
     bool point_found = false;
     do
     {
-        point.x = m_oRandDistr(m_oRandGen) % (m_stMapConf.nMapSize * m_stMapConf.nRoomSize + 1);
-        point.y = m_oRandDistr(m_oRandGen) % (m_stMapConf.nMapSize * m_stMapConf.nRoomSize + 1);
+        point.x = _randDistr(_randGenerator) % (m_stMapConf.MapSize * m_stMapConf.RoomSize + 1);
+        point.y = _randDistr(_randGenerator) % (m_stMapConf.MapSize * m_stMapConf.RoomSize + 1);
         point_found = true;
         
-        for(auto object : m_apoObjects)
+        for(auto object : _objects)
         {
             if(object->GetLogicalPosition() == point)
             {

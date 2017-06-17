@@ -9,18 +9,20 @@
 #ifndef gameserver_hpp
 #define gameserver_hpp
 
-#include <Poco/Net/DatagramSocket.h>
-#include <Poco/Runnable.h>
-#include "player.hpp"
 #include "gamelogic/gameworld.hpp"
 #include "logsystem.hpp"
+#include "player.hpp"
+
+#include <Poco/Net/DatagramSocket.h>
+#include <Poco/Runnable.h>
+
+#include <chrono>
+#include <cstring>
+#include <memory>
+#include <string>
+#include <sstream>
 #include <thread>
 #include <vector>
-#include <chrono>
-#include <string>
-#include <cstring>
-#include <sstream>
-#include <memory>
 
 using std::chrono::steady_clock;
 
@@ -35,48 +37,48 @@ public:
         RUNNING_GAME,
         FINISHED
     };
-    
+
     struct Configuration
     {
-        uint32_t nPort;
-        uint32_t nRandomSeed;
-        uint16_t nPlayers;
+        uint32_t Port;
+        uint32_t RandomSeed;
+        uint16_t Players;
     };
 public:
     GameServer(const Configuration&);
     ~GameServer();
-    
+
     virtual void run();
-    
-    GameServer::State   GetState() const;
+
+    GameServer::State GetState() const;
     GameServer::Configuration GetConfig() const;
 private:
-    void    shutdown();
-    
-    void    lobby_forming_stage();
-    void    hero_picking_stage();
-    void    world_generation_stage();
-    void    running_game_stage();
-    
-    void    SendToOne(uint32_t, uint8_t *, size_t);
-    void    SendToAll(uint8_t *, size_t);
-    
+    void shutdown();
+
+    void lobby_forming_stage();
+    void hero_picking_stage();
+    void world_generation_stage();
+    void running_game_stage();
+
+    void SendToOne(uint32_t, uint8_t *, size_t);
+    void SendToAll(uint8_t *, size_t);
+
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
 private:
-    GameServer::State   m_eState;
-    GameServer::Configuration m_stConfig;
-    std::string         m_sServerName;
-    Poco::Net::DatagramSocket           m_oSocket;
-    steady_clock::time_point            m_nStartTime;
-    std::chrono::milliseconds           m_msPerUpdate;
-    
-    std::unique_ptr<GameWorld>  m_pGameWorld;
-    std::vector<Player> m_aPlayers;
-    
-    LogSystem m_oLogSys;
-    std::ostringstream m_oMsgBuilder;
-    
-    flatbuffers::FlatBufferBuilder  m_oBuilder;
+    GameServer::State         _state;
+    GameServer::Configuration _config;
+    std::string               _serverName;
+    Poco::Net::DatagramSocket _socket;
+    steady_clock::time_point  _startTime;
+    std::chrono::milliseconds _msPerUpdate;
+
+    std::unique_ptr<GameWorld> _gameWorld;
+    std::vector<Player>        _players;
+
+    LogSystem          _logSystem;
+    std::ostringstream _msgBuilder;
+
+    flatbuffers::FlatBufferBuilder _flatBuilder;
 };
 
 #endif /* gameserver_hpp */

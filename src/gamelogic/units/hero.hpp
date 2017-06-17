@@ -38,7 +38,7 @@ protected:
     Hero();
     
 protected:
-    Hero::Type          m_eHero;
+    Hero::Type          _heroType;
 };
 
 

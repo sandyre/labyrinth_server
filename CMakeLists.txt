@@ -8,19 +8,17 @@ set(POCO_LIB_DIR     "${POCO_PREFIX}/lib")
 set(POCO_LIBS        "${POCO_LIB_DIR}/libPocoNet.a"
 					 "${POCO_LIB_DIR}/libPocoData.a"
 					 "${POCO_LIB_DIR}/libPocoDataMySQL.a"
-                     "${POCO_LIB_DIR}/libPocoFoundation.a"
-                     "pthread")
+                     "${POCO_LIB_DIR}/libPocoFoundation.a")
 set(MYSQLCONNECTOR_LIB "/usr/local/lib/libmysqlcppconn-static.a")
 
 set(CMAKE_COLOR_MAKEFILE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 set(SOURCES
 	src/main.cpp
 	src/gameserver.cpp
 	src/logsystem.cpp
-	src/mailservice.cpp
 	src/masterserver.cpp
 	src/shell.cpp
 	src/gamelogic/construction.cpp
@@ -42,7 +40,6 @@ set(SOURCES
 set(HEADERS
 	src/gameserver.hpp
 	src/logsystem.hpp
-	src/mailservice.hpp
 	src/masterserver.hpp
 	src/player.hpp
 	src/shell.hpp

@@ -9,36 +9,36 @@
 #include "item.hpp"
 
 Item::Item() :
-m_nCarrierID(0)
+_carrierUID(0)
 {
-    m_eObjType = GameObject::Type::ITEM;
-    m_nObjAttributes |= GameObject::Attributes::PASSABLE;
+    _objType = GameObject::Type::ITEM;
+    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 Item::Type
 Item::GetType() const
 {
-    return m_eType;
+    return _itemType;
 }
 
 uint32_t
 Item::GetCarrierID() const
 {
-    return m_nCarrierID;
+    return _carrierUID;
 }
 
 void
 Item::SetCarrierID(uint32_t id)
 {
-    m_nCarrierID = id;
+    _carrierUID = id;
 }
 
 Key::Key()
 {
-    m_eType = Item::Type::KEY;
+    _itemType = Item::Type::KEY;
 }
 
 Sword::Sword()
 {
-    m_eType = Item::Type::SWORD;
+    _itemType = Item::Type::SWORD;
 }

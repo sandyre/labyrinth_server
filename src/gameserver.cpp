@@ -8,272 +8,277 @@
 
 #include "gameserver.hpp"
 
-#include <algorithm>
-#include <iostream>
-#include <memory>
 #include "gsnet_generated.h"
-
 #include "gamelogic/gamemap.hpp"
 
 #include <Poco/Thread.h>
+
+#include <algorithm>
+#include <iostream>
+#include <memory>
 
 using namespace GameEvent;
 using namespace std::chrono;
 
 GameServer::GameServer(const Configuration& config) :
-m_eState(GameServer::State::LOBBY_FORMING),
-m_stConfig(config),
-m_nStartTime(steady_clock::now()),
-m_msPerUpdate(2)
+_state(GameServer::State::LOBBY_FORMING),
+_config(config), _startTime(steady_clock::now()),
+_msPerUpdate(2)
 {
-    m_sServerName = "GameServer ";
-    m_sServerName += std::to_string(m_stConfig.nPort);
-    
-    m_oLogSys.Init(m_sServerName, LogSystem::Mode::STDIO);
-    
-    m_oMsgBuilder << "Started. Configuration: {SEED:" << m_stConfig.nRandomSeed;
-    m_oMsgBuilder << "; PLAYERS_COUNT: " << m_stConfig.nPlayers << "}";
-    m_oLogSys.Info(m_oMsgBuilder.str());
-    m_oMsgBuilder.str("");
-    
-    Poco::Net::SocketAddress addr(Poco::Net::IPAddress(), m_stConfig.nPort);
-    m_oSocket.bind(addr);
+    _serverName = "GameServer ";
+    _serverName += std::to_string(_config.Port);
+
+    _logSystem.Init(_serverName,
+                    LogSystem::Mode::STDIO);
+
+    _msgBuilder << "Started. Configuration: {SEED:" << _config.RandomSeed;
+    _msgBuilder << "; PLAYERS_COUNT: " << _config.Players << "}";
+    _logSystem.Info(_msgBuilder.str());
+    _msgBuilder.str("");
+
+    Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
+                                  _config.Port);
+    _socket.bind(addr);
 }
 
 GameServer::~GameServer()
 {
-    m_oSocket.close();
-    m_oLogSys.Close();
+    _socket.close();
+    _logSystem.Close();
 }
 
-GameServer::State
-GameServer::GetState() const
+GameServer::State GameServer::GetState() const
 {
-    return m_eState;
+    return _state;
 }
 
-GameServer::Configuration
-GameServer::GetConfig() const
+GameServer::Configuration GameServer::GetConfig() const
 {
-    return m_stConfig;
+    return _config;
 }
 
-void
-GameServer::shutdown()
+void GameServer::shutdown()
 {
-    m_eState = GameServer::State::FINISHED;
-    
-    m_oMsgBuilder << "Finished";
-    m_oLogSys.Info(m_oMsgBuilder.str());
-    m_oMsgBuilder.str("");
+    _state = GameServer::State::FINISHED;
+    _msgBuilder << "Finished";
+    _logSystem.Info(_msgBuilder.str());
+    _msgBuilder.str("");
 }
 
-void
-GameServer::run()
+void GameServer::run()
 {
     try
     {
-            // lobby forming stage
+        // lobby forming stage
         lobby_forming_stage();
-            // hero picking stage
+        // hero picking stage
         hero_picking_stage();
-            // worldgen stage
+        // worldgen stage
         world_generation_stage();
-            // running game stage
+        // running game stage
         running_game_stage();
-    }
-    catch(std::exception& e)
+    } catch(std::exception& e)
     {
-        m_oMsgBuilder << e.what();
-        m_oLogSys.Error(m_oMsgBuilder.str());
-        m_oMsgBuilder.str("");
+        _msgBuilder << e.what();
+        _logSystem.Error(_msgBuilder.str());
+        _msgBuilder.str("");
         shutdown();
     }
 }
 
-void
-GameServer::SendToAll(uint8_t * buf,
-                      size_t size)
+void GameServer::SendToAll(uint8_t * buf,
+                           size_t size)
 {
-    std::for_each(m_aPlayers.cbegin(),
-                  m_aPlayers.cend(),
+    std::for_each(_players.cbegin(),
+                  _players.cend(),
                   [buf, size, this](const Player& player)
                   {
-                      m_oSocket.sendTo(buf, size,
-                                       player.GetAddress());
+                      _socket.sendTo(buf,
+                                     size,
+                                     player.GetAddress());
                   });
 }
 
-void
-GameServer::lobby_forming_stage()
+void GameServer::lobby_forming_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char buf[256];
-    
-    while(m_eState == State::LOBBY_FORMING)
+    char                     buf[256];
+
+    while(_state == State::LOBBY_FORMING)
     {
-        auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
-        
+        auto size = _socket.receiveFrom(buf,
+                                        256,
+                                        sender_addr);
+
         auto gs_event = GetMessage(buf);
-        
+
         if(gs_event->event_type() == Events_CLConnection)
         {
-            auto con_info = static_cast<const CLConnection*>(gs_event->event());
-            
+            auto con_info = static_cast<const CLConnection *>(gs_event->event());
+
             auto player = FindPlayerByUID(con_info->player_uid());
-            if(player == m_aPlayers.end())
+            if(player == _players.end())
             {
                 Player new_player(con_info->player_uid(),
                                   sender_addr,
                                   con_info->nickname()->c_str());
-                
-                m_oMsgBuilder << "Player \'" << new_player.GetNickname() << "\' [" <<
-                sender_addr.toString() << "]" << " connected";
-                m_oLogSys.Info(m_oMsgBuilder.str());
-                m_oMsgBuilder.str("");
-                
-                m_aPlayers.emplace_back(std::move(new_player));
-                
-                    // notify connector that he is accepted
-                auto gs_accept = CreateSVConnectionStatus(m_oBuilder,
+
+                _msgBuilder << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]"
+                            << " connected";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+
+                _players.emplace_back(std::move(new_player));
+
+                // notify connector that he is accepted
+                auto gs_accept = CreateSVConnectionStatus(_flatBuilder,
                                                           ConnectionStatus_ACCEPTED);
-                auto gs_event = CreateMessage(m_oBuilder,
-                                              Events_SVConnectionStatus,
-                                              gs_accept.Union());
-                m_oBuilder.Finish(gs_event);
-                
-                m_oSocket.sendTo(m_oBuilder.GetBufferPointer(),
-                                 m_oBuilder.GetSize(),
-                                 sender_addr);
-                m_oBuilder.Clear();
-                
-                    // send him info about all current players in lobby
-                for(auto& player : m_aPlayers)
+                auto gs_event  = CreateMessage(_flatBuilder,
+                                               Events_SVConnectionStatus,
+                                               gs_accept.Union());
+                _flatBuilder.Finish(gs_event);
+
+                _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                               _flatBuilder.GetSize(),
+                               sender_addr);
+                _flatBuilder.Clear();
+
+                // send him info about all current players in lobby
+                for(auto& player : _players)
                 {
-                    auto nick = m_oBuilder.CreateString(player.GetNickname());
-                    auto player_info = CreateSVPlayerConnected(m_oBuilder,
+                    auto nick        = _flatBuilder.CreateString(player.GetNickname());
+                    auto player_info = CreateSVPlayerConnected(_flatBuilder,
                                                                player.GetUID(),
                                                                nick);
-                    gs_event = CreateMessage(m_oBuilder,
+                    gs_event = CreateMessage(_flatBuilder,
                                              Events_SVPlayerConnected,
                                              player_info.Union());
-                    m_oBuilder.Finish(gs_event);
-                    
-                    m_oSocket.sendTo(m_oBuilder.GetBufferPointer(),
-                                     m_oBuilder.GetSize(),
-                                     sender_addr);
-                    m_oBuilder.Clear();
+                    _flatBuilder.Finish(gs_event);
+
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
                 }
-                
-                    // notify all players about connected one
-                auto nick = m_oBuilder.CreateString(con_info->nickname()->c_str(),
-                                                    con_info->nickname()->size());
-                auto gs_new_player = CreateSVPlayerConnected(m_oBuilder,
+
+                // notify all players about connected one
+                auto nick          = _flatBuilder.CreateString(con_info->nickname()->c_str(),
+                                                               con_info->nickname()->size());
+                auto gs_new_player = CreateSVPlayerConnected(_flatBuilder,
                                                              con_info->player_uid(),
                                                              nick);
-                gs_event = CreateMessage(m_oBuilder,
+                gs_event = CreateMessage(_flatBuilder,
                                          Events_SVPlayerConnected,
                                          gs_new_player.Union());
-                m_oBuilder.Finish(gs_event);
-                
-                SendToAll(m_oBuilder.GetBufferPointer(),
-                          m_oBuilder.GetSize());
-                m_oBuilder.Clear();
+                _flatBuilder.Finish(gs_event);
+
+                SendToAll(_flatBuilder.GetBufferPointer(),
+                          _flatBuilder.GetSize());
+                _flatBuilder.Clear();
             }
         }
-        
-        if(m_aPlayers.size() == m_stConfig.nPlayers)
+
+        if(_players.size() == _config.Players)
         {
-            m_eState = GameServer::State::HERO_PICK;
+            _state = GameServer::State::HERO_PICK;
+
+            _msgBuilder << "Starting hero-pick stage";
+            _logSystem.Info(_msgBuilder.str());
+            _msgBuilder.str("");
             
-            auto gs_heropick = CreateSVHeroPickStage(m_oBuilder);
-            auto gs_event = CreateMessage(m_oBuilder,
-                                          Events_SVHeroPickStage,
-                                          gs_heropick.Union());
-            m_oBuilder.Finish(gs_event);
-            
-            SendToAll(m_oBuilder.GetBufferPointer(),
-                      m_oBuilder.GetSize());
-            m_oBuilder.Clear();
+            auto gs_heropick = CreateSVHeroPickStage(_flatBuilder);
+            auto gs_event    = CreateMessage(_flatBuilder,
+                                             Events_SVHeroPickStage,
+                                             gs_heropick.Union());
+            _flatBuilder.Finish(gs_event);
+
+            SendToAll(_flatBuilder.GetBufferPointer(),
+                      _flatBuilder.GetSize());
+            _flatBuilder.Clear();
         }
     }
 }
 
-void
-GameServer::hero_picking_stage()
+void GameServer::hero_picking_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char buf[256];
-    
-    while(m_eState == State::HERO_PICK)
+    char                     buf[256];
+
+    while(_state == State::HERO_PICK)
     {
-        auto size = m_oSocket.receiveFrom(buf, 256, sender_addr);
-        
+        auto size = _socket.receiveFrom(buf,
+                                        256,
+                                        sender_addr);
+
         auto gs_event = GetMessage(buf);
-        
+
         switch(gs_event->event_type())
         {
             case GameEvent::Events_CLHeroPick:
             {
-                auto cl_pick = static_cast<const CLHeroPick*>(gs_event->event());
-                
+                auto cl_pick = static_cast<const CLHeroPick *>(gs_event->event());
+
                 auto player = FindPlayerByUID(cl_pick->player_uid());
-                player->SetHeroPicked((Hero::Type)cl_pick->hero_type());
-                
-                auto sv_pick = CreateSVHeroPick(m_oBuilder,
-                                                cl_pick->player_uid(),
-                                                cl_pick->hero_type());
-                auto sv_event = CreateMessage(m_oBuilder,
+                player->SetHeroPicked((Hero::Type) cl_pick->hero_type());
+
+                auto sv_pick  = CreateSVHeroPick(_flatBuilder,
+                                                 cl_pick->player_uid(),
+                                                 cl_pick->hero_type());
+                auto sv_event = CreateMessage(_flatBuilder,
                                               Events_SVHeroPick,
                                               sv_pick.Union());
-                m_oBuilder.Finish(sv_event);
-                SendToAll(m_oBuilder.GetBufferPointer(),
-                          m_oBuilder.GetSize());
-                m_oBuilder.Clear();
-                
+                _flatBuilder.Finish(sv_event);
+                SendToAll(_flatBuilder.GetBufferPointer(),
+                          _flatBuilder.GetSize());
+                _flatBuilder.Clear();
+
                 break;
             }
-                
+
             case GameEvent::Events_CLReadyToStart:
             {
-                auto cl_ready = static_cast<const CLReadyToStart*>(gs_event->event());
-                
+                auto cl_ready = static_cast<const CLReadyToStart *>(gs_event->event());
+
                 auto player = FindPlayerByUID(cl_ready->player_uid());
                 player->SetState(Player::State::PRE_READY_TO_START);
-                
-                auto sv_ready = CreateSVReadyToStart(m_oBuilder,
+
+                auto sv_ready = CreateSVReadyToStart(_flatBuilder,
                                                      cl_ready->player_uid());
-                auto sv_event = CreateMessage(m_oBuilder,
+                auto sv_event = CreateMessage(_flatBuilder,
                                               Events_SVReadyToStart,
                                               sv_ready.Union());
-                m_oBuilder.Finish(sv_event);
-                SendToAll(m_oBuilder.GetBufferPointer(),
-                          m_oBuilder.GetSize());
-                m_oBuilder.Clear();
+                _flatBuilder.Finish(sv_event);
+                SendToAll(_flatBuilder.GetBufferPointer(),
+                          _flatBuilder.GetSize());
+                _flatBuilder.Clear();
                 
+                _msgBuilder << "Player " << player->GetNickname() << " is ready";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+
                 break;
             }
-                
+
             default:
                 assert(false);
                 break;
         }
-        
-        bool bEveryoneReady = std::all_of(m_aPlayers.begin(),
-                                          m_aPlayers.end(),
+
+        bool bEveryoneReady = std::all_of(_players.begin(),
+                                          _players.end(),
                                           [](Player& player)
                                           {
                                               return player.GetState() == Player::State::PRE_READY_TO_START;
                                           });
         if(bEveryoneReady)
         {
-            m_eState = GameServer::State::GENERATING_WORLD;
-            
-            m_oMsgBuilder << "Generating world";
-            m_oLogSys.Info(m_oMsgBuilder.str());
-            m_oMsgBuilder.str("");
-            
-            for(auto& player : m_aPlayers)
+            _state = GameServer::State::GENERATING_WORLD;
+
+            _msgBuilder << "Generating world";
+            _logSystem.Info(_msgBuilder.str());
+            _msgBuilder.str("");
+
+            for(auto& player : _players)
             {
                 player.SetState(Player::State::IN_GAME);
             }
@@ -281,218 +286,217 @@ GameServer::hero_picking_stage()
     }
 }
 
-void
-GameServer::world_generation_stage()
+void GameServer::world_generation_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char buf[256];
-    
-    while(m_eState == State::GENERATING_WORLD)
+    char                     buf[256];
+
+    while(_state == State::GENERATING_WORLD)
     {
         GameMap::Configuration sets;
-        sets.nSeed = m_stConfig.nRandomSeed;
-        sets.nSeed = m_stConfig.nRandomSeed;
-        sets.nMapSize = 3;
-        sets.nRoomSize = 10;
-        m_pGameWorld = std::make_unique<GameWorld>();
-        m_pGameWorld->SetLoggingSystem(&m_oLogSys);
-        m_pGameWorld->CreateGameMap(sets);
-        
-        for(int i = 0; i < m_aPlayers.size(); ++i)
+        sets.Seed     = _config.RandomSeed;
+        sets.Seed     = _config.RandomSeed;
+        sets.MapSize  = 3;
+        sets.RoomSize = 10;
+        _gameWorld = std::make_unique<GameWorld>();
+        _gameWorld->CreateGameMap(sets);
+
+        for(int i = 0;
+            i < _players.size();
+            ++i)
         {
-            m_pGameWorld->AddPlayer(m_aPlayers[i]);
+            _gameWorld->AddPlayer(_players[i]);
         }
-        
-        m_pGameWorld->InitialSpawn();
-        
-        auto gs_gen_map = CreateSVGenerateMap(m_oBuilder,
-                                              sets.nMapSize,
-                                              sets.nRoomSize,
-                                              sets.nSeed);
-        auto gs_event = CreateMessage(m_oBuilder,
-                                      Events_SVGenerateMap,
-                                      gs_gen_map.Union());
-        m_oBuilder.Finish(gs_event);
-        
-        SendToAll(m_oBuilder.GetBufferPointer(), m_oBuilder.GetSize());
-        m_oBuilder.Clear();
-        
-        auto players_ungenerated = m_aPlayers.size();
+
+        _gameWorld->InitialSpawn();
+
+        auto gs_gen_map = CreateSVGenerateMap(_flatBuilder,
+                                              sets.MapSize,
+                                              sets.RoomSize,
+                                              sets.Seed);
+        auto gs_event   = CreateMessage(_flatBuilder,
+                                        Events_SVGenerateMap,
+                                        gs_gen_map.Union());
+        _flatBuilder.Finish(gs_event);
+
+        SendToAll(_flatBuilder.GetBufferPointer(),
+                  _flatBuilder.GetSize());
+        _flatBuilder.Clear();
+
+        auto players_ungenerated = _players.size();
         while(players_ungenerated)
         {
-            m_oSocket.receiveBytes(buf, 256);
-            
+            _socket.receiveBytes(buf,
+                                 256);
+
             auto gs_event = GetMessage(buf);
-            
+
             if(gs_event->event_type() == Events_CLMapGenerated)
             {
-                auto cl_gen_ok = static_cast<const CLMapGenerated*>(gs_event->event());
-                
-                m_oMsgBuilder << "Player " << cl_gen_ok->player_uid();
-                m_oMsgBuilder << " generated map";
-                m_oLogSys.Info(m_oMsgBuilder.str());
-                m_oMsgBuilder.str("");
-                
+                auto cl_gen_ok = static_cast<const CLMapGenerated *>(gs_event->event());
+
+                _msgBuilder << "Player " << cl_gen_ok->player_uid();
+                _msgBuilder << " generated map";
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+
                 --players_ungenerated;
             }
         }
-        
-        m_eState = GameServer::State::RUNNING_GAME;
-        
-            // notify players that game starts!
-        auto game_start = CreateSVGameStart(m_oBuilder);
-        gs_event = CreateMessage(m_oBuilder,
+
+        _state = GameServer::State::RUNNING_GAME;
+
+        // notify players that game starts!
+        auto game_start = CreateSVGameStart(_flatBuilder);
+        gs_event = CreateMessage(_flatBuilder,
                                  Events_SVGameStart,
                                  game_start.Union());
-        m_oBuilder.Finish(gs_event);
-        SendToAll(m_oBuilder.GetBufferPointer(), m_oBuilder.GetSize());
-        m_oBuilder.Clear();
-        
-        m_oMsgBuilder << "Game begins";
-        m_oLogSys.Info(m_oMsgBuilder.str());
-        m_oMsgBuilder.str("");
+        _flatBuilder.Finish(gs_event);
+        SendToAll(_flatBuilder.GetBufferPointer(),
+                  _flatBuilder.GetSize());
+        _flatBuilder.Clear();
+
+        _msgBuilder << "Game begins";
+        _logSystem.Info(_msgBuilder.str());
+        _msgBuilder.str("");
     }
 }
 
-void
-GameServer::running_game_stage()
+void GameServer::running_game_stage()
 {
-    char buf[256];
-    Poco::Net::SocketAddress sender_addr;
+    char                      buf[256];
+    Poco::Net::SocketAddress  sender_addr;
     std::chrono::milliseconds time_no_receive = 0ms;
-    
-    while(m_eState == State::RUNNING_GAME)
+
+    while(_state == State::RUNNING_GAME)
     {
         auto frame_start = steady_clock::now();
-        
-            // sleep for some time, then get all packets and pass it to the gameworld, update
-        std::this_thread::sleep_for(m_msPerUpdate);
-        
-        if(!m_oSocket.available())
+
+        // sleep for some time, then get all packets and pass it to the gameworld, update
+        std::this_thread::sleep_for(_msPerUpdate);
+
+        if(!_socket.available())
         {
-            time_no_receive += m_msPerUpdate;
+            time_no_receive += _msPerUpdate;
         }
-        while(m_oSocket.available())
+        while(_socket.available())
         {
             time_no_receive = 0ms;
             bool event_valid = false;
-            auto pack_size = m_oSocket.receiveFrom(buf,
+            auto pack_size   = _socket.receiveFrom(buf,
                                                    256,
                                                    sender_addr);
-            
+
             auto gs_event = GetMessage(buf);
-            
+
             switch(gs_event->event_type())
             {
                 case Events_CLActionMove:
                 {
-                    auto cl_mov = static_cast<const CLActionMove*>(gs_event->event());
+                    auto cl_mov = static_cast<const CLActionMove *>(gs_event->event());
                     auto player = FindPlayerByUID(cl_mov->target_uid());
-                    
-                    if(player != m_aPlayers.end() &&
-                       player->GetAddress() != sender_addr)
+
+                    if(player != _players.end() && player->GetAddress() != sender_addr)
                     {
                         player->SetAddress(sender_addr);
                     }
-                    
+
                     event_valid = true;
                     break;
                 }
-                    
+
                 case Events_CLActionItem:
                 {
-                    auto cl_item = static_cast<const CLActionItem*>(gs_event->event());
-                    auto player = FindPlayerByUID(cl_item->player_uid());
-                    
-                    if(player != m_aPlayers.end() &&
-                       player->GetAddress() != sender_addr)
+                    auto cl_item = static_cast<const CLActionItem *>(gs_event->event());
+                    auto player  = FindPlayerByUID(cl_item->player_uid());
+
+                    if(player != _players.end() && player->GetAddress() != sender_addr)
                     {
                         player->SetAddress(sender_addr);
                     }
-                    
+
                     event_valid = true;
                     break;
                 }
-                    
+
                 case Events_CLActionDuel:
                 {
-                    auto cl_duel = static_cast<const CLActionDuel*>(gs_event->event());
-                    
-                        //FIXME: players validation needed?
-                    
+                    auto cl_duel = static_cast<const CLActionDuel *>(gs_event->event());
+
+                    //FIXME: players validation needed?
+
                     event_valid = true;
                     break;
                 }
-                    
+
                 case Events_CLActionSpell:
                 {
-                        //FIXME: validation needed, at least for players id
+                    //FIXME: validation needed, at least for players id
                     event_valid = true;
                     break;
                 }
-                    
+
                 case Events_CLRequestWin:
                 {
                     event_valid = true;
                     break;
                 }
-                    
+
                 default:
                     assert(false);
                     break;
             }
-            
+
             if(event_valid) // add received event to the gameworld
             {
-                auto& in_events = m_pGameWorld->GetIncomingEvents();
+                auto& in_events = _gameWorld->GetIncomingEvents();
                 std::vector<uint8_t> event(buf,
                                            buf + pack_size);
                 in_events.emplace(event);
             }
         }
-        
-        auto& out_events = m_pGameWorld->GetOutgoingEvents();
+
+        auto& out_events = _gameWorld->GetOutgoingEvents();
         while(out_events.size())
         {
             auto event = out_events.front();
-            SendToAll(event.data(), event.size());
+            SendToAll(event.data(),
+                      event.size());
             out_events.pop();
         }
-        
+
         if(time_no_receive >= 180s)
         {
-            m_oMsgBuilder << "Server timeout exceeded.";
-            m_oLogSys.Warning(m_oMsgBuilder.str());
-            m_oMsgBuilder.str("");
+            _msgBuilder << "Server timeout exceeded.";
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
             shutdown();
         }
-        
+
         auto frame_end = steady_clock::now();
-        
-        m_pGameWorld->update(duration_cast<microseconds>(frame_end-frame_start));
+
+        _gameWorld->update(duration_cast<microseconds>(frame_end - frame_start));
     }
 }
 
-void
-GameServer::SendToOne(uint32_t player_id,
-                      uint8_t * buf,
-                      size_t size)
+void GameServer::SendToOne(uint32_t player_id,
+                           uint8_t * buf,
+                           size_t size)
 {
     auto player = FindPlayerByUID(player_id);
-    
-    if(player != m_aPlayers.end())
+
+    if(player != _players.end())
     {
-        m_oSocket.sendTo(buf,
-                         size,
-                         player->GetAddress());
+        _socket.sendTo(buf,
+                       size,
+                       player->GetAddress());
     }
 }
 
-std::vector<Player>::iterator
-GameServer::FindPlayerByUID(PlayerUID uid)
+std::vector<Player>::iterator GameServer::FindPlayerByUID(PlayerUID uid)
 {
-    for(auto iter = m_aPlayers.begin();
-        iter != m_aPlayers.end();
+    for(auto iter = _players.begin();
+        iter != _players.end();
         ++iter)
     {
         if((*iter).GetUID() == uid)
@@ -500,6 +504,6 @@ GameServer::FindPlayerByUID(PlayerUID uid)
             return iter;
         }
     }
-    
-    return m_aPlayers.end();
+
+    return _players.end();
 }

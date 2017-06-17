@@ -17,16 +17,16 @@ using namespace std::chrono_literals;
 Monster::Monster() :
 m_pChasingUnit(nullptr)
 {
-    m_eUnitType = Unit::Type::MONSTER;
-    m_sName = "Skeleton";
+    _unitType = Unit::Type::MONSTER;
+    _name = "Skeleton";
     
-    m_nBaseDamage = m_nActualDamage = 10;
-    m_nMHealth = m_nHealth = 50;
-    m_nArmor = 2;
-    m_nMResistance = 2;
+    _baseDamage = _actualDamage = 10;
+    _maxHealth = _health = 50;
+    _armor = 2;
+    _magResistance = 2;
     
         // spell 1 cd
-    m_aSpellCDs.push_back(std::make_tuple(false, 3s, 3s));
+    _spellsCDs.push_back(std::make_tuple(false, 3s, 3s));
     
         // spell 1 seq
     InputSequence atk_seq(5);
@@ -63,10 +63,10 @@ Monster::update(std::chrono::microseconds delta)
 //            }
 //        }
 //    }
-    if(!(m_nUnitAttributes & Unit::Attributes::INPUT))
+    if(!(_unitAttributes & Unit::Attributes::INPUT))
         return;
     
-    switch (m_eState)
+    switch (_state)
     {
         case Unit::State::DUEL:
         {
@@ -77,24 +77,24 @@ Monster::update(std::chrono::microseconds delta)
                 
                 if(m_aCastSequences[0].sequence.empty())
                 {
-                    if(m_pDuelTarget == nullptr)
+                    if(_duelTarget == nullptr)
                         return;
                     
                         // Log damage event
-                    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-                    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-                    m_oLogBuilder << this->GetName() << " " << m_nActualDamage << " PHYS DMG TO " << m_pDuelTarget->GetName();
-                    m_pLogSystem->Info(m_oLogBuilder.str());
+                    auto& m_pLogSystem = _gameWorld->_logSystem;
+                    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+                    m_oLogBuilder << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
+                    m_pLogSystem.Info(m_oLogBuilder.str());
                     m_oLogBuilder.str("");
                     
                         // set up CD
-                    std::get<0>(m_aSpellCDs[0]) = false;
-                    std::get<1>(m_aSpellCDs[0]) = std::get<2>(m_aSpellCDs[0]);
+                    std::get<0>(_spellsCDs[0]) = false;
+                    std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
                     
                     flatbuffers::FlatBufferBuilder builder;
                     auto spell_info = GameEvent::CreateMonsterAttack(builder,
-                                                                     m_pDuelTarget->GetUID(),
-                                                                     m_nActualDamage);
+                                                                     _duelTarget->GetUID(),
+                                                                     _actualDamage);
                     auto spell = GameEvent::CreateSpell(builder,
                                                         GameEvent::Spells_MonsterAttack,
                                                         spell_info.Union());
@@ -107,11 +107,11 @@ Monster::update(std::chrono::microseconds delta)
                                                           spell1.Union());
                     builder.Finish(event);
                     
-                    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+                    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                                         builder.GetBufferPointer() + builder.GetSize());
                     
                         // deal PHYSICAL damage
-                    m_pDuelTarget->TakeDamage(m_nActualDamage,
+                    _duelTarget->TakeDamage(_actualDamage,
                                               Unit::DamageType::PHYSICAL,
                                               this);
                     
@@ -130,16 +130,16 @@ Monster::update(std::chrono::microseconds delta)
 void
 Monster::Spawn(Point2 log_pos)
 {
-    m_eState = Unit::State::WALKING;
-    m_nObjAttributes = GameObject::Attributes::MOVABLE |
+    _state = Unit::State::WALKING;
+    _objAttributes = GameObject::Attributes::MOVABLE |
     GameObject::Attributes::VISIBLE |
     GameObject::Attributes::DAMAGABLE;
-    m_nUnitAttributes = Unit::Attributes::INPUT |
+    _unitAttributes = Unit::Attributes::INPUT |
     Unit::Attributes::ATTACK |
     Unit::Attributes::DUELABLE;
-    m_nHealth = m_nMHealth;
+    _health = _maxHealth;
     
-    m_stLogPosition = log_pos;
+    _logPos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameEvent::CreateSVSpawnMonster(builder,
@@ -150,7 +150,7 @@ Monster::Spawn(Point2 log_pos)
                                         GameEvent::Events_SVSpawnMonster,
                                         spawn.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
@@ -162,19 +162,19 @@ Monster::Die(Unit * killer)
         killer->EndDuel();
     }
         // Log dead event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << m_stLogPosition.x << ";" << m_stLogPosition.y << ")";
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
         // drop items
-    while(!m_aInventory.empty())
+    while(!_inventory.empty())
     {
         this->DropItem(0);
     }
     
-    if(m_pDuelTarget != nullptr)
+    if(_duelTarget != nullptr)
         EndDuel();
     
     flatbuffers::FlatBufferBuilder builder;
@@ -185,11 +185,11 @@ Monster::Die(Unit * killer)
                                         GameEvent::Events_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
     
-    m_eState = Unit::State::DEAD;
-    m_nObjAttributes = GameObject::Attributes::PASSABLE;
-    m_nUnitAttributes = 0;
-    m_nHealth = 0;
+    _state = Unit::State::DEAD;
+    _objAttributes = GameObject::Attributes::PASSABLE;
+    _unitAttributes = 0;
+    _health = 0;
 }

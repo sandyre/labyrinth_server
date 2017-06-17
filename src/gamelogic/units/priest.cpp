@@ -15,17 +15,17 @@ using namespace std::chrono_literals;
 
 Priest::Priest()
 {
-    m_eHero = Hero::Type::PRIEST;
-    m_nMoveSpeed = 0.1;
-    m_nMHealth = m_nHealth = 60;
-    m_nBaseDamage = m_nActualDamage = 10;
-    m_nArmor = 4;
+    _heroType = Hero::Type::PRIEST;
+    _moveSpeed = 0.1;
+    _maxHealth = _health = 60;
+    _baseDamage = _actualDamage = 10;
+    _armor = 4;
     
         // spell 1 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
     
         // spell 2 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
     
     m_nRegenInterval = 2s;
     m_nRegenTimer = 0s;
@@ -44,15 +44,15 @@ Priest::update(std::chrono::microseconds delta)
     Hero::update(delta);
     
         // passive regen works only in duel mode
-    if(m_eState == Unit::State::DUEL)
+    if(_state == Unit::State::DUEL)
     {
         m_nRegenTimer -= delta;
         if(m_nRegenTimer < 0s &&
-           m_nHealth <= m_nMHealth)
+           _health <= _maxHealth)
         {
-            m_nHealth += m_nRegenAmount;
-            if(m_nHealth > m_nMHealth)
-                m_nHealth = m_nMHealth;
+            _health += m_nRegenAmount;
+            if(_health > _maxHealth)
+                _health = _maxHealth;
             m_nRegenTimer = m_nRegenInterval;
         }
     }

@@ -19,10 +19,10 @@ class Mage : public Hero
 {
 public:
     Mage();
-    
-    virtual void    update(std::chrono::microseconds) override;
-    
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
+
+    virtual void update( std::chrono::microseconds ) override;
+
+    virtual void SpellCast( const GameEvent::CLActionSpell * ) override;
 };
 
 #endif /* mage_hpp */

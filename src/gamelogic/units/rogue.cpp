@@ -18,17 +18,17 @@ using Attributes = GameObject::Attributes;
 
 Rogue::Rogue()
 {
-    m_eHero = Hero::Type::ROGUE;
-    m_nMoveSpeed = 0.1;
-    m_nMHealth = m_nHealth = 75;
-    m_nBaseDamage = m_nActualDamage = 8;
-    m_nArmor = 2;
+    _heroType = Hero::Type::ROGUE;
+    _moveSpeed = 0.1;
+    _maxHealth = _health = 75;
+    _baseDamage = _actualDamage = 8;
+    _armor = 2;
     
         // spell 1 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 30s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 30s));
     
         // spell 2 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 15s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 15s));
 }
 
 void
@@ -36,11 +36,11 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
 {
         // invisibility cast (0 spell)
     if(spell->spell_id() == 0 &&
-       std::get<0>(m_aSpellCDs[0]) == true)
+       std::get<0>(_spellsCDs[0]) == true)
     {
             // set up CD
-        std::get<0>(m_aSpellCDs[0]) = false;
-        std::get<1>(m_aSpellCDs[0]) = std::get<2>(m_aSpellCDs[0]);
+        std::get<0>(_spellsCDs[0]) = false;
+        std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
         
         RogueInvisibility * pInvis = new RogueInvisibility(5s);
         pInvis->SetTargetUnit(this);
@@ -55,7 +55,7 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
     }
         // missing knife cast (1 spell)

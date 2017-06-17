@@ -18,23 +18,23 @@ using namespace std::chrono_literals;
 using Attributes = GameObject::Attributes;
 
 Unit::Unit() :
-m_eUnitType(Unit::Type::UNDEFINED),
-m_eState(Unit::State::UNDEFINED),
-m_eOrientation(Unit::Orientation::DOWN),
-m_sName("Unit"),
-m_nBaseDamage(10),
-m_nActualDamage(10),
-m_nHealth(50),
-m_nMHealth(50),
-m_nArmor(2),
-m_nMResistance(2),
-m_nMoveSpeed(0.5),
-m_pDuelTarget(nullptr)
+_unitType(Unit::Type::UNDEFINED),
+_state(Unit::State::UNDEFINED),
+_orientation(Unit::Orientation::DOWN),
+_name("Unit"),
+_baseDamage(10),
+_actualDamage(10),
+_health(50),
+_maxHealth(50),
+_armor(2),
+_magResistance(2),
+_moveSpeed(0.5),
+_duelTarget(nullptr)
 {
-    m_eObjType = GameObject::Type::UNIT;
-    m_nObjAttributes |= GameObject::Attributes::DAMAGABLE;
-    m_nObjAttributes |= GameObject::Attributes::MOVABLE;
-    m_nUnitAttributes = Unit::Attributes::INPUT |
+    _objType = GameObject::Type::UNIT;
+    _objAttributes |= GameObject::Attributes::DAMAGABLE;
+    _objAttributes |= GameObject::Attributes::MOVABLE;
+    _unitAttributes = Unit::Attributes::INPUT |
     Unit::Attributes::ATTACK |
     Unit::Attributes::DUELABLE;
 }
@@ -42,73 +42,73 @@ m_pDuelTarget(nullptr)
 Unit::Type
 Unit::GetUnitType() const
 {
-    return m_eUnitType;
+    return _unitType;
 }
 
 Unit::State
 Unit::GetState() const
 {
-    return m_eState;
+    return _state;
 }
 
 Unit::Orientation
 Unit::GetOrientation() const
 {
-    return m_eOrientation;
+    return _orientation;
 }
 
 std::string
 Unit::GetName() const
 {
-    return m_sName;
+    return _name;
 }
 
 void
 Unit::SetName(const std::string& name)
 {
-    m_sName = name;
+    _name = name;
 }
 
 int16_t
 Unit::GetDamage() const
 {
-    return m_nActualDamage;
+    return _actualDamage;
 }
 
 int16_t
 Unit::GetHealth() const
 {
-    return m_nHealth;
+    return _health;
 }
 
 int16_t
 Unit::GetMaxHealth() const
 {
-    return m_nMHealth;
+    return _maxHealth;
 }
 
 int16_t
 Unit::GetArmor() const
 {
-    return m_nArmor;
+    return _armor;
 }
 
 Unit * const
 Unit::GetDuelTarget() const
 {
-    return m_pDuelTarget;
+    return _duelTarget;
 }
 
 uint32_t
 Unit::GetUnitAttributes() const
 {
-    return m_nUnitAttributes;
+    return _unitAttributes;
 }
 
 std::vector<Item*>&
 Unit::GetInventory()
 {
-    return m_aInventory;
+    return _inventory;
 }
 
 /*
@@ -120,40 +120,52 @@ Unit::GetInventory()
 void
 Unit::ApplyEffect(Effect * effect)
 {
+        // Log item drop event
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+    m_oLogBuilder << effect->GetName() << " effect is applied to " << this->GetName();
+    m_pLogSystem.Info(m_oLogBuilder.str());
+    m_oLogBuilder.str("");
     effect->start();
-    m_aAppliedEffects.push_back(effect);
+    _appliedEffects.push_back(effect);
 }
 
 void
 Unit::update(std::chrono::microseconds delta)
 {
     UpdateCDs(delta);
-    for(auto effect : m_aAppliedEffects)
+    for(auto effect : _appliedEffects)
     {
         effect->update(delta);
         if(effect->GetState() == Effect::State::OVER)
         {
+                // Log item drop event
+            auto& m_pLogSystem = _gameWorld->_logSystem;
+            auto& m_oLogBuilder = _gameWorld->_logBuilder;
+            m_oLogBuilder << effect->GetName() << " effect ended on " << this->GetName();
+            m_pLogSystem.Info(m_oLogBuilder.str());
+            m_oLogBuilder.str("");
             effect->stop();
         }
     }
-    m_aAppliedEffects.erase(std::remove_if(m_aAppliedEffects.begin(),
-                                           m_aAppliedEffects.end(),
-                                           [this](Effect * eff)
-                                           {
-                                               if(eff->GetState() == Effect::State::OVER)
-                                               {
-                                                   delete eff;
-                                                   return true;
-                                               }
-                                               return false;
-                                           }),
-                            m_aAppliedEffects.end());
+    _appliedEffects.erase(std::remove_if(_appliedEffects.begin(),
+                                         _appliedEffects.end(),
+                                         [this](Effect * eff)
+                                         {
+                                             if(eff->GetState() == Effect::State::OVER)
+                                             {
+                                                 delete eff;
+                                                 return true;
+                                             }
+                                             return false;
+                                         }),
+                          _appliedEffects.end());
 }
 
 void
 Unit::UpdateCDs(std::chrono::microseconds delta)
 {
-    for(auto& cd : m_aSpellCDs)
+    for(auto& cd : _spellsCDs)
     {
         if(std::get<0>(cd) == false)
         {
@@ -171,27 +183,27 @@ Unit::UpdateCDs(std::chrono::microseconds delta)
 void
 Unit::UpdateStats()
 {
-    int new_dmg = m_nBaseDamage;
-    for(auto item : m_aInventory)
+    int new_dmg = _baseDamage;
+    for(auto item : _inventory)
     {
         if(item->GetType() == Item::Type::SWORD)
             new_dmg += 6;
     }
-    m_nActualDamage = new_dmg;
+    _actualDamage = new_dmg;
 }
 
 void
 Unit::TakeItem(Item * item)
 {
         // Log item drop event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << this->GetName() << " TOOK ITEM " << (int)item->GetType();
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
     item->SetCarrierID(this->GetUID());
-    m_aInventory.push_back(item);
+    _inventory.push_back(item);
     
     flatbuffers::FlatBufferBuilder builder;
     auto take = GameEvent::CreateSVActionItem(builder,
@@ -202,7 +214,7 @@ Unit::TakeItem(Item * item)
                                         GameEvent::Events_SVActionItem,
                                         take.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
@@ -210,22 +222,22 @@ void
 Unit::Spawn(Point2 log_pos)
 {
         // Log spawn event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    m_eState = Unit::State::WALKING;
-    m_nObjAttributes = GameObject::Attributes::MOVABLE |
+    _state = Unit::State::WALKING;
+    _objAttributes = GameObject::Attributes::MOVABLE |
                         GameObject::Attributes::VISIBLE |
                         GameObject::Attributes::DAMAGABLE;
-    m_nUnitAttributes = Unit::Attributes::INPUT |
+    _unitAttributes = Unit::Attributes::INPUT |
     Unit::Attributes::ATTACK |
     Unit::Attributes::DUELABLE;
-    m_nHealth = m_nMHealth;
+    _health = _maxHealth;
     
-    m_stLogPosition = log_pos;
+    _logPos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameEvent::CreateSVSpawnPlayer(builder,
@@ -236,7 +248,7 @@ Unit::Spawn(Point2 log_pos)
                                         GameEvent::Events_SVSpawnPlayer,
                                         spawn.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
@@ -244,22 +256,22 @@ void
 Unit::Respawn(Point2 log_pos)
 {
         // Log respawn event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")";
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    m_eState = Unit::State::WALKING;
-    m_nObjAttributes = GameObject::Attributes::MOVABLE |
+    _state = Unit::State::WALKING;
+    _objAttributes = GameObject::Attributes::MOVABLE |
     GameObject::Attributes::VISIBLE |
     GameObject::Attributes::DAMAGABLE;
-    m_nUnitAttributes = Unit::Attributes::INPUT |
+    _unitAttributes = Unit::Attributes::INPUT |
     Unit::Attributes::ATTACK |
     Unit::Attributes::DUELABLE;
-    m_nHealth = m_nMHealth;
+    _health = _maxHealth;
     
-    m_stLogPosition = log_pos;
+    _logPos = log_pos;
     
     RespawnInvulnerability * pRespInv = new RespawnInvulnerability(5s);
     pRespInv->SetTargetUnit(this);
@@ -274,20 +286,20 @@ Unit::Respawn(Point2 log_pos)
                                         GameEvent::Events_SVRespawnPlayer,
                                         resp.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
 void
 Unit::DropItem(int32_t index)
 {
-    auto item_iter = m_aInventory.begin() + index;
+    auto item_iter = _inventory.begin() + index;
     
         // Log item drop event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType();
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
         // make item visible and set its coords
@@ -295,7 +307,7 @@ Unit::DropItem(int32_t index)
     (*item_iter)->SetLogicalPosition(this->GetLogicalPosition());
     
         // delete item from inventory
-    m_aInventory.erase(item_iter);
+    _inventory.erase(item_iter);
 }
 
 void
@@ -306,19 +318,19 @@ Unit::Die(Unit * killer)
         killer->EndDuel();
     }
         // Log dead event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << m_stLogPosition.x << ";" << m_stLogPosition.y << ")";
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
         // drop items
-    while(!m_aInventory.empty())
+    while(!_inventory.empty())
     {
         this->DropItem(0);
     }
     
-    if(m_pDuelTarget != nullptr)
+    if(_duelTarget != nullptr)
         EndDuel();
     
     flatbuffers::FlatBufferBuilder builder;
@@ -329,14 +341,14 @@ Unit::Die(Unit * killer)
                                         GameEvent::Events_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
     
-    m_eState = Unit::State::DEAD;
-    m_nObjAttributes = GameObject::Attributes::PASSABLE;
-    m_nUnitAttributes = 0;
-    m_nHealth = 0;
-    m_poGameWorld->m_aRespawnQueue.push_back(std::make_pair(3s, this));
+    _state = Unit::State::DEAD;
+    _objAttributes = GameObject::Attributes::PASSABLE;
+    _unitAttributes = 0;
+    _health = 0;
+    _gameWorld->_respawnQueue.push_back(std::make_pair(3s, this));
 }
 
 void
@@ -353,7 +365,7 @@ Unit::Move(MoveDirection dir)
         --new_coord.y;
     
         // firstly - check if it can go there (no unpassable objects)
-    for(auto object : m_poGameWorld->m_apoObjects)
+    for(auto object : _gameWorld->_objects)
     {
         if(object->GetLogicalPosition() == new_coord &&
            !(object->GetAttributes() & GameObject::Attributes::PASSABLE))
@@ -362,11 +374,11 @@ Unit::Move(MoveDirection dir)
         }
     }
         // Log move event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " MOVE (" << m_stLogPosition.x
-    << ";" << m_stLogPosition.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+    m_oLogBuilder << this->GetName() << " MOVE (" << _logPos.x
+    << ";" << _logPos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
     this->SetLogicalPosition(new_coord);
@@ -381,7 +393,7 @@ Unit::Move(MoveDirection dir)
                                         GameEvent::Events_SVActionMove,
                                         move.Union());
     builder.Finish(msg);
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
@@ -392,21 +404,21 @@ Unit::TakeDamage(int16_t damage,
 {
     int16_t damage_taken = damage;
     if(dmg_type == Unit::DamageType::PHYSICAL)
-        damage_taken -= m_nArmor;
+        damage_taken -= _armor;
     else if(dmg_type == Unit::DamageType::MAGICAL)
-        damage_taken -= m_nMResistance;
+        damage_taken -= _magResistance;
     
-    m_nHealth -= damage_taken;
+    _health -= damage_taken;
     
         // Log damage take event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << this->GetName() << " TOOK " << damage_taken << " FROM " << damage_dealer->GetName()
-    << " HP " << m_nHealth + damage_taken << "->" << m_nHealth;
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    << " HP " << _health + damage_taken << "->" << _health;
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    if(m_nHealth <= 0)
+    if(_health <= 0)
     {
         Die(damage_dealer);
     }
@@ -419,17 +431,17 @@ Unit::StartDuel(Unit * enemy)
         // client now can eat it, but server should also be reworked
     
         // Log duel start event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
     m_oLogBuilder << "DUEL START  " <<
     this->GetName() << " and " << enemy->GetName();
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    m_eState = Unit::State::DUEL;
-    m_nUnitAttributes &= ~Unit::Attributes::DUELABLE;
+    _state = Unit::State::DUEL;
+    _unitAttributes &= ~Unit::Attributes::DUELABLE;
     
-    m_pDuelTarget = enemy;
+    _duelTarget = enemy;
     
     flatbuffers::FlatBufferBuilder builder;
     auto duel = GameEvent::CreateSVActionDuel(builder,
@@ -441,7 +453,7 @@ Unit::StartDuel(Unit * enemy)
                                         duel.Union());
     builder.Finish(msg);
     
-    m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                         builder.GetBufferPointer() + builder.GetSize());
 }
 
@@ -449,17 +461,17 @@ void
 Unit::EndDuel()
 {
         // Log duel-end event
-    auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-    auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-    m_oLogBuilder << this->GetName() << " DUEL END W " << m_pDuelTarget->GetName();
-    m_pLogSystem->Info(m_oLogBuilder.str());
+    auto& m_pLogSystem = _gameWorld->_logSystem;
+    auto& m_oLogBuilder = _gameWorld->_logBuilder;
+    m_oLogBuilder << this->GetName() << " DUEL END W " << _duelTarget->GetName();
+    m_pLogSystem.Info(m_oLogBuilder.str());
     m_oLogBuilder.str("");
     
-    m_eState = Unit::State::WALKING;
-    m_nUnitAttributes |=
+    _state = Unit::State::WALKING;
+    _unitAttributes |=
     Unit::Attributes::INPUT |
     Unit::Attributes::ATTACK |
     Unit::Attributes::DUELABLE;
     
-    m_pDuelTarget = nullptr;
+    _duelTarget = nullptr;
 }

@@ -14,15 +14,15 @@
 using namespace std::chrono_literals;
 
 Hero::Hero() :
-m_eHero(Hero::Type::FIRST_HERO)
+_heroType(Hero::Type::FIRST_HERO)
 {
-    m_eUnitType = Unit::Type::HERO;
+    _unitType = Unit::Type::HERO;
 }
 
 Hero::Type
 Hero::GetHero() const
 {
-    return m_eHero;
+    return _heroType;
 }
 
 void

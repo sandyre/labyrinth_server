@@ -8,29 +8,20 @@
 
 #include "gamemap.hpp"
 
-#include <random>
+#include "gameworld.hpp"
 #include "mapblock.hpp"
 #include "../globals.h"
-#include "gameworld.hpp"
 
-GameMap::GameMap()
-{
-    
-}
-
-GameMap::~GameMap()
-{
-    
-}
+#include <random>
 
 void
 GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
 {
-    auto m_oRandGen = std::mt19937(settings.nSeed);
+    auto m_oRandGen = std::mt19937(settings.Seed);
     auto m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
     
-    std::vector<std::vector<MapBlockType>> tmp_map(settings.nMapSize * settings.nRoomSize + 2,
-                                                   std::vector<MapBlockType>(settings.nMapSize * settings.nRoomSize + 2,
+    std::vector<std::vector<MapBlockType>> tmp_map(settings.MapSize * settings.RoomSize + 2,
+                                                   std::vector<MapBlockType>(settings.MapSize * settings.RoomSize + 2,
                                                                              MapBlockType::NOBLOCK));
     
     struct Cell {
@@ -50,18 +41,18 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
         std::vector<std::vector<MapBlockType>> cells;
     };
     
-    std::vector<std::vector<Room>> rooms(settings.nMapSize, std::vector<Room>(settings.nMapSize));
+    std::vector<std::vector<Room>> rooms(settings.MapSize, std::vector<Room>(settings.MapSize));
     
     bool red = false;
-    int n = settings.nRoomSize;
+    int n = settings.RoomSize;
     
-    for (size_t i = 0; i < settings.nMapSize; i++)
+    for (size_t i = 0; i < settings.MapSize; i++)
     {
-        if (settings.nMapSize % 2 != 1) {
+        if (settings.MapSize % 2 != 1) {
             red = !red;
         }
         
-        for (size_t j = 0; j < settings.nMapSize; j++)
+        for (size_t j = 0; j < settings.MapSize; j++)
         {
             rooms[i][j].cells.resize(n, std::vector<MapBlockType>(n, MapBlockType::WALL));
             
@@ -196,7 +187,7 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
             }
         }
     }
-    int size = settings.nMapSize * settings.nRoomSize + 2;
+    int size = settings.MapSize * settings.RoomSize + 2;
     for (size_t i = 0; i < size; i++)
     {
         tmp_map[i][0] = MapBlockType::BORDER;
@@ -218,7 +209,7 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
             block->SetUID(current_block_uid);
             block->SetLogicalPosition(log_coords);
             
-            world->m_apoObjects.emplace_back(block);
+            world->_objects.emplace_back(block);
             
             ++current_block_uid;
         }
@@ -237,7 +228,7 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
                 block->SetUID(current_block_uid);
                 block->SetLogicalPosition(log_coords);
                 
-                world->m_apoObjects.emplace_back(block);
+                world->_objects.emplace_back(block);
                 
                 ++current_block_uid;
             }
@@ -250,7 +241,7 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
                 block->SetUID(current_block_uid);
                 block->SetLogicalPosition(log_coords);
                 
-                world->m_apoObjects.emplace_back(block);
+                world->_objects.emplace_back(block);
                 
                 ++current_block_uid;
             }

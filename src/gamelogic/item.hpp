@@ -28,8 +28,8 @@ public:
 protected:
     Item();
     
-    Item::Type  m_eType;
-    uint32_t    m_nCarrierID;
+    Item::Type  _itemType;
+    uint32_t    _carrierUID;
 };
 
 class Key : public Item

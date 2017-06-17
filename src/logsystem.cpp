@@ -23,16 +23,16 @@ LogSystem::LogSystem()
 
 LogSystem::~LogSystem()
 {
-    if(m_oFileStream.is_open())
-        m_oFileStream.close();
+    if(_fileStream.is_open())
+        _fileStream.close();
 }
 
 void
 LogSystem::Init(const std::string &service_name,
                 Mode mode)
 {
-    m_eMode = mode;
-    m_oServiceName = service_name;
+    _mode = mode;
+    _serviceName = service_name;
     
     if(mode & Mode::FILE) // both FILE and MIXED catched
     {
@@ -45,7 +45,7 @@ LogSystem::Init(const std::string &service_name,
         oss << ".txt";
         
             // FIXME: no error handling
-        m_oFileStream.open(oss.str());
+        _fileStream.open(oss.str());
     }
 }
 
@@ -56,17 +56,19 @@ LogSystem::Info(const std::string& msg)
     std::ostringstream oss;
     oss << cyan;
     oss << "[" << std::chrono::system_clock::now() << "]";
-    oss << magenta;
-    oss << " {" << m_oServiceName << "} ";
+    oss << green;
+    oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
+    oss << yellow;
+    oss << "[ " << _serviceName << " ] ";
     oss << reset;
     oss << msg << "\n";
     
-    if(m_eMode & Mode::FILE)
+    if(_mode & Mode::FILE)
     {
-        m_oFileStream << oss.str();
-        m_oFileStream.flush();
+        _fileStream << oss.str();
+        _fileStream.flush();
     }
-    if(m_eMode & Mode::STDIO)
+    if(_mode & Mode::STDIO)
     {
         std::cout << oss.str();
     }
@@ -79,18 +81,20 @@ LogSystem::Warning(const std::string& msg)
     std::ostringstream oss;
     oss << cyan;
     oss << "[" << std::chrono::system_clock::now() << "]";
-    oss << magenta;
-    oss << " {" << m_oServiceName << "} ";
+    oss << green;
+    oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
+    oss << yellow;
+    oss << "[ " << _serviceName << " ] ";
     oss << yellow;
     oss << msg << "\n";
     oss << reset;
     
-    if(m_eMode & Mode::FILE)
+    if(_mode & Mode::FILE)
     {
-        m_oFileStream << oss.str();
-        m_oFileStream.flush();
+        _fileStream << oss.str();
+        _fileStream.flush();
     }
-    if(m_eMode & Mode::STDIO)
+    if(_mode & Mode::STDIO)
     {
         std::cout << oss.str();
     }
@@ -103,18 +107,20 @@ LogSystem::Error(const std::string& msg)
     std::ostringstream oss;
     oss << cyan;
     oss << "[" << std::chrono::system_clock::now() << "]";
-    oss << magenta;
-    oss << " {" << m_oServiceName << "} ";
+    oss << green;
+    oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
+    oss << yellow;
+    oss << "[ " << _serviceName << " ] ";
     oss << red;
     oss << msg << "\n";
     oss << reset;
     
-    if(m_eMode & Mode::FILE)
+    if(_mode & Mode::FILE)
     {
-        m_oFileStream << oss.str();
-        m_oFileStream.flush();
+        _fileStream << oss.str();
+        _fileStream.flush();
     }
-    if(m_eMode & Mode::STDIO)
+    if(_mode & Mode::STDIO)
     {
         std::cout << oss.str();
     }
@@ -123,5 +129,5 @@ LogSystem::Error(const std::string& msg)
 void
 LogSystem::Close()
 {
-    m_oFileStream.close();
+    _fileStream.close();
 }

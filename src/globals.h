@@ -9,8 +9,8 @@
 #ifndef globals_h
 #define globals_h
 
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 
 const int GAMEVERSION_MAJOR = 1;
 const int GAMEVERSION_MINOR = 1;

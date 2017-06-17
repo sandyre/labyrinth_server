@@ -18,21 +18,21 @@ using namespace std::chrono_literals;
 
 Mage::Mage()
 {
-    m_eHero = Hero::Type::MAGE;
-    m_nMoveSpeed = 0.3;
-    m_nMHealth = m_nHealth = 50;
-    m_nBaseDamage = m_nActualDamage = 18;
-    m_nArmor = 2;
-    m_nMResistance = 6;
+    _heroType = Hero::Type::MAGE;
+    _moveSpeed = 0.3;
+    _maxHealth = _health = 50;
+    _baseDamage = _actualDamage = 18;
+    _armor = 2;
+    _magResistance = 6;
     
         // spell 1 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 30s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 30s));
     
         // spell 2 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 0s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 0s));
     
         // spell 3 cd
-    m_aSpellCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
 }
 
 void
@@ -40,14 +40,14 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
 {
         // teleport cast (0 spell)
     if(spell->spell_id() == 0 &&
-       std::get<0>(m_aSpellCDs[0]) == true)
+       std::get<0>(_spellsCDs[0]) == true)
     {
             // set up CD
-        std::get<0>(m_aSpellCDs[0]) = false;
-        std::get<1>(m_aSpellCDs[0]) = std::get<2>(m_aSpellCDs[0]);
+        std::get<0>(_spellsCDs[0]) = false;
+        std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
         
         Point2 new_pos;
-        while(Distance(this->GetLogicalPosition(), new_pos = m_poGameWorld->GetRandomPosition()) > 10.0)
+        while(Distance(this->GetLogicalPosition(), new_pos = _gameWorld->GetRandomPosition()) > 10.0)
         {
         }
         
@@ -67,33 +67,33 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
         
         this->SetLogicalPosition(new_pos);
     }
         // attack cast (1 spell)
     else if(spell->spell_id() == 1 &&
-            std::get<0>(m_aSpellCDs[1]) == true)
+            std::get<0>(_spellsCDs[1]) == true)
     {
-        if(m_pDuelTarget == nullptr)
+        if(_duelTarget == nullptr)
             return;
         
             // Log damage event
-        auto m_pLogSystem = m_poGameWorld->m_pLogSystem;
-        auto& m_oLogBuilder = m_poGameWorld->m_oLogBuilder;
-        m_oLogBuilder << this->GetName() << " " << m_nActualDamage << " MAG DMG TO " << m_pDuelTarget->GetName();
-        m_pLogSystem->Info(m_oLogBuilder.str());
+        auto& m_pLogSystem = _gameWorld->_logSystem;
+        auto& m_oLogBuilder = _gameWorld->_logBuilder;
+        m_oLogBuilder << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName();
+        m_pLogSystem.Info(m_oLogBuilder.str());
         m_oLogBuilder.str("");
         
             // set up CD
-        std::get<0>(m_aSpellCDs[1]) = false;
-        std::get<1>(m_aSpellCDs[1]) = std::get<2>(m_aSpellCDs[1]);
+        std::get<0>(_spellsCDs[1]) = false;
+        std::get<1>(_spellsCDs[1]) = std::get<2>(_spellsCDs[1]);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameEvent::CreateMageAttack(builder,
-                                                      m_pDuelTarget->GetUID(),
-                                                      m_nActualDamage);
+                                                      _duelTarget->GetUID(),
+                                                      _actualDamage);
         auto spell = GameEvent::CreateSpell(builder,
                                             GameEvent::Spells_MageAttack,
                                             spell_info.Union());
@@ -106,29 +106,29 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
         
             // deal MAGIC damage
-        m_pDuelTarget->TakeDamage(m_nActualDamage,
+        _duelTarget->TakeDamage(_actualDamage,
                                   Unit::DamageType::MAGICAL,
                                   this);
     }
         // frostbolt casted (2 spell)
     else if(spell->spell_id() == 2 &&
-            std::get<0>(m_aSpellCDs[2]) == true)
+            std::get<0>(_spellsCDs[2]) == true)
     {
-        if(m_pDuelTarget == nullptr)
+        if(_duelTarget == nullptr)
             return;
         
             // set up CD
-        std::get<0>(m_aSpellCDs[2]) = false;
-        std::get<1>(m_aSpellCDs[2]) = std::get<2>(m_aSpellCDs[2]);
+        std::get<0>(_spellsCDs[2]) = false;
+        std::get<1>(_spellsCDs[2]) = std::get<2>(_spellsCDs[2]);
         
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameEvent::CreateMageFreeze(builder,
-                                                  m_pDuelTarget->GetUID());
+                                                  _duelTarget->GetUID());
         auto spell = GameEvent::CreateSpell(builder,
                                             GameEvent::Spells_MageFreeze,
                                             spell1.Union());
@@ -141,13 +141,13 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               cl_spell.Union());
         builder.Finish(event);
         
-        m_poGameWorld->m_aOutEvents.emplace(builder.GetBufferPointer(),
+        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
         
             // apply freeze effect
         MageFreeze * pFreeze = new MageFreeze(3s);
-        pFreeze->SetTargetUnit(m_pDuelTarget);
-        m_pDuelTarget->ApplyEffect(pFreeze);
+        pFreeze->SetTargetUnit(_duelTarget);
+        _duelTarget->ApplyEffect(pFreeze);
     }
 }
 

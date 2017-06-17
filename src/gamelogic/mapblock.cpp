@@ -10,27 +10,27 @@
 
 MapBlock::MapBlock()
 {
-    m_eObjType = GameObject::Type::MAPBLOCK;
+    _objType = GameObject::Type::MAPBLOCK;
 }
 
 MapBlock::Type
 MapBlock::GetType() const
 {
-    return m_eType;
+    return _blockType;
 }
 
 NoBlock::NoBlock()
 {
-    m_eType = MapBlock::Type::NOBLOCK;
-    m_nObjAttributes |= GameObject::Attributes::PASSABLE;
+    _blockType = MapBlock::Type::NOBLOCK;
+    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 WallBlock::WallBlock()
 {
-    m_eType = MapBlock::Type::WALL;
+    _blockType = MapBlock::Type::WALL;
 }
 
 BorderBlock::BorderBlock()
 {
-    m_eType = MapBlock::Type::BORDER;
+    _blockType = MapBlock::Type::BORDER;
 }

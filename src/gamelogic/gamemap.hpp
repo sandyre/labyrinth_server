@@ -16,24 +16,25 @@ class GameWorld;
 
 class GameMap
 {
+private:
     enum class MapBlockType : unsigned char
     {
         NOBLOCK = 0x00,
         WALL    = 0x01,
         BORDER  = 0x02
     };
+    
 public:
     struct Configuration
     {
-        uint16_t nMapSize;
-        uint16_t nRoomSize;
-        uint32_t nSeed;
+        uint16_t MapSize;
+        uint16_t RoomSize;
+        uint32_t Seed;
     };
     
-    GameMap();
-    ~GameMap();
-    
+public:
     void    GenerateMap(const Configuration&, GameWorld*);
+    
 };
 
 #endif /* gamemap_hpp */

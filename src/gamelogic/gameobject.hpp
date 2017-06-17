@@ -37,10 +37,10 @@ public:
     GameObject();
     ~GameObject();
     
-    virtual void        update(std::chrono::microseconds) {}
+    virtual void        update(std::chrono::microseconds) { } // FIXME: should be pure
     
     GameObject::Type    GetObjType() const;
-    uint32_t        GetAttributes() const;
+    uint32_t            GetAttributes() const;
     
     void            SetGameWorld(GameWorld*);
     
@@ -50,13 +50,13 @@ public:
     Point2          GetLogicalPosition() const;
     void            SetLogicalPosition(Point2);
 protected:
-        // no need for automatic memory management, gameworld will outlive GO anyway
-    GameWorld *     m_poGameWorld;
+        // no need for memory management, gameworld will outlive GO anyway
+    GameWorld *         _gameWorld;
     
-    GameObject::Type    m_eObjType;
-    uint32_t            m_nObjAttributes;
-    uint32_t            m_nUID;
-    Point2              m_stLogPosition;
+    GameObject::Type    _objType;
+    uint32_t            _objAttributes;
+    uint32_t            _UID;
+    Point2              _logPos;
 };
 
 #endif /* gameobject_hpp */

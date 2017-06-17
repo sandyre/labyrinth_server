@@ -11,7 +11,6 @@
 		1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */; };
 		1F23AEC81EC51B060048C59A /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F23AEC61EC51B060048C59A /* effect.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
-		1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
 		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
 		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
@@ -57,8 +56,6 @@
 		1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gsnet_generated.h; path = ../../../src/gsnet_generated.h; sourceTree = "<group>"; };
 		1F40F9691E49E13C003861AF /* libflatbuffers.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflatbuffers.a; path = labyrinth_serv_xcode.xcodeproj/libflatbuffers.a; sourceTree = "<group>"; };
 		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
-		1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mailservice.cpp; path = ../../../src/mailservice.cpp; sourceTree = "<group>"; };
-		1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = mailservice.hpp; path = ../../../src/mailservice.hpp; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -198,8 +195,6 @@
 				1F40F96D1E49F2A7003861AF /* msnet_generated.h */,
 				1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */,
 				1FEC14491E450ED5004EC380 /* player.hpp */,
-				1F5FFAEB1EA00D5B00542178 /* mailservice.cpp */,
-				1F5FFAEC1EA00D5B00542178 /* mailservice.hpp */,
 				1FF6BBFC1EEDB5D000170BAA /* shell.cpp */,
 				1FF6BBFD1EEDB5D000170BAA /* shell.hpp */,
 			);
@@ -298,7 +293,6 @@
 				1FF6BBFE1EEDB5D000170BAA /* shell.cpp in Sources */,
 				1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */,
 				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
-				1F5FFAED1EA00D5B00542178 /* mailservice.cpp in Sources */,
 				1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */,
 				1F5FFBED1EA282C300542178 /* priest.cpp in Sources */,
 				1F5FFBE41EA2821400542178 /* hero.cpp in Sources */,
