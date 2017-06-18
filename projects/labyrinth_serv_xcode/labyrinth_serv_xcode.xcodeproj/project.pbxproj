@@ -31,7 +31,6 @@
 		1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14431E450ED5004EC380 /* gameserver.cpp */; };
 		1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC144C1E450ED5004EC380 /* masterserver.cpp */; };
 		1FEC14561E450ED5004EC380 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FEC14501E450ED5004EC380 /* main.cpp */; };
-		1FF6BBFE1EEDB5D000170BAA /* shell.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FF6BBFC1EEDB5D000170BAA /* shell.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -98,8 +97,6 @@
 		1FEC14511E450ED5004EC380 /* masterserver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = masterserver.hpp; path = ../../../src/masterserver.hpp; sourceTree = "<group>"; };
 		1FEC14591E4527E9004EC380 /* libPocoFoundation.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPocoFoundation.a; path = "../../third-party/poco-1.7.7/lib/Darwin/x86_64/libPocoFoundation.a"; sourceTree = "<group>"; };
 		1FF6BBF71EED949F00170BAA /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/date.h; sourceTree = "<group>"; };
-		1FF6BBFC1EEDB5D000170BAA /* shell.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shell.cpp; path = ../../../src/shell.cpp; sourceTree = "<group>"; };
-		1FF6BBFD1EEDB5D000170BAA /* shell.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = shell.hpp; path = ../../../src/shell.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,8 +192,6 @@
 				1F40F96D1E49F2A7003861AF /* msnet_generated.h */,
 				1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */,
 				1FEC14491E450ED5004EC380 /* player.hpp */,
-				1FF6BBFC1EEDB5D000170BAA /* shell.cpp */,
-				1FF6BBFD1EEDB5D000170BAA /* shell.hpp */,
 			);
 			path = labyrinth_serv_xcode;
 			sourceTree = "<group>";
@@ -290,7 +285,6 @@
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
 				1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */,
 				1F5FFBDA1EA280ED00542178 /* mapblock.cpp in Sources */,
-				1FF6BBFE1EEDB5D000170BAA /* shell.cpp in Sources */,
 				1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */,
 				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
 				1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */,

@@ -26,6 +26,14 @@ struct SVFindGame;
 
 struct SVGameFound;
 
+struct CL_ADM_Stats;
+
+struct SV_ADM_Stats;
+
+struct CL_ADM_Shutdown;
+
+struct SV_ADM_Shutdown;
+
 struct Message;
 
 enum RegistrationStatus {
@@ -102,8 +110,12 @@ enum Messages {
   Messages_CLFindGame = 7,
   Messages_SVFindGame = 8,
   Messages_SVGameFound = 9,
+  Messages_CL_ADM_Stats = 10,
+  Messages_SV_ADM_Stats = 11,
+  Messages_CL_ADM_Shutdown = 12,
+  Messages_SV_ADM_Shutdown = 13,
   Messages_MIN = Messages_NONE,
-  Messages_MAX = Messages_SVGameFound
+  Messages_MAX = Messages_SV_ADM_Shutdown
 };
 
 inline const char **EnumNamesMessages() {
@@ -118,6 +130,10 @@ inline const char **EnumNamesMessages() {
     "CLFindGame",
     "SVFindGame",
     "SVGameFound",
+    "CL_ADM_Stats",
+    "SV_ADM_Stats",
+    "CL_ADM_Shutdown",
+    "SV_ADM_Shutdown",
     nullptr
   };
   return names;
@@ -166,6 +182,22 @@ template<> struct MessagesTraits<SVFindGame> {
 
 template<> struct MessagesTraits<SVGameFound> {
   static const Messages enum_value = Messages_SVGameFound;
+};
+
+template<> struct MessagesTraits<CL_ADM_Stats> {
+  static const Messages enum_value = Messages_CL_ADM_Stats;
+};
+
+template<> struct MessagesTraits<SV_ADM_Stats> {
+  static const Messages enum_value = Messages_SV_ADM_Stats;
+};
+
+template<> struct MessagesTraits<CL_ADM_Shutdown> {
+  static const Messages enum_value = Messages_CL_ADM_Shutdown;
+};
+
+template<> struct MessagesTraits<SV_ADM_Shutdown> {
+  static const Messages enum_value = Messages_SV_ADM_Shutdown;
 };
 
 bool VerifyMessages(flatbuffers::Verifier &verifier, const void *obj, Messages type);
@@ -591,6 +623,184 @@ inline flatbuffers::Offset<SVGameFound> CreateSVGameFound(
   return builder_.Finish();
 }
 
+struct CL_ADM_Stats FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ADM_KEY = 4
+  };
+  uint32_t adm_key() const {
+    return GetField<uint32_t>(VT_ADM_KEY, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ADM_KEY) &&
+           verifier.EndTable();
+  }
+};
+
+struct CL_ADM_StatsBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_adm_key(uint32_t adm_key) {
+    fbb_.AddElement<uint32_t>(CL_ADM_Stats::VT_ADM_KEY, adm_key, 0);
+  }
+  CL_ADM_StatsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CL_ADM_StatsBuilder &operator=(const CL_ADM_StatsBuilder &);
+  flatbuffers::Offset<CL_ADM_Stats> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CL_ADM_Stats>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CL_ADM_Stats> CreateCL_ADM_Stats(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t adm_key = 0) {
+  CL_ADM_StatsBuilder builder_(_fbb);
+  builder_.add_adm_key(adm_key);
+  return builder_.Finish();
+}
+
+struct SV_ADM_Stats FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_RESPONSE = 4
+  };
+  const flatbuffers::String *response() const {
+    return GetPointer<const flatbuffers::String *>(VT_RESPONSE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_RESPONSE) &&
+           verifier.Verify(response()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SV_ADM_StatsBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_response(flatbuffers::Offset<flatbuffers::String> response) {
+    fbb_.AddOffset(SV_ADM_Stats::VT_RESPONSE, response);
+  }
+  SV_ADM_StatsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SV_ADM_StatsBuilder &operator=(const SV_ADM_StatsBuilder &);
+  flatbuffers::Offset<SV_ADM_Stats> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SV_ADM_Stats>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SV_ADM_Stats> CreateSV_ADM_Stats(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> response = 0) {
+  SV_ADM_StatsBuilder builder_(_fbb);
+  builder_.add_response(response);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<SV_ADM_Stats> CreateSV_ADM_StatsDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *response = nullptr) {
+  return CreateSV_ADM_Stats(
+      _fbb,
+      response ? _fbb.CreateString(response) : 0);
+}
+
+struct CL_ADM_Shutdown FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_ADM_KEY = 4
+  };
+  uint32_t adm_key() const {
+    return GetField<uint32_t>(VT_ADM_KEY, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ADM_KEY) &&
+           verifier.EndTable();
+  }
+};
+
+struct CL_ADM_ShutdownBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_adm_key(uint32_t adm_key) {
+    fbb_.AddElement<uint32_t>(CL_ADM_Shutdown::VT_ADM_KEY, adm_key, 0);
+  }
+  CL_ADM_ShutdownBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CL_ADM_ShutdownBuilder &operator=(const CL_ADM_ShutdownBuilder &);
+  flatbuffers::Offset<CL_ADM_Shutdown> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CL_ADM_Shutdown>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CL_ADM_Shutdown> CreateCL_ADM_Shutdown(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t adm_key = 0) {
+  CL_ADM_ShutdownBuilder builder_(_fbb);
+  builder_.add_adm_key(adm_key);
+  return builder_.Finish();
+}
+
+struct SV_ADM_Shutdown FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_RESPONSE = 4
+  };
+  const flatbuffers::String *response() const {
+    return GetPointer<const flatbuffers::String *>(VT_RESPONSE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_RESPONSE) &&
+           verifier.Verify(response()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SV_ADM_ShutdownBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_response(flatbuffers::Offset<flatbuffers::String> response) {
+    fbb_.AddOffset(SV_ADM_Shutdown::VT_RESPONSE, response);
+  }
+  SV_ADM_ShutdownBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SV_ADM_ShutdownBuilder &operator=(const SV_ADM_ShutdownBuilder &);
+  flatbuffers::Offset<SV_ADM_Shutdown> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SV_ADM_Shutdown>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SV_ADM_Shutdown> CreateSV_ADM_Shutdown(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> response = 0) {
+  SV_ADM_ShutdownBuilder builder_(_fbb);
+  builder_.add_response(response);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<SV_ADM_Shutdown> CreateSV_ADM_ShutdownDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *response = nullptr) {
+  return CreateSV_ADM_Shutdown(
+      _fbb,
+      response ? _fbb.CreateString(response) : 0);
+}
+
 struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_MESSAGE_TYPE = 4,
@@ -681,6 +891,22 @@ inline bool VerifyMessages(flatbuffers::Verifier &verifier, const void *obj, Mes
     }
     case Messages_SVGameFound: {
       auto ptr = reinterpret_cast<const SVGameFound *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Messages_CL_ADM_Stats: {
+      auto ptr = reinterpret_cast<const CL_ADM_Stats *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Messages_SV_ADM_Stats: {
+      auto ptr = reinterpret_cast<const SV_ADM_Stats *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Messages_CL_ADM_Shutdown: {
+      auto ptr = reinterpret_cast<const CL_ADM_Shutdown *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Messages_SV_ADM_Shutdown: {
+      auto ptr = reinterpret_cast<const SV_ADM_Shutdown *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;

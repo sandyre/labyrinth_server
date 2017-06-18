@@ -16,6 +16,8 @@ const int GAMEVERSION_MAJOR = 2;
 const int GAMEVERSION_MINOR = 0;
 const int GAMEVERSION_BUILD = 0;
 
+const int ADMIN_KEY = 131313;
+
 struct Point2
 {
     Point2() :

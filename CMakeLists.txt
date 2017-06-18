@@ -20,7 +20,6 @@ set(SOURCES
 	src/gameserver.cpp
 	src/logsystem.cpp
 	src/masterserver.cpp
-	src/shell.cpp
 	src/gamelogic/construction.cpp
 	src/gamelogic/effect.cpp
 	src/gamelogic/gamemap.cpp
@@ -42,7 +41,6 @@ set(HEADERS
 	src/logsystem.hpp
 	src/masterserver.hpp
 	src/player.hpp
-	src/shell.hpp
 	src/date.h
 	src/globals.h
 	src/gsnet_generated.h

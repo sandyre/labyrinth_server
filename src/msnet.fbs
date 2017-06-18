@@ -66,7 +66,27 @@ response:ConnectionResponse;
 
 table SVGameFound
 {
-  gs_port:uint;
+gs_port:uint;
+}
+
+table CL_ADM_Stats
+{
+adm_key:uint;
+}
+
+table SV_ADM_Stats
+{
+response:string;
+}
+
+table CL_ADM_Shutdown
+{
+adm_key:uint;
+}
+
+table SV_ADM_Shutdown
+{
+response:string;
 }
 
 union Messages
@@ -79,7 +99,12 @@ union Messages
   SVLogin,
   CLFindGame,
   SVFindGame,
-  SVGameFound
+  SVGameFound,
+
+  CL_ADM_Stats,
+  SV_ADM_Stats,
+  CL_ADM_Shutdown,
+  SV_ADM_Shutdown
 }
 
 table Message

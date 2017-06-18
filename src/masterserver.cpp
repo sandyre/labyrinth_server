@@ -360,7 +360,8 @@ void MasterServer::service_loop()
                                        sender_addr);
                         _flatBuilder.Clear();
                     }
-                } else // player is not registered, or wrong password
+                }
+                else // player is not registered, or wrong password
                 {
                     _msgBuilder << "Player " << email << " failed to log in: wrong pass or email";
                     _logSystem.Info(_msgBuilder.str());
@@ -404,7 +405,8 @@ void MasterServer::service_loop()
                                    _flatBuilder.GetSize(),
                                    sender_addr);
                     _flatBuilder.Clear();
-                } else
+                }
+                else
                 {
                     _msgBuilder << "Player " << finder->player_uid() << " connection refused: old client version";
                     _msgBuilder << " (" << std::to_string(finder->cl_version_major()) << ".";
@@ -464,6 +466,42 @@ void MasterServer::service_loop()
                                               game_found.Union());
                 _flatBuilder.Finish(ms_event);
                 
+                _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                               _flatBuilder.GetSize(),
+                               sender_addr);
+                _flatBuilder.Clear();
+                break;
+            }
+                
+            case Messages_CL_ADM_Stats:
+            {
+                auto adm_stats = static_cast<const CL_ADM_Stats*>(msg->message());
+                
+                if(adm_stats->adm_key() != ADMIN_KEY)
+                {
+                    _msgBuilder << "Requested stats, but ADMIN_KEY is not correct";
+                    _logSystem.Warning(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    break;
+                }
+                
+                std::ostringstream stats;
+                {
+                    std::lock_guard<std::mutex> lock(_serversMutex);
+                    stats << "Total servers: " << _gameServers.size();
+                    for(const auto& server : _gameServers)
+                    {
+                        stats << "GS" << server->GetConfig().Port << "| State: " << (int)server->GetState();
+                        stats << "\n";
+                    }
+                }
+                auto flat_stats = _flatBuilder.CreateString(stats.str());
+                auto stats_msg = CreateSV_ADM_Stats(_flatBuilder,
+                                                    flat_stats);
+                auto msg = CreateMessage(_flatBuilder,
+                                         Messages_SV_ADM_Stats,
+                                         stats_msg.Union());
+                _flatBuilder.Finish(msg);
                 _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                _flatBuilder.GetSize(),
                                sender_addr);
