@@ -113,7 +113,7 @@ LogSystem::Error(const std::string& msg)
     oss << green;
     oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
     oss << magenta;
-    oss << "[ " << _serviceName << " ] ";
+    oss << "[ " << _serviceName << " ]";
     oss << red;
     oss << "[ Error ] ";
     oss << msg << "\n";

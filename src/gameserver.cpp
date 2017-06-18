@@ -98,7 +98,7 @@ void GameServer::lobby_forming_stage()
                                                  dataBuffer.size(),
                                                  sender_addr);
             
-            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
             _logSystem.Warning(_msgBuilder.str());
             _msgBuilder.str("");
             continue;
@@ -224,7 +224,7 @@ void GameServer::hero_picking_stage()
                                                  dataBuffer.size(),
                                                  sender_addr);
             
-            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
             _logSystem.Warning(_msgBuilder.str());
             _msgBuilder.str("");
             continue;
@@ -371,7 +371,7 @@ void GameServer::world_generation_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 _logSystem.Warning(_msgBuilder.str());
                 _msgBuilder.str("");
                 continue;
@@ -452,7 +452,7 @@ void GameServer::running_game_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 _logSystem.Warning(_msgBuilder.str());
                 _msgBuilder.str("");
                 continue;

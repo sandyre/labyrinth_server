@@ -69,6 +69,10 @@ void MasterServer::init(uint32_t Port)
     // Check inet connection
     try
     {
+        _msgBuilder << "Sending HTTP request to api.ipify.org";
+        _logSystem.Info(_msgBuilder.str());
+        _msgBuilder.str("");
+        
         Poco::Net::HTTPClientSession session("api.ipify.org");
         session.setTimeout(Poco::Timespan(1,
                                           0));
@@ -80,6 +84,10 @@ void MasterServer::init(uint32_t Port)
         std::istream& rs = session.receiveResponse(response);
         if(response.getStatus() == Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK)
         {
+            _msgBuilder << "HTTP response received";
+            _logSystem.Info(_msgBuilder.str());
+            _msgBuilder.str("");
+            
             _msgBuilder << "Public IP: " << rs.rdbuf();
             _logSystem.Info(_msgBuilder.str());
             _msgBuilder.str("");
@@ -91,10 +99,6 @@ void MasterServer::init(uint32_t Port)
             Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(),
                                                Port);
             _socket.bind(sock_addr);
-
-            _msgBuilder << "Binded";
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
 
             m_nSystemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
 
@@ -154,7 +158,7 @@ void MasterServer::init(uint32_t Port)
                             "host=127.0.0.1;user=masterserver;db=labyrinth;password=2(3oOS1E;compress=true;auto-reconnect=true";
         _dbSession = std::make_unique<Session>("MySQL",
                                                con_params);
-
+        
         m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
         _msgBuilder << "Database initialization done";
         _logSystem.Info(_msgBuilder.str());
@@ -207,7 +211,7 @@ void MasterServer::service_loop()
                                                  _dataBuffer.size(),
                                                  sender_addr);
             
-            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
             _logSystem.Warning(_msgBuilder.str());
             _msgBuilder.str("");
             continue;
