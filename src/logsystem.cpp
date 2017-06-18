@@ -58,10 +58,12 @@ LogSystem::Info(const std::string& msg)
     oss << "[" << std::chrono::system_clock::now() << "]";
     oss << green;
     oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
-    oss << yellow;
-    oss << "[ " << _serviceName << " ] ";
-    oss << reset;
+    oss << magenta;
+    oss << "[ " << _serviceName << " ]";
+    oss << white;
+    oss << "[ Info ] ";
     oss << msg << "\n";
+    oss << reset;
     
     if(_mode & Mode::FILE)
     {
@@ -83,9 +85,10 @@ LogSystem::Warning(const std::string& msg)
     oss << "[" << std::chrono::system_clock::now() << "]";
     oss << green;
     oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
+    oss << magenta;
+    oss << "[ " << _serviceName << " ]";
     oss << yellow;
-    oss << "[ " << _serviceName << " ] ";
-    oss << yellow;
+    oss << "[ Warning ] ";
     oss << msg << "\n";
     oss << reset;
     
@@ -109,9 +112,10 @@ LogSystem::Error(const std::string& msg)
     oss << "[" << std::chrono::system_clock::now() << "]";
     oss << green;
     oss << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "_undefined_") << " }";
-    oss << yellow;
+    oss << magenta;
     oss << "[ " << _serviceName << " ] ";
     oss << red;
+    oss << "[ Error ] ";
     oss << msg << "\n";
     oss << reset;
     

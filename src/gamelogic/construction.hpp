@@ -23,12 +23,13 @@ public:
         SWAMP = 0x02
     };
 public:
-    Construction::Type  GetType() const;
+    Construction::Type  GetType() const
+    { return _constrType; }
     
 protected:
     Construction();
     
-    Construction::Type  m_eType;
+    Construction::Type  _constrType;
 };
 
 class Door : public Construction

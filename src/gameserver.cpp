@@ -10,6 +10,7 @@
 
 #include <Poco/Thread.h>
 
+#include <array>
 #include <iostream>
 
 using namespace GameEvent;
@@ -19,7 +20,7 @@ GameServer::GameServer(const Configuration& config) :
 _state(GameServer::State::LOBBY_FORMING),
 _config(config),
 _startTime(steady_clock::now()),
-_msPerUpdate(4)
+_msPerUpdate(10)
 {
     _serverName = "GS";
     _serverName += std::to_string(_config.Port);
@@ -87,15 +88,37 @@ void GameServer::SendMulticast(const std::vector<uint8_t>& msg)
 void GameServer::lobby_forming_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char                     buf[256];
+    std::array<uint8_t, 512> dataBuffer;
 
     while(_state == State::LOBBY_FORMING)
     {
-        auto size = _socket.receiveFrom(buf,
-                                        256,
-                                        sender_addr);
-
-        auto gs_event = GetMessage(buf);
+        if(_socket.available() > dataBuffer.size())
+        {
+            auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                 dataBuffer.size(),
+                                                 sender_addr);
+            
+            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
+        }
+        
+        auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                             dataBuffer.size(),
+                                             sender_addr);
+        
+        flatbuffers::Verifier verifier(dataBuffer.data(),
+                                       pack_size);
+        if(!VerifyMessageBuffer(verifier))
+        {
+            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
+        }
+        
+        auto gs_event = GetMessage(dataBuffer.data());
 
         if(gs_event->event_type() == Events_CLConnection)
         {
@@ -181,8 +204,8 @@ void GameServer::lobby_forming_stage()
                                              gs_heropick.Union());
             _flatBuilder.Finish(gs_event);
             SendMulticast(std::vector<uint8_t>(
-                    _flatBuilder.GetBufferPointer(),
-                    _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
+                                               _flatBuilder.GetBufferPointer(),
+                                               _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
             _flatBuilder.Clear();
         }
     }
@@ -191,15 +214,37 @@ void GameServer::lobby_forming_stage()
 void GameServer::hero_picking_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char                     buf[256];
+    std::array<uint8_t, 512> dataBuffer;
 
     while(_state == State::HERO_PICK)
     {
-        auto size = _socket.receiveFrom(buf,
-                                        256,
-                                        sender_addr);
-
-        auto gs_event = GetMessage(buf);
+        if(_socket.available() > dataBuffer.size())
+        {
+            auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                 dataBuffer.size(),
+                                                 sender_addr);
+            
+            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
+        }
+        
+        auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                             dataBuffer.size(),
+                                             sender_addr);
+        
+        flatbuffers::Verifier verifier(dataBuffer.data(),
+                                       pack_size);
+        if(!VerifyMessageBuffer(verifier))
+        {
+            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
+        }
+        
+        auto gs_event = GetMessage(dataBuffer.data());
 
         switch(gs_event->event_type())
         {
@@ -282,7 +327,7 @@ void GameServer::hero_picking_stage()
 void GameServer::world_generation_stage()
 {
     Poco::Net::SocketAddress sender_addr;
-    char                     buf[256];
+    std::array<uint8_t, 512> dataBuffer;
 
     while(_state == State::GENERATING_WORLD)
     {
@@ -320,10 +365,33 @@ void GameServer::world_generation_stage()
         auto players_ungenerated = _players.size();
         while(players_ungenerated)
         {
-            _socket.receiveBytes(buf,
-                                 256);
-
-            auto gs_event = GetMessage(buf);
+            if(_socket.available() > dataBuffer.size())
+            {
+                auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                     dataBuffer.size(),
+                                                     sender_addr);
+                
+                _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
+            auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                 dataBuffer.size(),
+                                                 sender_addr);
+            
+            flatbuffers::Verifier verifier(dataBuffer.data(),
+                                           pack_size);
+            if(!VerifyMessageBuffer(verifier))
+            {
+                _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
+            auto gs_event = GetMessage(dataBuffer.data());
 
             if(gs_event->event_type() == Events_CLMapGenerated)
             {
@@ -360,7 +428,7 @@ void GameServer::world_generation_stage()
 
 void GameServer::running_game_stage()
 {
-    char                      buf[256];
+    std::array<uint8_t, 512>  dataBuffer;
     Poco::Net::SocketAddress  sender_addr;
     std::chrono::milliseconds time_no_receive = 0ms;
 
@@ -378,11 +446,33 @@ void GameServer::running_game_stage()
         while(_socket.available())
         {
             time_no_receive = 0ms;
-            auto pack_size   = _socket.receiveFrom(buf,
-                                                   256,
-                                                   sender_addr);
-
-            auto gs_event = GetMessage(buf);
+            if(_socket.available() > dataBuffer.size())
+            {
+                auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                     dataBuffer.size(),
+                                                     sender_addr);
+                
+                _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
+            auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                 dataBuffer.size(),
+                                                 sender_addr);
+            
+            flatbuffers::Verifier verifier(dataBuffer.data(),
+                                           pack_size);
+            if(!VerifyMessageBuffer(verifier))
+            {
+                _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
+            auto gs_event = GetMessage(dataBuffer.data());
             
             auto sender = FindPlayerByUID(gs_event->sender_id());
             if(sender != _players.end())
@@ -396,8 +486,8 @@ void GameServer::running_game_stage()
                     sender->SetAddress(sender_addr);
                 }
                 
-                _gameWorld->GetIncomingEvents().emplace(buf,
-                                                        buf + pack_size);
+                _gameWorld->GetIncomingEvents().emplace(dataBuffer.data(),
+                                                        dataBuffer.data() + pack_size);
             }
             else
             {

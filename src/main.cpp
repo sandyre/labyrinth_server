@@ -12,7 +12,7 @@ int main(int argc, const char * argv[])
 {
     MasterServer server;
     Poco::Thread ms_thread;
-    ms_thread.setName("MasterServer");
+    ms_thread.setName("Main");
     ms_thread.setPriority(Poco::Thread::Priority::PRIO_HIGHEST);
     ms_thread.start(server);
     ms_thread.join();

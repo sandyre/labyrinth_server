@@ -13,23 +13,19 @@ Construction::Construction()
     _objType = GameObject::Type::CONSTRUCTION;
 }
 
-Construction::Type
-Construction::GetType() const
-{
-    return m_eType;
-}
-
 Door::Door()
 {
-    m_eType = Construction::Type::DOOR;
+    _constrType = Construction::Type::DOOR;
+    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 Graveyard::Graveyard()
 {
-    m_eType = Construction::Type::GRAVEYARD;
+    _constrType = Construction::Type::GRAVEYARD;
+    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 Swamp::Swamp()
 {
-    m_eType = Construction::Type::SWAMP;
+    _constrType = Construction::Type::SWAMP;
 }

@@ -33,6 +33,7 @@
 
 class MasterServer : public Poco::Runnable
 {
+    using GameServers = std::vector<std::unique_ptr<GameServer>>;
 public:
     struct SystemStatus
     {
@@ -52,7 +53,6 @@ public:
 protected:
     void service_loop();
     
-    void ProcessIncomingMessage();
     void FreeResourcesAndSaveResults(Poco::Timer&);
 
     std::mt19937                    _randGenerator;
@@ -65,10 +65,10 @@ protected:
     // Gameservers
     std::unique_ptr<Poco::ThreadPool>        _threadPool;
     std::mutex                               _serversMutex;
-    std::vector<std::unique_ptr<GameServer>> _gameServers;
+    GameServers                              _gameServers;
 
     // System timers and flags
-    std::unique_ptr<Poco::Timer> _freementTimer;
+    std::unique_ptr<Poco::Timer>   _freementTimer;
 
     // Network
     Poco::Net::DatagramSocket      _socket;

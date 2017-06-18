@@ -199,256 +199,280 @@ void MasterServer::service_loop()
 {
     while(true)
     {
-        ProcessIncomingMessage();
-    }
-}
-
-void MasterServer::ProcessIncomingMessage()
-{
-    Poco::Net::SocketAddress sender_addr;
-
-    auto size = _socket.receiveFrom(_dataBuffer.data(),
-                                    256,
-                                    sender_addr);
-    auto msg  = GetMessage(_dataBuffer.data());
-
-    switch(msg->message_type())
-    {
-        case Messages_CLPing:
+        Poco::Net::SocketAddress sender_addr;
+        
+        if(_socket.available() > _dataBuffer.size())
         {
-            auto pong = CreateSVPing(_flatBuilder);
-            auto smsg = CreateMessage(_flatBuilder,
-                                      Messages_CLPing,
-                                      pong.Union());
-            _flatBuilder.Finish(smsg);
-
-            _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                           _flatBuilder.GetSize(),
-                           sender_addr);
-            _flatBuilder.Clear();
-            break;
+            auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
+                                                 _dataBuffer.size(),
+                                                 sender_addr);
+            
+            _msgBuilder << "Received packet which site is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
         }
-
-        case Messages_CLRegister:
+        
+        auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
+                                             _dataBuffer.size(),
+                                             sender_addr);
+        
+        flatbuffers::Verifier verifier(_dataBuffer.data(),
+                                       pack_size);
+        if(!VerifyMessageBuffer(verifier))
         {
-            auto        registr        = static_cast<const CLRegister *>(msg->message());
-            size_t      mail_presented = 0;
-            std::string email(registr->email()->c_str());
-            std::string password(registr->password()->c_str());
-
-            // Check that player isnt registered already
-            Poco::Data::Statement select(* _dbSession);
-            select << "SELECT COUNT(*) FROM players WHERE email=?", into(mail_presented), use(email), now;
-
-            // New user, add him
-            if(mail_presented == 0)
-            {
-                _msgBuilder << "Player registered: {" << email << ";" << password << "}";
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
-                
-                // Add to DB
-                Poco::Data::Statement insert(*_dbSession);
-                insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(email), use(password), now;
-
-                // Send response to client
-                auto response = CreateSVRegister(_flatBuilder,
-                                                 RegistrationStatus_SUCCESS);
-                auto msg      = CreateMessage(_flatBuilder,
-                                              Messages_SVRegister,
-                                              response.Union());
-                _flatBuilder.Finish(msg);
-
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
-            }
-            else // email already taken
-            {
-                _msgBuilder << "Player tried to register: " << email << " already taken";
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
-                
-                // Send response to client
-                auto response = CreateSVRegister(_flatBuilder,
-                                                 RegistrationStatus_EMAIL_TAKEN);
-                auto msg      = CreateMessage(_flatBuilder,
-                                              Messages_SVRegister,
-                                              response.Union());
-                _flatBuilder.Finish(msg);
-
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
-            }
-
-            break;
+            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+            _logSystem.Warning(_msgBuilder.str());
+            _msgBuilder.str("");
+            continue;
         }
-
-        case Messages_CLLogin:
+        
+        auto msg  = GetMessage(_dataBuffer.data());
+        
+        switch(msg->message_type())
         {
-            auto registr = static_cast<const CLLogin*>(msg->message());
-
-            Poco::Nullable<std::string> stored_pass;
-            std::string                 email(registr->email()->c_str());
-            std::string                 password(registr->password()->c_str());
-
-            // Check that player isnt registered already
-            Poco::Data::Statement select(*_dbSession);
-            select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(stored_pass), use(email), now;
-
-            if(!stored_pass.isNull())
+            case Messages_CLPing:
             {
-                // password is correct, notify player
-                if(stored_pass == password)
-                {
-                    _msgBuilder << "Player " << email << " logged in";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
-                    
-                    // Send response to client
-                    auto response = CreateSVLogin(_flatBuilder,
-                                                  LoginStatus_SUCCESS);
-                    auto msg      = CreateMessage(_flatBuilder,
-                                                  Messages_SVLogin,
-                                                  response.Union());
-                    _flatBuilder.Finish(msg);
-
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                } else // password is wrong
-                {
-                    _msgBuilder << "Player " << email << " failed to log in: wrong password";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
-                    
-                    // Send response to client
-                    auto response = CreateSVLogin(_flatBuilder,
-                                                  LoginStatus_WRONG_INPUT);
-                    auto msg      = CreateMessage(_flatBuilder,
-                                                  Messages_SVLogin,
-                                                  response.Union());
-                    _flatBuilder.Finish(msg);
-
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                }
-            } else // player is not registered, or wrong password
-            {
-                _msgBuilder << "Player " << email << " failed to log in: wrong pass or email";
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
+                auto pong = CreateSVPing(_flatBuilder);
+                auto smsg = CreateMessage(_flatBuilder,
+                                          Messages_CLPing,
+                                          pong.Union());
+                _flatBuilder.Finish(smsg);
                 
-                // Send response to client
-                auto response = CreateSVLogin(_flatBuilder,
-                                              LoginStatus_WRONG_INPUT);
-                auto msg      = CreateMessage(_flatBuilder,
-                                              Messages_SVLogin,
-                                              response.Union());
-                _flatBuilder.Finish(msg);
-
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
-            }
-
-            break;
-        }
-
-        case Messages_CLFindGame:
-        {
-            auto finder = static_cast<const CLFindGame*>(msg->message());
-
-            if(finder->cl_version_major() == GAMEVERSION_MAJOR)
-            {
-                _msgBuilder << "Player " << finder->player_uid() << " version is OK";
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
-                
-                auto gs_accepted = CreateSVFindGame(_flatBuilder,
-                                                    finder->player_uid(),
-                                                    ConnectionResponse_ACCEPTED);
-                auto gs_event    = CreateMessage(_flatBuilder,
-                                                 Messages_SVFindGame,
-                                                 gs_accepted.Union());
-                _flatBuilder.Finish(gs_event);
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
-            } else
-            {
-                _msgBuilder << "Player " << finder->player_uid() << " connection refused: old client version";
-                _logSystem.Warning(_msgBuilder.str());
-                _msgBuilder.str("");
-                
-                auto gs_refused = CreateSVFindGame(_flatBuilder,
-                                                   finder->player_uid(),
-                                                   ConnectionResponse_REFUSED);
-                auto gs_event   = CreateMessage(_flatBuilder,
-                                                Messages_SVFindGame,
-                                                gs_refused.Union());
-                _flatBuilder.Finish(gs_event);
                 _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                _flatBuilder.GetSize(),
                                sender_addr);
                 _flatBuilder.Clear();
                 break;
             }
-            
-            std::lock_guard<std::mutex> lock(_serversMutex);
-            auto server_available = std::find_if(_gameServers.cbegin(),
-                                                 _gameServers.cend(),
-                                                 [this](std::unique_ptr<GameServer> const& gs)
-                                                 {
-                                                     return gs->GetState() == GameServer::State::LOBBY_FORMING;
-                                                 });
-            if(server_available == _gameServers.cend())
-            {
-                GameServer::Configuration config;
-                config.Players    = 1; // +-
-                config.RandomSeed = _randDistr(_randGenerator);
-                config.Port       = _availablePorts.front();
-                _availablePorts.pop();
                 
-                _gameServers.emplace_back(std::make_unique<GameServer>(config));
-                _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
-                                               *_gameServers.back(),
-                                               "GameServer");
-                server_available = _gameServers.end()-1;
+            case Messages_CLRegister:
+            {
+                auto        registr        = static_cast<const CLRegister *>(msg->message());
+                size_t      mail_presented = 0;
+                std::string email(registr->email()->c_str());
+                std::string password(registr->password()->c_str());
+                
+                    // Check that player isnt registered already
+                Poco::Data::Statement select(* _dbSession);
+                select << "SELECT COUNT(*) FROM players WHERE email=?", into(mail_presented), use(email), now;
+                
+                    // New user, add him
+                if(mail_presented == 0)
+                {
+                    _msgBuilder << "Player registered: {" << email << ";" << password << "}";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                        // Add to DB
+                    Poco::Data::Statement insert(*_dbSession);
+                    insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(email), use(password), now;
+                    
+                        // Send response to client
+                    auto response = CreateSVRegister(_flatBuilder,
+                                                     RegistrationStatus_SUCCESS);
+                    auto msg      = CreateMessage(_flatBuilder,
+                                                  Messages_SVRegister,
+                                                  response.Union());
+                    _flatBuilder.Finish(msg);
+                    
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
+                }
+                else // email already taken
+                {
+                    _msgBuilder << "Player tried to register: " << email << " already taken";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                        // Send response to client
+                    auto response = CreateSVRegister(_flatBuilder,
+                                                     RegistrationStatus_EMAIL_TAKEN);
+                    auto msg      = CreateMessage(_flatBuilder,
+                                                  Messages_SVRegister,
+                                                  response.Union());
+                    _flatBuilder.Finish(msg);
+                    
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
+                }
+                
+                break;
             }
-            
-            _msgBuilder << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
-            
-                // transfer player to GS
-            auto game_found = CreateSVGameFound(_flatBuilder,
-                                                (*server_available)->GetConfig().Port);
-            auto ms_event = CreateMessage(_flatBuilder,
-                                          Messages_SVGameFound,
-                                          game_found.Union());
-            _flatBuilder.Finish(ms_event);
-            
-            _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                           _flatBuilder.GetSize(),
-                           sender_addr);
-            _flatBuilder.Clear();
-            break;
+                
+            case Messages_CLLogin:
+            {
+                auto registr = static_cast<const CLLogin*>(msg->message());
+                
+                Poco::Nullable<std::string> stored_pass;
+                std::string                 email(registr->email()->c_str());
+                std::string                 password(registr->password()->c_str());
+                
+                    // Check that player isnt registered already
+                Poco::Data::Statement select(*_dbSession);
+                select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(stored_pass), use(email), now;
+                
+                if(!stored_pass.isNull())
+                {
+                        // password is correct, notify player
+                    if(stored_pass == password)
+                    {
+                        _msgBuilder << "Player " << email << " logged in";
+                        _logSystem.Info(_msgBuilder.str());
+                        _msgBuilder.str("");
+                        
+                            // Send response to client
+                        auto response = CreateSVLogin(_flatBuilder,
+                                                      LoginStatus_SUCCESS);
+                        auto msg      = CreateMessage(_flatBuilder,
+                                                      Messages_SVLogin,
+                                                      response.Union());
+                        _flatBuilder.Finish(msg);
+                        
+                        _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                       _flatBuilder.GetSize(),
+                                       sender_addr);
+                        _flatBuilder.Clear();
+                    } else // password is wrong
+                    {
+                        _msgBuilder << "Player " << email << " failed to log in: wrong password";
+                        _logSystem.Info(_msgBuilder.str());
+                        _msgBuilder.str("");
+                        
+                            // Send response to client
+                        auto response = CreateSVLogin(_flatBuilder,
+                                                      LoginStatus_WRONG_INPUT);
+                        auto msg      = CreateMessage(_flatBuilder,
+                                                      Messages_SVLogin,
+                                                      response.Union());
+                        _flatBuilder.Finish(msg);
+                        
+                        _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                       _flatBuilder.GetSize(),
+                                       sender_addr);
+                        _flatBuilder.Clear();
+                    }
+                } else // player is not registered, or wrong password
+                {
+                    _msgBuilder << "Player " << email << " failed to log in: wrong pass or email";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                        // Send response to client
+                    auto response = CreateSVLogin(_flatBuilder,
+                                                  LoginStatus_WRONG_INPUT);
+                    auto msg      = CreateMessage(_flatBuilder,
+                                                  Messages_SVLogin,
+                                                  response.Union());
+                    _flatBuilder.Finish(msg);
+                    
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
+                }
+                
+                break;
+            }
+                
+            case Messages_CLFindGame:
+            {
+                auto finder = static_cast<const CLFindGame*>(msg->message());
+                
+                if(finder->cl_version_major() == GAMEVERSION_MAJOR)
+                {
+                    _msgBuilder << "Player " << finder->player_uid() << " version is OK";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                    auto gs_accepted = CreateSVFindGame(_flatBuilder,
+                                                        finder->player_uid(),
+                                                        ConnectionResponse_ACCEPTED);
+                    auto gs_event    = CreateMessage(_flatBuilder,
+                                                     Messages_SVFindGame,
+                                                     gs_accepted.Union());
+                    _flatBuilder.Finish(gs_event);
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
+                } else
+                {
+                    _msgBuilder << "Player " << finder->player_uid() << " connection refused: old client version";
+                    _msgBuilder << " (" << std::to_string(finder->cl_version_major()) << ".";
+                    _msgBuilder << std::to_string(finder->cl_version_minor()) << ".";
+                    _msgBuilder << std::to_string(finder->cl_version_build()) << ")";
+                    _logSystem.Warning(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    
+                    auto gs_refused = CreateSVFindGame(_flatBuilder,
+                                                       finder->player_uid(),
+                                                       ConnectionResponse_REFUSED);
+                    auto gs_event   = CreateMessage(_flatBuilder,
+                                                    Messages_SVFindGame,
+                                                    gs_refused.Union());
+                    _flatBuilder.Finish(gs_event);
+                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                   _flatBuilder.GetSize(),
+                                   sender_addr);
+                    _flatBuilder.Clear();
+                    break;
+                }
+                
+                GameServers::const_iterator server_available;
+                {
+                    std::lock_guard<std::mutex> lock(_serversMutex);
+                    server_available = std::find_if(_gameServers.cbegin(),
+                                                    _gameServers.cend(),
+                                                    [this](std::unique_ptr<GameServer> const& gs)
+                                                    {
+                                                        return gs->GetState() == GameServer::State::LOBBY_FORMING;
+                                                    });
+                    if(server_available == _gameServers.cend())
+                    {
+                        GameServer::Configuration config;
+                        config.Players    = 1; // +-
+                        config.RandomSeed = _randDistr(_randGenerator);
+                        config.Port       = _availablePorts.front();
+                        _availablePorts.pop();
+                        
+                        _gameServers.emplace_back(std::make_unique<GameServer>(config));
+                        _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
+                                                       *_gameServers.back(),
+                                                       "GameServer");
+                        server_available = _gameServers.end()-1;
+                    }
+                }
+                
+                _msgBuilder << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
+                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder.str("");
+                
+                    // transfer player to GS
+                auto game_found = CreateSVGameFound(_flatBuilder,
+                                                    (*server_available)->GetConfig().Port);
+                auto ms_event = CreateMessage(_flatBuilder,
+                                              Messages_SVGameFound,
+                                              game_found.Union());
+                _flatBuilder.Finish(ms_event);
+                
+                _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                               _flatBuilder.GetSize(),
+                               sender_addr);
+                _flatBuilder.Clear();
+                break;
+            }
+                
+            default:
+                _msgBuilder << "Undefined packet received";
+                _logSystem.Error(_msgBuilder.str());
+                _msgBuilder.str("");
+                break;
         }
-
-        default:
-            _msgBuilder << "Undefined packet received";
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
-            break;
     }
 }
 

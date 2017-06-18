@@ -64,7 +64,6 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
-    void SendMulticast();
     void SendMulticast(const std::vector<uint8_t>&);
 
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
