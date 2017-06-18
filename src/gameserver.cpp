@@ -298,7 +298,9 @@ void GameServer::hero_picking_stage()
             }
 
             default:
-                assert(false);
+                _msgBuilder << "Unexpected packet in hero_picking_stage, skipping it";
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
                 break;
         }
 

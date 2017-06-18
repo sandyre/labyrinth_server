@@ -11,15 +11,15 @@
 
 #include "gamemap.hpp"
 #include "gameobject.hpp"
-#include "../globals.h"
-#include "../logsystem.hpp"
-#include "../player.hpp"
 #include "units/hero.hpp"
 #include "units/mage.hpp"
 #include "units/monster.hpp"
 #include "units/priest.hpp"
 #include "units/rogue.hpp"
 #include "units/warrior.hpp"
+#include "../globals.h"
+#include "../logsystem.hpp"
+#include "../player.hpp"
 
 #include <chrono>
 #include <queue>

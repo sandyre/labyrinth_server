@@ -33,6 +33,7 @@ GameWorld::~GameWorld()
     {
         delete obj;
     }
+    _logSystem.Close();
 }
 
 void
