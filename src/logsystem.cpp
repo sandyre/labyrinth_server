@@ -12,8 +12,6 @@
 
 #include <Poco/Thread.h>
 
-#include <chrono>
-#include <sstream>
 #include <iomanip>
 #include <iostream>
 
