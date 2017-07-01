@@ -9,6 +9,7 @@
 #include "gameserver.hpp"
 
 #include <Poco/Thread.h>
+#include <Poco/Timer.h>
 
 #include <array>
 #include <iostream>
@@ -46,6 +47,7 @@ GameServer::~GameServer()
 
 void GameServer::shutdown()
 {
+    _pingerTimer->stop();
     _state = GameServer::State::FINISHED;
     _msgBuilder << "Finished";
     _logSystem.Info(_msgBuilder.str());
@@ -56,6 +58,12 @@ void GameServer::run()
 {
     try
     {
+        _pingerTimer = std::make_unique<Poco::Timer>(0,
+                                                     2000);
+        Poco::TimerCallback<GameServer> free_callback(*this,
+                                                      &GameServer::Ping);
+        _pingerTimer->start(free_callback);
+        
         // lobby forming stage
         lobby_forming_stage();
         // hero picking stage
@@ -66,15 +74,29 @@ void GameServer::run()
         running_game_stage();
     } catch(std::exception& e)
     {
-        _msgBuilder << e.what();
+        _msgBuilder << "Exception: " << e.what();
         _logSystem.Error(_msgBuilder.str());
         _msgBuilder.str("");
         shutdown();
     }
 }
 
+void GameServer::Ping(Poco::Timer& timer)
+{
+    auto ping = CreateSVPing(_flatBuilder);
+    auto msg = CreateMessage(_flatBuilder,
+                             0,
+                             Events_SVPing,
+                             ping.Union());
+    _flatBuilder.Finish(msg);
+    
+    SendMulticast(std::vector<uint8_t>(_flatBuilder.GetBufferPointer(),
+                                       _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
+}
+
 void GameServer::SendMulticast(const std::vector<uint8_t>& msg)
 {
+    std::lock_guard<std::mutex> lock(_playersMutex);
     std::for_each(_players.cbegin(),
                   _players.cend(),
                   [&msg, this](const Player& player)
@@ -89,110 +111,153 @@ void GameServer::lobby_forming_stage()
 {
     Poco::Net::SocketAddress sender_addr;
     std::array<uint8_t, 512> dataBuffer;
-
+    
     while(_state == State::LOBBY_FORMING)
     {
-        if(_socket.available() > dataBuffer.size())
+        std::this_thread::sleep_for(_msPerUpdate);
+        
+        while(_socket.available())
         {
+            if(_socket.available() > dataBuffer.size())
+            {
+                auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                     dataBuffer.size(),
+                                                     sender_addr);
+                
+                _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
             
-            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
-            continue;
-        }
-        
-        auto pack_size = _socket.receiveFrom(dataBuffer.data(),
-                                             dataBuffer.size(),
-                                             sender_addr);
-        
-        flatbuffers::Verifier verifier(dataBuffer.data(),
-                                       pack_size);
-        if(!VerifyMessageBuffer(verifier))
-        {
-            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
-            continue;
-        }
-        
-        auto gs_event = GetMessage(dataBuffer.data());
-
-        if(gs_event->event_type() == Events_CLConnection)
-        {
-            auto con_info = static_cast<const CLConnection *>(gs_event->event());
-
-            auto player = FindPlayerByUID(gs_event->sender_id());
-            if(player == _players.end())
+            flatbuffers::Verifier verifier(dataBuffer.data(),
+                                           pack_size);
+            if(!VerifyMessageBuffer(verifier))
             {
-                Player new_player(gs_event->sender_id(),
-                                  sender_addr,
-                                  con_info->nickname()->c_str());
-
-                _msgBuilder << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]"
-                            << " connected";
-                _logSystem.Info(_msgBuilder.str());
+                _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
                 _msgBuilder.str("");
-
-                _players.emplace_back(std::move(new_player));
-
-                // notify connector that he is accepted
-                auto gs_accept = CreateSVConnectionStatus(_flatBuilder,
-                                                          ConnectionStatus_ACCEPTED);
-                auto gs_event  = CreateMessage(_flatBuilder,
-                                               0,
-                                               Events_SVConnectionStatus,
-                                               gs_accept.Union());
-                _flatBuilder.Finish(gs_event);
-
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
-
-                // send him info about all current players in lobby
-                for(auto& player : _players)
+                continue;
+            }
+            
+            auto gs_event = GetMessage(dataBuffer.data());
+            auto sender = FindPlayerByUID(gs_event->sender_id());
+            if(sender != _players.end()) // FIXME: should be sync'd via mutex. BTW, pingerThread does not modify that shit.
+                sender->SetLastMsgTimepoint(steady_clock::now());
+            
+            switch(gs_event->event_type())
+            {
+                case GameEvent::Events_CLConnection:
                 {
-                    auto nick        = _flatBuilder.CreateString(player.GetNickname());
-                    auto player_info = CreateSVPlayerConnected(_flatBuilder,
-                                                               player.GetUID(),
-                                                               nick);
-                    gs_event = CreateMessage(_flatBuilder,
-                                             0,
-                                             Events_SVPlayerConnected,
-                                             player_info.Union());
-                    _flatBuilder.Finish(gs_event);
-
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
+                    auto con_info = static_cast<const CLConnection *>(gs_event->event());
+                    auto player = FindPlayerByUID(gs_event->sender_id());
+                    
+                    if(player == _players.end())
+                    {
+                        Player new_player(gs_event->sender_id(),
+                                          sender_addr,
+                                          con_info->nickname()->c_str());
+                        new_player.SetLastMsgTimepoint(steady_clock::now());
+                        
+                        _msgBuilder << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]"
+                        << " connected";
+                        _logSystem.Info(_msgBuilder.str());
+                        _msgBuilder.str("");
+                        
+                        _players.emplace_back(std::move(new_player));
+                        
+                            // notify connector that he is accepted
+                        auto gs_accept = CreateSVConnectionStatus(_flatBuilder,
+                                                                  ConnectionStatus_ACCEPTED);
+                        auto gs_event  = CreateMessage(_flatBuilder,
+                                                       0,
+                                                       Events_SVConnectionStatus,
+                                                       gs_accept.Union());
+                        _flatBuilder.Finish(gs_event);
+                        
+                        _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                       _flatBuilder.GetSize(),
+                                       sender_addr);
+                        _flatBuilder.Clear();
+                        
+                            // send him info about all current players in lobby
+                        for(auto& player : _players)
+                        {
+                            auto nick        = _flatBuilder.CreateString(player.GetNickname());
+                            auto player_info = CreateSVPlayerConnected(_flatBuilder,
+                                                                       player.GetUID(),
+                                                                       nick);
+                            gs_event = CreateMessage(_flatBuilder,
+                                                     0,
+                                                     Events_SVPlayerConnected,
+                                                     player_info.Union());
+                            _flatBuilder.Finish(gs_event);
+                            
+                            _socket.sendTo(_flatBuilder.GetBufferPointer(),
+                                           _flatBuilder.GetSize(),
+                                           sender_addr);
+                            _flatBuilder.Clear();
+                        }
+                        
+                            // notify all players about connected one
+                        auto nick          = _flatBuilder.CreateString(con_info->nickname()->c_str(),
+                                                                       con_info->nickname()->size());
+                        auto gs_new_player = CreateSVPlayerConnected(_flatBuilder,
+                                                                     con_info->player_uid(),
+                                                                     nick);
+                        gs_event = CreateMessage(_flatBuilder,
+                                                 0,
+                                                 Events_SVPlayerConnected,
+                                                 gs_new_player.Union());
+                        _flatBuilder.Finish(gs_event);
+                        SendMulticast(std::vector<uint8_t>(
+                                                           _flatBuilder.GetBufferPointer(),
+                                                           _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
+                        _flatBuilder.Clear();
+                    }
+                    break;
                 }
-
-                // notify all players about connected one
-                auto nick          = _flatBuilder.CreateString(con_info->nickname()->c_str(),
-                                                               con_info->nickname()->size());
-                auto gs_new_player = CreateSVPlayerConnected(_flatBuilder,
-                                                             con_info->player_uid(),
-                                                             nick);
-                gs_event = CreateMessage(_flatBuilder,
-                                         0,
-                                         Events_SVPlayerConnected,
-                                         gs_new_player.Union());
-                _flatBuilder.Finish(gs_event);
-                SendMulticast(std::vector<uint8_t>(
-                        _flatBuilder.GetBufferPointer(),
-                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
-                _flatBuilder.Clear();
+                
+                case GameEvent::Events_CLPing:
+                {
+                        // we aren't interested in processing this event
+                    break;
+                }
+                default:
+                    _msgBuilder << "Unexpected event received in lobby_forming";
+                    _logSystem.Warning(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    break;
             }
         }
-
+        
+            // check players last message time (should be less than 2 secs)
+        {
+            std::lock_guard<std::mutex> lock(_playersMutex);
+            _players.erase(std::remove_if(_players.begin(),
+                                          _players.end(),
+                                          [this](const Player& player)
+                                          {
+                                              if(duration_cast<milliseconds>(steady_clock::now() - player.GetLastMsgTimepoint()) > 2s)
+                                                 {
+                                                     _msgBuilder << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)";
+                                                     _logSystem.Info(_msgBuilder.str());
+                                                     _msgBuilder.str("");
+                                                         // TODO: send msg that player has disconnected
+                                                     return true;
+                                                 }
+                                                 return false;
+                                          }),
+                                          _players.end());
+        }
+        
         if(_players.size() == _config.Players)
         {
             _state = GameServer::State::HERO_PICK;
-
             _msgBuilder << "Starting hero-pick stage";
             _logSystem.Info(_msgBuilder.str());
             _msgBuilder.str("");
@@ -215,109 +280,143 @@ void GameServer::hero_picking_stage()
 {
     Poco::Net::SocketAddress sender_addr;
     std::array<uint8_t, 512> dataBuffer;
-
+    
     while(_state == State::HERO_PICK)
     {
-        if(_socket.available() > dataBuffer.size())
+        std::this_thread::sleep_for(_msPerUpdate);
+        
+        while(_socket.available())
         {
+            if(_socket.available() > dataBuffer.size())
+            {
+                auto pack_size = _socket.receiveFrom(dataBuffer.data(),
+                                                     dataBuffer.size(),
+                                                     sender_addr);
+                
+                _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
+                _logSystem.Warning(_msgBuilder.str());
+                _msgBuilder.str("");
+                continue;
+            }
+            
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
             
-            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
-            continue;
-        }
-        
-        auto pack_size = _socket.receiveFrom(dataBuffer.data(),
-                                             dataBuffer.size(),
-                                             sender_addr);
-        
-        flatbuffers::Verifier verifier(dataBuffer.data(),
-                                       pack_size);
-        if(!VerifyMessageBuffer(verifier))
-        {
-            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
-            continue;
-        }
-        
-        auto gs_event = GetMessage(dataBuffer.data());
-
-        switch(gs_event->event_type())
-        {
-            case GameEvent::Events_CLHeroPick:
+            flatbuffers::Verifier verifier(dataBuffer.data(),
+                                           pack_size);
+            if(!VerifyMessageBuffer(verifier))
             {
-                auto cl_pick = static_cast<const CLHeroPick *>(gs_event->event());
-
-                auto player = FindPlayerByUID(gs_event->sender_id());
-                player->SetHeroPicked((Hero::Type) cl_pick->hero_type());
-
-                auto sv_pick  = CreateSVHeroPick(_flatBuilder,
-                                                 gs_event->sender_id(),
-                                                 cl_pick->hero_type());
-                auto sv_event = CreateMessage(_flatBuilder,
-                                              0,
-                                              Events_SVHeroPick,
-                                              sv_pick.Union());
-                _flatBuilder.Finish(sv_event);
-                SendMulticast(std::vector<uint8_t>(
-                        _flatBuilder.GetBufferPointer(),
-                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
-                _flatBuilder.Clear();
-
-                break;
-            }
-
-            case GameEvent::Events_CLReadyToStart:
-            {
-                auto cl_ready = static_cast<const CLReadyToStart *>(gs_event->event());
-
-                auto player = FindPlayerByUID(cl_ready->player_uid());
-                player->SetState(Player::State::PRE_READY_TO_START);
-
-                auto sv_ready = CreateSVReadyToStart(_flatBuilder,
-                                                     cl_ready->player_uid());
-                auto sv_event = CreateMessage(_flatBuilder,
-                                              0,
-                                              Events_SVReadyToStart,
-                                              sv_ready.Union());
-                _flatBuilder.Finish(sv_event);
-                SendMulticast(std::vector<uint8_t>(
-                        _flatBuilder.GetBufferPointer(),
-                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
-                _flatBuilder.Clear();
-                
-                _msgBuilder << "Player " << player->GetNickname() << " is ready";
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
-
-                break;
-            }
-
-            default:
-                _msgBuilder << "Unexpected packet in hero_picking_stage, skipping it";
+                _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 _logSystem.Warning(_msgBuilder.str());
                 _msgBuilder.str("");
-                break;
-        }
+                continue;
+            }
+            
+            auto gs_event = GetMessage(dataBuffer.data());
+            
+            auto sender = FindPlayerByUID(gs_event->sender_id());
+            if(sender != _players.end())
+                sender->SetLastMsgTimepoint(steady_clock::now());
 
+            switch(gs_event->event_type())
+            {
+                case GameEvent::Events_CLHeroPick:
+                {
+                    auto cl_pick = static_cast<const CLHeroPick *>(gs_event->event());
+
+                    auto player = FindPlayerByUID(gs_event->sender_id());
+                    player->SetHeroPicked((Hero::Type) cl_pick->hero_type());
+
+                    auto sv_pick  = CreateSVHeroPick(_flatBuilder,
+                                                     gs_event->sender_id(),
+                                                     cl_pick->hero_type());
+                    auto sv_event = CreateMessage(_flatBuilder,
+                                                  0,
+                                                  Events_SVHeroPick,
+                                                  sv_pick.Union());
+                    _flatBuilder.Finish(sv_event);
+                    SendMulticast(std::vector<uint8_t>(
+                            _flatBuilder.GetBufferPointer(),
+                            _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
+                    _flatBuilder.Clear();
+
+                    break;
+                }
+
+                case GameEvent::Events_CLReadyToStart:
+                {
+                    auto cl_ready = static_cast<const CLReadyToStart *>(gs_event->event());
+
+                    auto player = FindPlayerByUID(cl_ready->player_uid());
+                    player->SetState(Player::State::PRE_READY_TO_START);
+
+                    auto sv_ready = CreateSVReadyToStart(_flatBuilder,
+                                                         cl_ready->player_uid());
+                    auto sv_event = CreateMessage(_flatBuilder,
+                                                  0,
+                                                  Events_SVReadyToStart,
+                                                  sv_ready.Union());
+                    _flatBuilder.Finish(sv_event);
+                    SendMulticast(std::vector<uint8_t>(
+                            _flatBuilder.GetBufferPointer(),
+                            _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
+                    _flatBuilder.Clear();
+                    
+                    _msgBuilder << "Player " << player->GetNickname() << " is ready";
+                    _logSystem.Info(_msgBuilder.str());
+                    _msgBuilder.str("");
+
+                    break;
+                }
+
+                default:
+                    _msgBuilder << "Unexpected packet in hero_picking_stage, skipping it";
+                    _logSystem.Warning(_msgBuilder.str());
+                    _msgBuilder.str("");
+                    break;
+            }
+        }
+        
+            // check players last message time (should be less than 2 secs)
+        {
+            std::lock_guard<std::mutex> lock(_playersMutex);
+            _players.erase(std::remove_if(_players.begin(),
+                                          _players.end(),
+                                          [this](const Player& player)
+                                          {
+                                              if(duration_cast<milliseconds>(steady_clock::now() - player.GetLastMsgTimepoint()) > 2s)
+                                              {
+                                                  _msgBuilder << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)";
+                                                  _logSystem.Info(_msgBuilder.str());
+                                                  _msgBuilder.str("");
+                                                      // TODO: send msg that player has disconnected
+                                                  return true;
+                                              }
+                                              return false;
+                                          }),
+                           _players.end());
+        }
+        
         bool bEveryoneReady = std::all_of(_players.begin(),
                                           _players.end(),
                                           [](Player& player)
                                           {
                                               return player.GetState() == Player::State::PRE_READY_TO_START;
                                           });
+        
+        if(_players.size() != _config.Players)
+        {
+            throw std::runtime_error("Unhandled situation: num of players < lobby size in HERO_PICKING phase");
+        }
         if(bEveryoneReady)
         {
             _state = GameServer::State::GENERATING_WORLD;
-
+            
             _msgBuilder << "Generating world";
             _logSystem.Info(_msgBuilder.str());
             _msgBuilder.str("");
-
+            
             for(auto& player : _players)
             {
                 player.SetState(Player::State::IN_GAME);
@@ -523,6 +622,7 @@ void GameServer::running_game_stage()
 
 std::vector<Player>::iterator GameServer::FindPlayerByUID(PlayerUID uid)
 {
+    std::lock_guard<std::mutex> lock(_playersMutex);
     for(auto iter = _players.begin();
         iter != _players.end();
         ++iter)

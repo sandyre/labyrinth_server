@@ -275,6 +275,15 @@ table SVGameEnd
 player_uid:uint;
 }
 
+table CLPing
+{
+player_uid:uint;
+}
+
+table SVPing
+{
+}
+
 union Events
 {
 CLConnection,
@@ -309,7 +318,10 @@ SVRespawnPlayer,
 SVSpawnMonster,
 SVSpawnItem,
 SVSpawnConstr,
-SVGameEnd
+SVGameEnd,
+
+CLPing,
+SVPing
 }
 
 table Message

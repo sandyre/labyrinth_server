@@ -78,6 +78,10 @@ struct CLRequestWin;
 
 struct SVGameEnd;
 
+struct CLPing;
+
+struct SVPing;
+
 struct Message;
 
 enum ConnectionStatus {
@@ -315,8 +319,10 @@ enum Events {
   Events_SVSpawnItem = 25,
   Events_SVSpawnConstr = 26,
   Events_SVGameEnd = 27,
+  Events_CLPing = 28,
+  Events_SVPing = 29,
   Events_MIN = Events_NONE,
-  Events_MAX = Events_SVGameEnd
+  Events_MAX = Events_SVPing
 };
 
 inline const char **EnumNamesEvents() {
@@ -349,6 +355,8 @@ inline const char **EnumNamesEvents() {
     "SVSpawnItem",
     "SVSpawnConstr",
     "SVGameEnd",
+    "CLPing",
+    "SVPing",
     nullptr
   };
   return names;
@@ -469,6 +477,14 @@ template<> struct EventsTraits<SVSpawnConstr> {
 
 template<> struct EventsTraits<SVGameEnd> {
   static const Events enum_value = Events_SVGameEnd;
+};
+
+template<> struct EventsTraits<CLPing> {
+  static const Events enum_value = Events_CLPing;
+};
+
+template<> struct EventsTraits<SVPing> {
+  static const Events enum_value = Events_SVPing;
 };
 
 bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Events type);
@@ -2341,6 +2357,74 @@ inline flatbuffers::Offset<SVGameEnd> CreateSVGameEnd(
   return builder_.Finish();
 }
 
+struct CLPing FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER_UID = 4
+  };
+  uint32_t player_uid() const {
+    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLPingBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player_uid(uint32_t player_uid) {
+    fbb_.AddElement<uint32_t>(CLPing::VT_PLAYER_UID, player_uid, 0);
+  }
+  CLPingBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLPingBuilder &operator=(const CLPingBuilder &);
+  flatbuffers::Offset<CLPing> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CLPing>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLPing> CreateCLPing(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player_uid = 0) {
+  CLPingBuilder builder_(_fbb);
+  builder_.add_player_uid(player_uid);
+  return builder_.Finish();
+}
+
+struct SVPing FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVPingBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  SVPingBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVPingBuilder &operator=(const SVPingBuilder &);
+  flatbuffers::Offset<SVPing> Finish() {
+    const auto end = fbb_.EndTable(start_, 0);
+    auto o = flatbuffers::Offset<SVPing>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVPing> CreateSVPing(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  SVPingBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
 struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_SENDER_ID = 4,
@@ -2561,6 +2645,14 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
     }
     case Events_SVGameEnd: {
       auto ptr = reinterpret_cast<const SVGameEnd *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Events_CLPing: {
+      auto ptr = reinterpret_cast<const CLPing *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Events_SVPing: {
+      auto ptr = reinterpret_cast<const SVPing *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;

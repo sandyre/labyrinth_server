@@ -15,6 +15,7 @@
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Runnable.h>
+#include <Poco/Timer.h>
 
 #include <chrono>
 #include <cstring>
@@ -64,6 +65,8 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
+    void update();
+    void Ping(Poco::Timer&);
     void SendMulticast(const std::vector<uint8_t>&);
 
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
@@ -76,7 +79,10 @@ private:
     steady_clock::time_point  _startTime;
     std::chrono::milliseconds _msPerUpdate;
 
+    std::unique_ptr<Poco::Timer>    _pingerTimer;
+    
     std::unique_ptr<GameWorld> _gameWorld;
+    std::mutex                 _playersMutex;
     std::vector<Player>        _players;
 
     LogSystem          _logSystem;

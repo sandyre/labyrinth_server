@@ -16,6 +16,6 @@ int main(int argc, const char * argv[])
     ms_thread.setPriority(Poco::Thread::Priority::PRIO_HIGHEST);
     ms_thread.start(server);
     ms_thread.join();
-    
+
     return 0;
 }

@@ -7,14 +7,16 @@
 //
 
 #include "logsystem.hpp"
+
 #include "date.h"
+
+#include <Poco/Thread.h>
 
 #include <chrono>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
 
-#include <Poco/Thread.h>
 
 LogSystem::LogSystem()
 {
