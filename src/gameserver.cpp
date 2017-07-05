@@ -21,7 +21,8 @@ GameServer::GameServer(const Configuration& config) :
 _state(GameServer::State::LOBBY_FORMING),
 _config(config),
 _startTime(steady_clock::now()),
-_msPerUpdate(10)
+_msPerUpdate(10),
+_pingerTimer(std::make_unique<Poco::Timer>(0, 2000))
 {
     _serverName = "GS";
     _serverName += std::to_string(_config.Port);
@@ -34,9 +35,23 @@ _msPerUpdate(10)
     _logSystem.Info(_msgBuilder.str());
     _msgBuilder.str("");
 
-    Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
-                                  _config.Port);
-    _socket.bind(addr);
+    try
+    {
+        Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
+                                      _config.Port);
+        _socket.bind(addr);
+    }
+    catch(const std::exception& e)
+    {
+        _msgBuilder << "Failed to bind socket to port: " << e.what();
+        _logSystem.Error(_msgBuilder.str());
+        _msgBuilder.str("");
+        shutdown();
+    }
+
+    Poco::TimerCallback<GameServer> free_callback(*this,
+                                                  &GameServer::Ping);
+    _pingerTimer->start(free_callback);
 }
 
 GameServer::~GameServer()
@@ -47,7 +62,8 @@ GameServer::~GameServer()
 
 void GameServer::shutdown()
 {
-    _pingerTimer->stop();
+    if(_pingerTimer)
+        _pingerTimer->stop();
     _state = GameServer::State::FINISHED;
     _msgBuilder << "Finished";
     _logSystem.Info(_msgBuilder.str());
@@ -58,12 +74,6 @@ void GameServer::run()
 {
     try
     {
-        _pingerTimer = std::make_unique<Poco::Timer>(0,
-                                                     2000);
-        Poco::TimerCallback<GameServer> free_callback(*this,
-                                                      &GameServer::Ping);
-        _pingerTimer->start(free_callback);
-        
         // lobby forming stage
         lobby_forming_stage();
         // hero picking stage
@@ -72,9 +82,10 @@ void GameServer::run()
         world_generation_stage();
         // running game stage
         running_game_stage();
-    } catch(std::exception& e)
+    }
+    catch(const std::exception& e)
     {
-        _msgBuilder << "Exception: " << e.what();
+        _msgBuilder << "Unhandled exception thrown: " << e.what();
         _logSystem.Error(_msgBuilder.str());
         _msgBuilder.str("");
         shutdown();
