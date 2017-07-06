@@ -597,9 +597,11 @@ void GameServer::running_game_stage()
                     
                     sender->SetAddress(sender_addr);
                 }
-                
-                _gameWorld->GetIncomingEvents().emplace(dataBuffer.data(),
-                                                        dataBuffer.data() + pack_size);
+
+                    // gameworld shouldnt know about Ping events
+                if(gs_event->event_type() != GameEvent::Events_CLPing)
+                    _gameWorld->GetIncomingEvents().emplace(dataBuffer.data(),
+                                                            dataBuffer.data() + pack_size);
             }
             else
             {
