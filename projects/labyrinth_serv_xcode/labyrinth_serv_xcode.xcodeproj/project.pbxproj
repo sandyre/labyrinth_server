@@ -58,6 +58,7 @@
 		1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = named_logger.cpp; path = ../../../src/utils/named_logger.cpp; sourceTree = "<group>"; };
 		1F58786C1F0E0D3C001C3ACF /* named_logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = named_logger.hpp; path = ../../../src/utils/named_logger.hpp; sourceTree = "<group>"; };
 		1F58786E1F0E260C001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/utils/date.h; sourceTree = "<group>"; };
+		1F5878701F0E2B39001C3ACF /* elapsed_time.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = elapsed_time.hpp; path = ../../../src/utils/elapsed_time.hpp; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -217,6 +218,7 @@
 				1F58786E1F0E260C001C3ACF /* date.h */,
 				1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */,
 				1F58786C1F0E0D3C001C3ACF /* named_logger.hpp */,
+				1F5878701F0E2B39001C3ACF /* elapsed_time.hpp */,
 			);
 			name = utils;
 			sourceTree = "<group>";

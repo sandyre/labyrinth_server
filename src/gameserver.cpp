@@ -8,6 +8,8 @@
 
 #include "gameserver.hpp"
 
+#include "utils/elapsed_time.hpp"
+
 #include <Poco/Thread.h>
 #include <Poco/Timer.h>
 
@@ -494,10 +496,11 @@ void GameServer::running_game_stage()
     std::array<uint8_t, 512>  dataBuffer;
     Poco::Net::SocketAddress  sender_addr;
     std::chrono::milliseconds time_no_receive = 0ms;
+    ElapsedTime frameTime;
 
     while(_state == State::RUNNING_GAME)
     {
-        auto frame_start = steady_clock::now();
+        frameTime.Reset();
 
         // sleep for some time, then get all packets and pass it to the gameworld, update
         std::this_thread::sleep_for(_msPerUpdate);
@@ -568,9 +571,7 @@ void GameServer::running_game_stage()
             shutdown();
         }
 
-        auto frame_end = steady_clock::now();
-
-        _gameWorld->update(duration_cast<microseconds>(frame_end - frame_start));
+        _gameWorld->update(frameTime.Elapsed<std::chrono::microseconds>());
     }
 }
 
