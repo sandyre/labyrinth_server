@@ -22,9 +22,7 @@ public:
 
     template<typename T>
     T Elapsed() const
-    {
-        return std::chrono::duration_cast<T>(std::chrono::steady_clock::now() - _started);
-    }
+    { return std::chrono::duration_cast<T>(std::chrono::steady_clock::now() - _started); }
 
 private:
     std::chrono::steady_clock::time_point _started;

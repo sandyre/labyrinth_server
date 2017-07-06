@@ -493,10 +493,10 @@ void GameServer::world_generation_stage()
 
 void GameServer::running_game_stage()
 {
-    std::array<uint8_t, 512>  dataBuffer;
-    Poco::Net::SocketAddress  sender_addr;
-    std::chrono::milliseconds time_no_receive = 0ms;
-    ElapsedTime frameTime;
+    std::array<uint8_t, 512>    dataBuffer;
+    Poco::Net::SocketAddress    sender_addr;
+    std::chrono::milliseconds   time_no_receive = 0ms;
+    ElapsedTime                 frameTime;
 
     while(_state == State::RUNNING_GAME)
     {
