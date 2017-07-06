@@ -31,47 +31,34 @@ MasterServer::MasterServer() :
 m_nSystemStatus(0),
 _randGenerator(228),
 _randDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
-                                           std::numeric_limits<int32_t>::max()))
+                                           std::numeric_limits<int32_t>::max())),
+_logger("MasterServer", NamedLogger::Mode::STDIO)
 {
 
 }
 
 MasterServer::~MasterServer()
 {
-    _logSystem.Close();
     _socket.close();
-    _msgBuilder << "Shutdown";
-    _logSystem.Info(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Info() << "Shutdown" << End();
 }
 
 void MasterServer::init(uint32_t Port)
 {
     // Init logging
-    _logSystem.Init("MasterServer",
-                    LogSystem::Mode::STDIO);
     m_nSystemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
 
-    _msgBuilder << "MasterServer booting starts";
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Warning() << "MasterServer booting starts" << End();
 
-    _msgBuilder << "Labyrinth core version: ";
-    _msgBuilder << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Warning() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD << End();
 
     // Init Net
-    _msgBuilder << "Initializing network...";
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Warning() << "Initializing network..." << End();
 
     // Check inet connection
     try
     {
-        _msgBuilder << "Sending HTTP request to api.ipify.org";
-        _logSystem.Info(_msgBuilder.str());
-        _msgBuilder.str("");
+        _logger.Info() << "Sending HTTP request to api.ipify.org" << End();
         
         Poco::Net::HTTPClientSession session("api.ipify.org");
         session.setTimeout(Poco::Timespan(1,
@@ -84,17 +71,10 @@ void MasterServer::init(uint32_t Port)
         std::istream& rs = session.receiveResponse(response);
         if(response.getStatus() == Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK)
         {
-            _msgBuilder << "HTTP response received";
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
-            
-            _msgBuilder << "Public IP: " << rs.rdbuf();
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
 
-            _msgBuilder << "Binding to port " << Port;
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
+            _logger.Info() << "HTTP response received" << End();
+            _logger.Info() << "Public IP: " << rs.rdbuf() << End();
+            _logger.Info() << "Binding to port " << Port << End();
 
             Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(),
                                                Port);
@@ -102,21 +82,16 @@ void MasterServer::init(uint32_t Port)
 
             m_nSystemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
 
-            _msgBuilder << "Network initialization done";
-            _logSystem.Info(_msgBuilder.str());
-            _msgBuilder.str("");
+            _logger.Info() << "Network initialization done" << End();
         }
-    } catch(std::exception& e)
+    }
+    catch(const std::exception& e)
     {
-        _msgBuilder << "FAILED. Reason: " << e.what();
-        _logSystem.Error(_msgBuilder.str());
-        _msgBuilder.str("");
+        _logger.Error() << "Failed. Exception thrown: " << e.what() << End();
     }
 
     // Fill ports pool
-    for(uint32_t i = 1931;
-        i < (1931 + 150);
-        ++i)
+    for(uint32_t i = 1931; i < (1931 + 150); ++i)
     {
         Poco::Net::DatagramSocket socket;
         Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
@@ -127,28 +102,24 @@ void MasterServer::init(uint32_t Port)
             socket.bind(addr);
             _availablePorts.push(i);
             socket.close();
-        } catch(std::exception e)
+        }
+        catch(std::exception e)
         {
-            // port is busy
+            _logger.Info() << "Port " << i << " is already in use" << End();
         }
     }
 
     // Init gameservers threadpool
-    _msgBuilder << "Initializing gameservers threadpool...";
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+
+    _logger.Warning() << "Initializing gameservers threadpool..." << End();
     _threadPool = std::make_unique<Poco::ThreadPool>(std::thread::hardware_concurrency(), // min
                                                      std::thread::hardware_concurrency() * 4, // max
                                                      120, // idle time
                                                      0); // stack size
-    _msgBuilder << "DONE";
-    _logSystem.Info(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Info() << "DONE" << End();
 
     // Init DB
-    _msgBuilder << "Initializing database service...";
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Warning() << "Initializing database service..." << End();
 
     try
     {
@@ -160,30 +131,23 @@ void MasterServer::init(uint32_t Port)
                                                con_params);
         
         m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
-        _msgBuilder << "Database initialization done";
-        _logSystem.Info(_msgBuilder.str());
-        _msgBuilder.str("");
-    } catch(std::exception& e)
+        _logger.Info() << "Database initialization done" << End();
+    }
+    catch(const std::exception& e)
     {
-        _msgBuilder << "FAILED. Reason: " << e.what();
-        _logSystem.Error(_msgBuilder.str());
-        _msgBuilder.str("");
+        _logger.Error() << "Failed. Exception thrown: " << e.what() << End();
     }
 
     if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & m_nSystemStatus) ||
        !(SystemStatus::DATABASE_SYSTEM_ACTIVE & m_nSystemStatus))
     {
-        _msgBuilder << "Critical systems failed to start, aborting";
-        _logSystem.Error(_msgBuilder.str());
-        _msgBuilder.str("");
+        _logger.Error() << "Critical systems failed to start, aborting" << End();
 
         exit(1);
     }
 
     // Everything done
-    _msgBuilder << "MasterServer is running";
-    _logSystem.Warning(_msgBuilder.str());
-    _msgBuilder.str("");
+    _logger.Warning() << "MasterServer launched successfully" << End();
 
     // Advanced init - freement timer
     _freementTimer = std::make_unique<Poco::Timer>(0,
@@ -210,10 +174,8 @@ void MasterServer::service_loop()
             auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
                                                  _dataBuffer.size(),
                                                  sender_addr);
-            
-            _msgBuilder << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
+
+            _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString() << End();
             continue;
         }
         
@@ -225,9 +187,7 @@ void MasterServer::service_loop()
                                        pack_size);
         if(!VerifyMessageBuffer(verifier))
         {
-            _msgBuilder << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
-            _logSystem.Warning(_msgBuilder.str());
-            _msgBuilder.str("");
+            _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString() << End();
             continue;
         }
         
@@ -264,9 +224,7 @@ void MasterServer::service_loop()
                     // New user, add him
                 if(mail_presented == 0)
                 {
-                    _msgBuilder << "Player registered: {" << email << ";" << password << "}";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Info() << "Player registered: {" << email << ";" << password << "}" << End();
                     
                         // Add to DB
                     Poco::Data::Statement insert(*_dbSession);
@@ -287,9 +245,7 @@ void MasterServer::service_loop()
                 }
                 else // email already taken
                 {
-                    _msgBuilder << "Player tried to register: " << email << " already taken";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Info() << "Player tried to register: " << email << " already taken" << End();
                     
                         // Send response to client
                     auto response = CreateSVRegister(_flatBuilder,
@@ -325,9 +281,7 @@ void MasterServer::service_loop()
                         // password is correct, notify player
                     if(stored_pass == password)
                     {
-                        _msgBuilder << "Player " << email << " logged in";
-                        _logSystem.Info(_msgBuilder.str());
-                        _msgBuilder.str("");
+                        _logger.Info() << "Player " << email << " logged in" << End();
                         
                             // Send response to client
                         auto response = CreateSVLogin(_flatBuilder,
@@ -343,9 +297,7 @@ void MasterServer::service_loop()
                         _flatBuilder.Clear();
                     } else // password is wrong
                     {
-                        _msgBuilder << "Player " << email << " failed to log in: wrong password";
-                        _logSystem.Info(_msgBuilder.str());
-                        _msgBuilder.str("");
+                        _logger.Info() << "Player " << email << " failed to log in: wrong password" << End();
                         
                             // Send response to client
                         auto response = CreateSVLogin(_flatBuilder,
@@ -363,9 +315,7 @@ void MasterServer::service_loop()
                 }
                 else // player is not registered, or wrong password
                 {
-                    _msgBuilder << "Player " << email << " failed to log in: wrong pass or email";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Info() << "Player " << email << " failed to log in: wrong pass or email" << End();
                     
                         // Send response to client
                     auto response = CreateSVLogin(_flatBuilder,
@@ -390,9 +340,7 @@ void MasterServer::service_loop()
                 
                 if(finder->cl_version_major() == GAMEVERSION_MAJOR)
                 {
-                    _msgBuilder << "Player " << finder->player_uid() << " version is OK";
-                    _logSystem.Info(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Info() << "Player " << finder->player_uid() << " version is OK" << End();
                     
                     auto gs_accepted = CreateSVFindGame(_flatBuilder,
                                                         finder->player_uid(),
@@ -408,12 +356,11 @@ void MasterServer::service_loop()
                 }
                 else
                 {
-                    _msgBuilder << "Player " << finder->player_uid() << " connection refused: old client version";
-                    _msgBuilder << " (" << std::to_string(finder->cl_version_major()) << ".";
-                    _msgBuilder << std::to_string(finder->cl_version_minor()) << ".";
-                    _msgBuilder << std::to_string(finder->cl_version_build()) << ")";
-                    _logSystem.Warning(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Warning() << "Player " << finder->player_uid() << " connection refused: old client version";
+                    _logger.Warning() << " (" << std::to_string(finder->cl_version_major()) << ".";
+                    _logger.Warning() << std::to_string(finder->cl_version_minor()) << ".";
+                    _logger.Warning() << std::to_string(finder->cl_version_build()) << ")";
+                    _logger.Warning() << End();
                     
                     auto gs_refused = CreateSVFindGame(_flatBuilder,
                                                        finder->player_uid(),
@@ -454,9 +401,7 @@ void MasterServer::service_loop()
                     }
                 }
                 
-                _msgBuilder << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
-                _logSystem.Info(_msgBuilder.str());
-                _msgBuilder.str("");
+                _logger.Info() << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port << End();
                 
                     // transfer player to GS
                 auto game_found = CreateSVGameFound(_flatBuilder,
@@ -479,9 +424,7 @@ void MasterServer::service_loop()
                 
                 if(adm_stats->adm_key() != ADMIN_KEY)
                 {
-                    _msgBuilder << "Requested stats, but ADMIN_KEY is not correct";
-                    _logSystem.Warning(_msgBuilder.str());
-                    _msgBuilder.str("");
+                    _logger.Warning() << "Requested stats, but ADMIN_KEY is not correct" << End();
                     break;
                 }
                 
@@ -510,9 +453,7 @@ void MasterServer::service_loop()
             }
                 
             default:
-                _msgBuilder << "Undefined packet received";
-                _logSystem.Error(_msgBuilder.str());
-                _msgBuilder.str("");
+                _logger.Warning() << "Undefined packet received" << End();
                 break;
         }
     }

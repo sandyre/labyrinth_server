@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(SOURCES
 	src/main.cpp
 	src/gameserver.cpp
-	src/logsystem.cpp
+	src/utils/named_logger.cpp
 	src/masterserver.cpp
 	src/gamelogic/construction.cpp
 	src/gamelogic/effect.cpp
@@ -38,7 +38,7 @@ set(SOURCES
 
 set(HEADERS
 	src/gameserver.hpp
-	src/logsystem.hpp
+	src/utils/named_logger.hpp
 	src/masterserver.hpp
 	src/player.hpp
 	src/date.h

@@ -81,11 +81,7 @@ Monster::update(std::chrono::microseconds delta)
                         return;
                     
                         // Log damage event
-                    auto& m_pLogSystem = _gameWorld->_logSystem;
-                    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-                    m_oLogBuilder << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
-                    m_pLogSystem.Info(m_oLogBuilder.str());
-                    m_oLogBuilder.str("");
+                    _gameWorld->_logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName() << End();
                     
                         // set up CD
                     std::get<0>(_spellsCDs[0]) = false;
@@ -163,12 +159,8 @@ Monster::Die(Unit * killer)
     {
         killer->EndDuel();
     }
-        // Log dead event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+        // Log death event
+    _gameWorld->_logger.Info() << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")" << End();
     
         // drop items
     while(!_inventory.empty())

@@ -12,8 +12,8 @@
 #include "flatbuffers/flatbuffers.h"
 
 #include "gameserver.hpp"
-#include "logsystem.hpp"
 #include "player.hpp"
+#include "utils/named_logger.hpp"
 
 #include <Poco/Data/SessionFactory.h>
 #include <Poco/Net/DatagramSocket.h>
@@ -75,8 +75,7 @@ protected:
     std::array<uint8_t, 512>       _dataBuffer;
 
     // Logging
-    LogSystem          _logSystem;
-    std::ostringstream _msgBuilder;
+    NamedLogger         _logger;
 
     // Labyrinth database
     std::unique_ptr<Poco::Data::Session> _dbSession;

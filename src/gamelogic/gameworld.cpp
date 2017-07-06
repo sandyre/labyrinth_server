@@ -21,11 +21,9 @@ using namespace GameEvent;
 GameWorld::GameWorld() :
 _objUIDSeq(1),
 _monsterSpawnInterval(30s),
-_monsterSpawnTimer(30s)
-{
-    _logSystem.Init("GameWorld",
-                    LogSystem::Mode::STDIO);
-}
+_monsterSpawnTimer(30s),
+_logger("GameWorld", NamedLogger::Mode::STDIO)
+{ }
 
 GameWorld::~GameWorld()
 {
@@ -33,7 +31,6 @@ GameWorld::~GameWorld()
     {
         delete obj;
     }
-    _logSystem.Close();
 }
 
 void
@@ -128,11 +125,8 @@ GameWorld::InitialSpawn()
         ++_objUIDSeq;
         
             // Log key spawn event
-        _logBuilder << "Key spawned at (" << key->GetLogicalPosition().x
-        << ";" << key->GetLogicalPosition().y << ")";
-        _logSystem.Info(_logBuilder.str());
-        _logBuilder.str("");
-        
+        _logger.Info() << "Key spawned at (" << key->GetLogicalPosition().x << "," << key->GetLogicalPosition().y << ")" << End();
+
         auto key_spawn = CreateSVSpawnItem(_flatBuilder,
                                            key->GetUID(),
                                            ItemType_KEY,
@@ -157,10 +151,7 @@ GameWorld::InitialSpawn()
         ++_objUIDSeq;
         
             // Log key spawn event
-        _logBuilder << "Door spawned at (" << door->GetLogicalPosition().x
-        << ";" << door->GetLogicalPosition().y << ")";
-        _logSystem.Info(_logBuilder.str());
-        _logBuilder.str("");
+        _logger.Info() << "Door spawned at (" << door->GetLogicalPosition().x << "," << door->GetLogicalPosition().y << ")" << End();
         
         auto door_spawn = CreateSVSpawnConstr(_flatBuilder,
                                               door->GetUID(),
@@ -186,10 +177,7 @@ GameWorld::InitialSpawn()
         ++_objUIDSeq;
         
             // Log key spawn event
-        _logBuilder << "Graveyard spawned at (" << grave->GetLogicalPosition().x
-        << ";" << grave->GetLogicalPosition().y << ")";
-        _logSystem.Info(_logBuilder.str());
-        _logBuilder.str("");
+        _logger.Info() << "Graveyard spawned at (" << grave->GetLogicalPosition().x << "," << grave->GetLogicalPosition().y << ")" << End();
         
         auto grave_spawn = CreateSVSpawnConstr(_flatBuilder,
                                                grave->GetUID(),
@@ -215,10 +203,7 @@ GameWorld::InitialSpawn()
         monster->Spawn(GetRandomPosition());
         
             // Log monster spawn event
-        _logBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
-        << ";" << monster->GetLogicalPosition().y << ")";
-        _logSystem.Info(_logBuilder.str());
-        _logBuilder.str("");
+        _logger.Info() << "Monster spawned at (" << monster->GetLogicalPosition().x << "," << monster->GetLogicalPosition().y << ")" << End();
         
         ++_objUIDSeq; // dont forget!
     }
@@ -420,10 +405,7 @@ GameWorld::ApplyInputEvents()
                     _flatBuilder.Clear();
                     
                         // Log key spawn event
-                    _logBuilder << "Player with name '" << player->GetName()
-                    << "' won the escaped from LABYRINTH!";
-                    _logSystem.Info(_logBuilder.str());
-                    _logBuilder.str("");
+                    _logger.Info() << "Player with name '" << player->GetName() << "' won the escaped from LABYRINTH!" << End();
                 }
                 
                 break;
@@ -488,10 +470,7 @@ GameWorld::update(std::chrono::microseconds delta)
         monster->Spawn(GetRandomPosition());
         
             // Log monster spawn event
-        _logBuilder << "Monster spawned at (" << monster->GetLogicalPosition().x
-        << ";" << monster->GetLogicalPosition().y << ")";
-        _logSystem.Info(_logBuilder.str());
-        _logBuilder.str("");
+        _logger.Info() << "Monster spawned at (" << monster->GetLogicalPosition().x << "," << monster->GetLogicalPosition().y << ")" << End();
         
         ++_objUIDSeq; // dont forget!
         

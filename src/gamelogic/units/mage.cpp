@@ -81,11 +81,8 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
             return;
         
             // Log damage event
-        auto& m_pLogSystem = _gameWorld->_logSystem;
-        auto& m_oLogBuilder = _gameWorld->_logBuilder;
-        m_oLogBuilder << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName();
-        m_pLogSystem.Info(m_oLogBuilder.str());
-        m_oLogBuilder.str("");
+        auto& logger = _gameWorld->_logger;
+        logger.Info() << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName() << End();
         
             // set up CD
         std::get<0>(_spellsCDs[1]) = false;

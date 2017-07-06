@@ -10,8 +10,8 @@
 #define gameserver_hpp
 
 #include "gamelogic/gameworld.hpp"
-#include "logsystem.hpp"
 #include "player.hpp"
+#include "utils/named_logger.hpp"
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Runnable.h>
@@ -85,8 +85,7 @@ private:
     std::mutex                 _playersMutex;
     std::vector<Player>        _players;
 
-    LogSystem          _logSystem;
-    std::ostringstream _msgBuilder;
+    NamedLogger                _logger;
 
     flatbuffers::FlatBufferBuilder _flatBuilder;
 };

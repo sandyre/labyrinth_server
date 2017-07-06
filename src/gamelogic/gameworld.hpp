@@ -18,7 +18,7 @@
 #include "units/rogue.hpp"
 #include "units/warrior.hpp"
 #include "../globals.h"
-#include "../logsystem.hpp"
+#include "../utils/named_logger.hpp"
 #include "../player.hpp"
 
 #include <chrono>
@@ -78,7 +78,7 @@ protected:
     std::chrono::microseconds _monsterSpawnTimer;
 
     // logsystem from gameserver
-    LogSystem           _logSystem;
+    NamedLogger         _logger;
     std::ostringstream  _logBuilder;
 
     friend GameMap;

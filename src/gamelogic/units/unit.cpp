@@ -121,12 +121,7 @@ void
 Unit::ApplyEffect(Effect * effect)
 {
         // Log item drop event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << effect->GetName() << " effect is applied to " << this->GetName();
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
-    effect->start();
+    _gameWorld->_logger.Info() << effect->GetName() << " effect is applied to " << this->GetName() << End();
     _appliedEffects.push_back(effect);
 }
 
@@ -140,11 +135,7 @@ Unit::update(std::chrono::microseconds delta)
         if(effect->GetState() == Effect::State::OVER)
         {
                 // Log item drop event
-            auto& m_pLogSystem = _gameWorld->_logSystem;
-            auto& m_oLogBuilder = _gameWorld->_logBuilder;
-            m_oLogBuilder << effect->GetName() << " effect ended on " << this->GetName();
-            m_pLogSystem.Info(m_oLogBuilder.str());
-            m_oLogBuilder.str("");
+            _gameWorld->_logger.Info() << effect->GetName() << " effect ended on " << this->GetName() << End();
             effect->stop();
         }
     }
@@ -196,11 +187,7 @@ void
 Unit::TakeItem(Item * item)
 {
         // Log item drop event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " TOOK ITEM " << (int)item->GetType();
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " TOOK ITEM " << (int)item->GetType() << End();
     
     item->SetCarrierID(this->GetUID());
     _inventory.push_back(item);
@@ -223,11 +210,7 @@ void
 Unit::Spawn(Point2 log_pos)
 {
         // Log spawn event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")" << End();
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE |
@@ -258,11 +241,7 @@ void
 Unit::Respawn(Point2 log_pos)
 {
         // Log respawn event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")";
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")" << End();
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE |
@@ -299,11 +278,7 @@ Unit::DropItem(int32_t index)
     auto item_iter = _inventory.begin() + index;
     
         // Log item drop event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType();
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType() << End();
     
         // make item visible and set its coords
     (*item_iter)->SetCarrierID(0);
@@ -320,12 +295,8 @@ Unit::Die(Unit * killer)
     {
         killer->EndDuel();
     }
-        // Log dead event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+        // Log death event
+    _gameWorld->_logger.Info() << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")" << End();
     
         // drop items
     while(!_inventory.empty())
@@ -378,12 +349,8 @@ Unit::Move(MoveDirection dir)
         }
     }
         // Log move event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " MOVE (" << _logPos.x
-    << ";" << _logPos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " MOVE (" << _logPos.x
+    << ";" << _logPos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")" << End();
     
     this->SetLogicalPosition(new_coord);
     
@@ -416,12 +383,8 @@ Unit::TakeDamage(int16_t damage,
     _health -= damage_taken;
     
         // Log damage take event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " TOOK " << damage_taken << " FROM " << damage_dealer->GetName()
-    << " HP " << _health + damage_taken << "->" << _health;
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " TOOK " << damage_taken << " FROM " << damage_dealer->GetName()
+    << " HP " << _health + damage_taken << "->" << _health << End();
     
     if(_health <= 0)
     {
@@ -436,12 +399,7 @@ Unit::StartDuel(Unit * enemy)
         // client now can eat it, but server should also be reworked
     
         // Log duel start event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << "DUEL START  " <<
-    this->GetName() << " and " << enemy->GetName();
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << "DUEL START  " << this->GetName() << " and " << enemy->GetName() << End();
     
     _state = Unit::State::DUEL;
     _unitAttributes &= ~Unit::Attributes::DUELABLE;
@@ -467,11 +425,7 @@ void
 Unit::EndDuel()
 {
         // Log duel-end event
-    auto& m_pLogSystem = _gameWorld->_logSystem;
-    auto& m_oLogBuilder = _gameWorld->_logBuilder;
-    m_oLogBuilder << this->GetName() << " DUEL END W " << _duelTarget->GetName();
-    m_pLogSystem.Info(m_oLogBuilder.str());
-    m_oLogBuilder.str("");
+    _gameWorld->_logger.Info() << this->GetName() << " DUEL END W " << _duelTarget->GetName() << End();
     
     _state = Unit::State::WALKING;
     _unitAttributes |=
