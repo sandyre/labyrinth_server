@@ -110,7 +110,6 @@ void MasterServer::init(uint32_t Port)
     }
 
     // Init gameservers threadpool
-
     _logger.Warning() << "Initializing gameservers threadpool..." << End();
     _threadPool = std::make_unique<Poco::ThreadPool>(std::thread::hardware_concurrency(), // min
                                                      std::thread::hardware_concurrency() * 4, // max
@@ -144,6 +143,17 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Critical systems failed to start, aborting" << End();
 
         exit(1);
+    }
+
+    _logger.Warning() << "Initializing system monitor service" << End();
+    try
+    {
+        _systemMonitor = std::make_unique<SystemMonitor>();
+        _logger.Info() << "System monitor initialization done" << End();
+    }
+    catch(const std::exception& e)
+    {
+        _logger.Error() << "Failed. Exception thrown: " << e.what() << End();
     }
 
     // Everything done
@@ -464,18 +474,11 @@ void MasterServer::FreeResourcesAndSaveResults(Poco::Timer& timer)
     // Free resources of finished servers
     std::lock_guard<std::mutex> lock(_serversMutex);
 
-    auto servers_freed = 0;
     _gameServers.erase(std::remove_if(_gameServers.begin(),
                                       _gameServers.end(),
-                                      [this, &servers_freed](std::unique_ptr<GameServer> const& server)
+                                      [this](const std::unique_ptr<GameServer>& server) -> bool
                                       {
-                                          if(server->GetState() == GameServer::State::FINISHED)
-                                          {
-                                              ++servers_freed;
-                                              _availablePorts.push(server->GetConfig().Port);
-                                              return true;
-                                          }
-                                          return false;
+                                          return server->GetState() == GameServer::State::FINISHED;
                                       }),
                        _gameServers.end());
 }

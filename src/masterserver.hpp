@@ -13,6 +13,7 @@
 
 #include "gameserver.hpp"
 #include "player.hpp"
+#include "services/system_monitor.hpp"
 #include "utils/named_logger.hpp"
 
 #include <Poco/Data/SessionFactory.h>
@@ -33,6 +34,7 @@
 class MasterServer : public Poco::Runnable
 {
     using GameServers = std::vector<std::unique_ptr<GameServer>>;
+
 public:
     struct SystemStatus
     {
@@ -41,6 +43,7 @@ public:
         static const int EMAIL_SYSTEM_ACTIVE    = 0x04;
         static const int DATABASE_SYSTEM_ACTIVE = 0x08;
     };
+
 public:
     MasterServer();
     ~MasterServer();
@@ -54,10 +57,11 @@ protected:
     
     void FreeResourcesAndSaveResults(Poco::Timer&);
 
+protected:
     std::mt19937                    _randGenerator;
     std::uniform_int_distribution<> _randDistr;
 
-    std::queue<uint32_t> _availablePorts;
+    std::queue<uint32_t>            _availablePorts;
 
     uint32_t m_nSystemStatus;
 
@@ -79,6 +83,9 @@ protected:
 
     // Labyrinth database
     std::unique_ptr<Poco::Data::Session> _dbSession;
+
+        // Services
+    std::unique_ptr<SystemMonitor>       _systemMonitor;
 };
 
 #endif /* masterserver_hpp */

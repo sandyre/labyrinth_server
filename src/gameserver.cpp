@@ -50,6 +50,7 @@ _logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
 
 GameServer::~GameServer()
 {
+    _logger.Info() << "Destructor called" << End();
     _socket.close();
 }
 
@@ -565,7 +566,7 @@ void GameServer::running_game_stage()
             out_events.pop();
         }
 
-        if(time_no_receive >= 180s)
+        if(time_no_receive >= 30s)
         {
             _logger.Warning() << "Server timeout exceeded" << End();
             shutdown();

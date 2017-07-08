@@ -12,6 +12,7 @@
 		1F23AEC81EC51B060048C59A /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F23AEC61EC51B060048C59A /* effect.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
 		1F58786D1F0E0D3C001C3ACF /* named_logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */; };
+		1F5878791F0EBB02001C3ACF /* system_monitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878781F0EBB02001C3ACF /* system_monitor.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
 		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
 		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
@@ -59,6 +60,9 @@
 		1F58786C1F0E0D3C001C3ACF /* named_logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = named_logger.hpp; path = ../../../src/utils/named_logger.hpp; sourceTree = "<group>"; };
 		1F58786E1F0E260C001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/utils/date.h; sourceTree = "<group>"; };
 		1F5878701F0E2B39001C3ACF /* elapsed_time.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = elapsed_time.hpp; path = ../../../src/utils/elapsed_time.hpp; sourceTree = "<group>"; };
+		1F5878771F0EBB02001C3ACF /* system_monitor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = system_monitor.hpp; path = ../../../src/services/system_monitor.hpp; sourceTree = "<group>"; };
+		1F5878781F0EBB02001C3ACF /* system_monitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = system_monitor.cpp; path = ../../../src/services/system_monitor.cpp; sourceTree = "<group>"; };
+		1F58787B1F1197DE001C3ACF /* optional.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = optional.hpp; path = ../../../src/toolkit/optional.hpp; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -117,6 +121,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1F5878721F0EB809001C3ACF /* services */ = {
+			isa = PBXGroup;
+			children = (
+				1F5878771F0EBB02001C3ACF /* system_monitor.hpp */,
+				1F5878781F0EBB02001C3ACF /* system_monitor.cpp */,
+			);
+			name = services;
+			sourceTree = "<group>";
+		};
+		1F58787A1F1197C8001C3ACF /* toolkit */ = {
+			isa = PBXGroup;
+			children = (
+				1F58787B1F1197DE001C3ACF /* optional.hpp */,
+			);
+			name = toolkit;
+			sourceTree = "<group>";
+		};
 		1F5FFBC81EA27F8C00542178 /* gamelogic */ = {
 			isa = PBXGroup;
 			children = (
@@ -180,6 +201,8 @@
 		1FEC14271E450E9A004EC380 /* labyrinth_serv_xcode */ = {
 			isa = PBXGroup;
 			children = (
+				1F58787A1F1197C8001C3ACF /* toolkit */,
+				1F5878721F0EB809001C3ACF /* services */,
 				1FF6BBF61EED947C00170BAA /* utils */,
 				1F5FFBC81EA27F8C00542178 /* gamelogic */,
 				1FEC14431E450ED5004EC380 /* gameserver.cpp */,
@@ -291,6 +314,7 @@
 				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
 				1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */,
 				1F5FFBED1EA282C300542178 /* priest.cpp in Sources */,
+				1F5878791F0EBB02001C3ACF /* system_monitor.cpp in Sources */,
 				1F5FFBE41EA2821400542178 /* hero.cpp in Sources */,
 				1F5FFBDD1EA2810D00542178 /* item.cpp in Sources */,
 				1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */,

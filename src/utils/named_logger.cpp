@@ -64,8 +64,7 @@ NamedLogger::Write(const std::string& str) const
     using namespace date;
     std::ostringstream oss;
 
-    oss << Color::CYAN << "[ " << std::chrono::system_clock::now() << " ]"
-    ;
+    oss << Color::CYAN << "[ " << std::chrono::system_clock::now() << " ]";
     oss << Color::GREEN << "{ " << (Poco::Thread::current() ? Poco::Thread::current()->getName() : "__undefined__") << " }";
     oss << Color::MAGENTA << "[ " << _name << " ]";
     oss << str << std::endl;

@@ -89,19 +89,19 @@ public:
 
     LoggerStream& Info()
     {
-        static LoggerStream ls(*this, LoggerStream::Level::INFO);
+        thread_local LoggerStream ls(*this, LoggerStream::Level::INFO);
         return ls;
     }
 
     LoggerStream& Warning()
     {
-        static LoggerStream ls(*this, LoggerStream::Level::WARNING);
+        thread_local LoggerStream ls(*this, LoggerStream::Level::WARNING);
         return ls;
     }
 
     LoggerStream& Error()
     {
-        static LoggerStream ls(*this, LoggerStream::Level::ERROR);
+        thread_local LoggerStream ls(*this, LoggerStream::Level::ERROR);
         return ls;
     }
 
@@ -109,8 +109,8 @@ private:
     void Write(const std::string& str) const;
 
 private:
-    const Mode            _mode;
-    const std::string     _name;
+    const Mode              _mode;
+    const std::string       _name;
 
     mutable std::mutex      _fileMutex;
     mutable std::ofstream   _fileStream;

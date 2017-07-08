@@ -19,6 +19,7 @@ set(SOURCES
 	src/main.cpp
 	src/gameserver.cpp
 	src/utils/named_logger.cpp
+  src/services/system_monitor.cpp
 	src/masterserver.cpp
 	src/gamelogic/construction.cpp
 	src/gamelogic/effect.cpp
@@ -39,6 +40,7 @@ set(SOURCES
 set(HEADERS
 	src/gameserver.hpp
 	src/utils/named_logger.hpp
+  src/services/system_monitor.hpp
 	src/masterserver.hpp
 	src/player.hpp
 	src/date.h
