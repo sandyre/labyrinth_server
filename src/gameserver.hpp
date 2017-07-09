@@ -11,7 +11,7 @@
 
 #include "gamelogic/gameworld.hpp"
 #include "player.hpp"
-#include "utils/named_logger.hpp"
+#include "toolkit/named_logger.hpp"
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Runnable.h>

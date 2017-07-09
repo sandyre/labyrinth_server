@@ -9,7 +9,7 @@
 #ifndef system_monitor_hpp
 #define system_monitor_hpp
 
-#include "../utils/named_logger.hpp"
+#include "../toolkit/named_logger.hpp"
 
 #include <Poco/Timer.h>
 

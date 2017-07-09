@@ -8,7 +8,7 @@
 
 #include "gameserver.hpp"
 
-#include "utils/elapsed_time.hpp"
+#include "toolkit/elapsed_time.hpp"
 
 #include <Poco/Thread.h>
 #include <Poco/Timer.h>
@@ -29,7 +29,7 @@ _logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
 {
     _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed;
     _logger.Info() << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
-    _logger.Info() << End();
+    _logger.Info();
 
     try
     {
@@ -39,7 +39,7 @@ _logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
     }
     catch(const std::exception& e)
     {
-        _logger.Error() << "Failed to bind socket to port, exception thrown: " << e.what() << End();
+        _logger.Error() << "Failed to bind socket to port, exception thrown: " << e.what();
         shutdown();
     }
 
@@ -50,7 +50,7 @@ _logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
 
 GameServer::~GameServer()
 {
-    _logger.Info() << "Destructor called" << End();
+    _logger.Info() << "Destructor called";
     _socket.close();
 }
 
@@ -59,7 +59,7 @@ void GameServer::shutdown()
     if(_pingerTimer)
         _pingerTimer->stop();
     _state = GameServer::State::FINISHED;
-    _logger.Info() << "Finished" << End();
+    _logger.Info() << "Finished";
 }
 
 void GameServer::run()
@@ -77,7 +77,7 @@ void GameServer::run()
     }
     catch(const std::exception& e)
     {
-        _logger.Error() << "Unhandled exception thrown in GameServer::run: " << e.what() << End();
+        _logger.Error() << "Unhandled exception thrown in GameServer::run: " << e.what();
         shutdown();
     }
 }
@@ -125,7 +125,7 @@ void GameServer::lobby_forming_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -137,7 +137,7 @@ void GameServer::lobby_forming_stage()
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
             {
-                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -160,8 +160,7 @@ void GameServer::lobby_forming_stage()
                                           con_info->nickname()->c_str());
                         new_player.SetLastMsgTimepoint(steady_clock::now());
                         
-                        _logger.Info() << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]"
-                        << " connected" << End();
+                        _logger.Info() << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]" << " connected";
                         
                         _players.emplace_back(std::move(new_player));
                         
@@ -223,7 +222,7 @@ void GameServer::lobby_forming_stage()
                     break;
                 }
                 default:
-                    _logger.Warning() << "Unexpected event received in lobby_forming" << End();
+                    _logger.Warning() << "Unexpected event received in lobby_forming";
                     break;
             }
         }
@@ -237,7 +236,7 @@ void GameServer::lobby_forming_stage()
                                           {
                                               if(duration_cast<milliseconds>(steady_clock::now() - player.GetLastMsgTimepoint()) > 2s)
                                                  {
-                                                     _logger.Info() << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)" << End();
+                                                     _logger.Info() << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)";
                                                          // TODO: send msg that player has disconnected
                                                      return true;
                                                  }
@@ -249,7 +248,7 @@ void GameServer::lobby_forming_stage()
         if(_players.size() == _config.Players)
         {
             _state = GameServer::State::HERO_PICK;
-            _logger.Info() << "Starting hero-pick stage" << End();
+            _logger.Info() << "Starting hero-pick stage";
             
             auto gs_heropick = CreateSVHeroPickStage(_flatBuilder);
             auto gs_event    = CreateMessage(_flatBuilder,
@@ -282,7 +281,7 @@ void GameServer::hero_picking_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -294,7 +293,7 @@ void GameServer::hero_picking_stage()
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
             {
-                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -348,12 +347,12 @@ void GameServer::hero_picking_stage()
                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
                     _flatBuilder.Clear();
                     
-                    _logger.Info() << "Player " << player->GetNickname() << " is ready" << End();
+                    _logger.Info() << "Player " << player->GetNickname() << " is ready";
                     break;
                 }
 
                 default:
-                    _logger.Warning() << "Unexpected packet in hero_picking_stage, skipping it" << End();
+                    _logger.Warning() << "Unexpected packet in hero_picking_stage, skipping it";
                     break;
             }
         }
@@ -367,7 +366,7 @@ void GameServer::hero_picking_stage()
                                           {
                                               if(duration_cast<milliseconds>(steady_clock::now() - player.GetLastMsgTimepoint()) > 2s)
                                               {
-                                                  _logger.Warning() << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)" << End();
+                                                  _logger.Warning() << "Player " << player.GetNickname() << " has been removed from server (reason: no network activity for last 2 secs)";
                                                       // TODO: send msg that player has disconnected
                                                   return true;
                                               }
@@ -391,7 +390,7 @@ void GameServer::hero_picking_stage()
         {
             _state = GameServer::State::GENERATING_WORLD;
             
-            _logger.Info() << "Generating world" << End();
+            _logger.Info() << "Generating world";
             
             for(auto& player : _players)
             {
@@ -446,7 +445,7 @@ void GameServer::world_generation_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -458,7 +457,7 @@ void GameServer::world_generation_stage()
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
             {
-                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -468,7 +467,7 @@ void GameServer::world_generation_stage()
             {
                 auto cl_gen_ok = static_cast<const CLMapGenerated *>(gs_event->event());
 
-                _logger.Info() << "Player " << cl_gen_ok->player_uid() << " generated map" << End();
+                _logger.Info() << "Player " << cl_gen_ok->player_uid() << " generated map";
 
                 --players_ungenerated;
             }
@@ -488,7 +487,7 @@ void GameServer::world_generation_stage()
                 _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
         _flatBuilder.Clear();
 
-        _logger.Info() << "Game begins" << End();
+        _logger.Info() << "Game begins";
     }
 }
 
@@ -519,7 +518,7 @@ void GameServer::running_game_stage()
                                                      dataBuffer.size(),
                                                      sender_addr);
                 
-                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -531,7 +530,7 @@ void GameServer::running_game_stage()
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
             {
-                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString() << End();
+                _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
             
@@ -542,7 +541,7 @@ void GameServer::running_game_stage()
             {
                 if(sender->GetAddress() != sender_addr)
                 {
-                    _logger.Warning() << "Player" << sender->GetNickname() << " dynamic change IP to " << sender_addr.toString() << End();
+                    _logger.Warning() << "Player" << sender->GetNickname() << " dynamic change IP to " << sender_addr.toString();
                     
                     sender->SetAddress(sender_addr);
                 }
@@ -554,7 +553,7 @@ void GameServer::running_game_stage()
             }
             else
             {
-                _logger.Warning() << "Received packet from unexisting player with IP [" << sender_addr.toString() << "]" << End();
+                _logger.Warning() << "Received packet from unexisting player with IP [" << sender_addr.toString() << "]";
             }
         }
 
@@ -568,7 +567,7 @@ void GameServer::running_game_stage()
 
         if(time_no_receive >= 30s)
         {
-            _logger.Warning() << "Server timeout exceeded" << End();
+            _logger.Warning() << "Server timeout exceeded";
             shutdown();
         }
 

@@ -121,7 +121,7 @@ void
 Unit::ApplyEffect(Effect * effect)
 {
         // Log item drop event
-    _gameWorld->_logger.Info() << effect->GetName() << " effect is applied to " << this->GetName() << End();
+    _gameWorld->_logger.Info() << effect->GetName() << " effect is applied to " << this->GetName();
     _appliedEffects.push_back(effect);
 }
 
@@ -135,7 +135,7 @@ Unit::update(std::chrono::microseconds delta)
         if(effect->GetState() == Effect::State::OVER)
         {
                 // Log item drop event
-            _gameWorld->_logger.Info() << effect->GetName() << " effect ended on " << this->GetName() << End();
+            _gameWorld->_logger.Info() << effect->GetName() << " effect ended on " << this->GetName();
             effect->stop();
         }
     }
@@ -187,7 +187,7 @@ void
 Unit::TakeItem(Item * item)
 {
         // Log item drop event
-    _gameWorld->_logger.Info() << this->GetName() << " TOOK ITEM " << (int)item->GetType() << End();
+    _gameWorld->_logger.Info() << this->GetName() << " TOOK ITEM " << (int)item->GetType();
     
     item->SetCarrierID(this->GetUID());
     _inventory.push_back(item);
@@ -210,7 +210,7 @@ void
 Unit::Spawn(Point2 log_pos)
 {
         // Log spawn event
-    _gameWorld->_logger.Info() << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")" << End();
+    _gameWorld->_logger.Info() << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE |
@@ -241,7 +241,7 @@ void
 Unit::Respawn(Point2 log_pos)
 {
         // Log respawn event
-    _gameWorld->_logger.Info() << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")" << End();
+    _gameWorld->_logger.Info() << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")";
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE |
@@ -278,7 +278,7 @@ Unit::DropItem(int32_t index)
     auto item_iter = _inventory.begin() + index;
     
         // Log item drop event
-    _gameWorld->_logger.Info() << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType() << End();
+    _gameWorld->_logger.Info() << this->GetName() << " DROPPED ITEM " << (int)(*item_iter)->GetType();
     
         // make item visible and set its coords
     (*item_iter)->SetCarrierID(0);
@@ -296,7 +296,7 @@ Unit::Die(Unit * killer)
         killer->EndDuel();
     }
         // Log death event
-    _gameWorld->_logger.Info() << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")" << End();
+    _gameWorld->_logger.Info() << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
     
         // drop items
     while(!_inventory.empty())
@@ -350,7 +350,7 @@ Unit::Move(MoveDirection dir)
     }
         // Log move event
     _gameWorld->_logger.Info() << this->GetName() << " MOVE (" << _logPos.x
-    << ";" << _logPos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")" << End();
+    << ";" << _logPos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";
     
     this->SetLogicalPosition(new_coord);
     
@@ -384,7 +384,7 @@ Unit::TakeDamage(int16_t damage,
     
         // Log damage take event
     _gameWorld->_logger.Info() << this->GetName() << " TOOK " << damage_taken << " FROM " << damage_dealer->GetName()
-    << " HP " << _health + damage_taken << "->" << _health << End();
+    << " HP " << _health + damage_taken << "->" << _health;
     
     if(_health <= 0)
     {
@@ -399,7 +399,7 @@ Unit::StartDuel(Unit * enemy)
         // client now can eat it, but server should also be reworked
     
         // Log duel start event
-    _gameWorld->_logger.Info() << "DUEL START  " << this->GetName() << " and " << enemy->GetName() << End();
+    _gameWorld->_logger.Info() << "DUEL START  " << this->GetName() << " and " << enemy->GetName();
     
     _state = Unit::State::DUEL;
     _unitAttributes &= ~Unit::Attributes::DUELABLE;
@@ -425,7 +425,7 @@ void
 Unit::EndDuel()
 {
         // Log duel-end event
-    _gameWorld->_logger.Info() << this->GetName() << " DUEL END W " << _duelTarget->GetName() << End();
+    _gameWorld->_logger.Info() << this->GetName() << " DUEL END W " << _duelTarget->GetName();
     
     _state = Unit::State::WALKING;
     _unitAttributes |=

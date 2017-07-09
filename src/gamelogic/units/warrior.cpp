@@ -71,7 +71,7 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
         
             // Log damage event
         auto& logger = _gameWorld->_logger;
-        logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName() << End();
+        logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
         
             // set up CD
         std::get<0>(_spellsCDs[1]) = false;

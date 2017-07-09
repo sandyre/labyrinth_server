@@ -18,7 +18,7 @@
 #include "units/rogue.hpp"
 #include "units/warrior.hpp"
 #include "../globals.h"
-#include "../utils/named_logger.hpp"
+#include "../toolkit/named_logger.hpp"
 #include "../player.hpp"
 
 #include <chrono>
