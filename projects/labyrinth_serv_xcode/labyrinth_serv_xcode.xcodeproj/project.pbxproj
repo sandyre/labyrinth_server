@@ -11,8 +11,9 @@
 		1F1651BD1E9E6E4100F1181C /* libmysqlcppconn-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F1651BC1E9E6E4100F1181C /* libmysqlcppconn-static.a */; };
 		1F23AEC81EC51B060048C59A /* effect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F23AEC61EC51B060048C59A /* effect.cpp */; };
 		1F40F96A1E49E13C003861AF /* libflatbuffers.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1F40F9691E49E13C003861AF /* libflatbuffers.a */; };
-		1F58786D1F0E0D3C001C3ACF /* named_logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */; };
 		1F5878791F0EBB02001C3ACF /* system_monitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878781F0EBB02001C3ACF /* system_monitor.cpp */; };
+		1F5878841F1198FE001C3ACF /* DatabaseAccessor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878821F1198FE001C3ACF /* DatabaseAccessor.cpp */; };
+		1F5878891F119A59001C3ACF /* named_logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878861F119A59001C3ACF /* named_logger.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
 		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
 		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
@@ -56,13 +57,15 @@
 		1F3E69C01E4A1D2C00A102C1 /* gsnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gsnet_generated.h; path = ../../../src/gsnet_generated.h; sourceTree = "<group>"; };
 		1F40F9691E49E13C003861AF /* libflatbuffers.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflatbuffers.a; path = labyrinth_serv_xcode.xcodeproj/libflatbuffers.a; sourceTree = "<group>"; };
 		1F40F96D1E49F2A7003861AF /* msnet_generated.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msnet_generated.h; path = ../../../src/msnet_generated.h; sourceTree = "<group>"; };
-		1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = named_logger.cpp; path = ../../../src/utils/named_logger.cpp; sourceTree = "<group>"; };
-		1F58786C1F0E0D3C001C3ACF /* named_logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = named_logger.hpp; path = ../../../src/utils/named_logger.hpp; sourceTree = "<group>"; };
-		1F58786E1F0E260C001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/utils/date.h; sourceTree = "<group>"; };
-		1F5878701F0E2B39001C3ACF /* elapsed_time.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = elapsed_time.hpp; path = ../../../src/utils/elapsed_time.hpp; sourceTree = "<group>"; };
 		1F5878771F0EBB02001C3ACF /* system_monitor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = system_monitor.hpp; path = ../../../src/services/system_monitor.hpp; sourceTree = "<group>"; };
 		1F5878781F0EBB02001C3ACF /* system_monitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = system_monitor.cpp; path = ../../../src/services/system_monitor.cpp; sourceTree = "<group>"; };
 		1F58787B1F1197DE001C3ACF /* optional.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = optional.hpp; path = ../../../src/toolkit/optional.hpp; sourceTree = "<group>"; };
+		1F5878821F1198FE001C3ACF /* DatabaseAccessor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DatabaseAccessor.cpp; path = ../../../src/services/DatabaseAccessor.cpp; sourceTree = "<group>"; };
+		1F5878831F1198FE001C3ACF /* DatabaseAccessor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = DatabaseAccessor.hpp; path = ../../../src/services/DatabaseAccessor.hpp; sourceTree = "<group>"; };
+		1F5878851F119A59001C3ACF /* named_logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = named_logger.hpp; path = ../../../src/toolkit/named_logger.hpp; sourceTree = "<group>"; };
+		1F5878861F119A59001C3ACF /* named_logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = named_logger.cpp; path = ../../../src/toolkit/named_logger.cpp; sourceTree = "<group>"; };
+		1F5878871F119A59001C3ACF /* elapsed_time.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = elapsed_time.hpp; path = ../../../src/toolkit/elapsed_time.hpp; sourceTree = "<group>"; };
+		1F5878881F119A59001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/toolkit/date.h; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -126,6 +129,8 @@
 			children = (
 				1F5878771F0EBB02001C3ACF /* system_monitor.hpp */,
 				1F5878781F0EBB02001C3ACF /* system_monitor.cpp */,
+				1F5878821F1198FE001C3ACF /* DatabaseAccessor.cpp */,
+				1F5878831F1198FE001C3ACF /* DatabaseAccessor.hpp */,
 			);
 			name = services;
 			sourceTree = "<group>";
@@ -133,6 +138,10 @@
 		1F58787A1F1197C8001C3ACF /* toolkit */ = {
 			isa = PBXGroup;
 			children = (
+				1F5878851F119A59001C3ACF /* named_logger.hpp */,
+				1F5878861F119A59001C3ACF /* named_logger.cpp */,
+				1F5878871F119A59001C3ACF /* elapsed_time.hpp */,
+				1F5878881F119A59001C3ACF /* date.h */,
 				1F58787B1F1197DE001C3ACF /* optional.hpp */,
 			);
 			name = toolkit;
@@ -203,7 +212,6 @@
 			children = (
 				1F58787A1F1197C8001C3ACF /* toolkit */,
 				1F5878721F0EB809001C3ACF /* services */,
-				1FF6BBF61EED947C00170BAA /* utils */,
 				1F5FFBC81EA27F8C00542178 /* gamelogic */,
 				1FEC14431E450ED5004EC380 /* gameserver.cpp */,
 				1FEC14471E450ED5004EC380 /* gameserver.hpp */,
@@ -233,17 +241,6 @@
 				1FEC14591E4527E9004EC380 /* libPocoFoundation.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		1FF6BBF61EED947C00170BAA /* utils */ = {
-			isa = PBXGroup;
-			children = (
-				1F58786E1F0E260C001C3ACF /* date.h */,
-				1F58786B1F0E0D3C001C3ACF /* named_logger.cpp */,
-				1F58786C1F0E0D3C001C3ACF /* named_logger.hpp */,
-				1F5878701F0E2B39001C3ACF /* elapsed_time.hpp */,
-			);
-			name = utils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -305,6 +302,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F23AEC81EC51B060048C59A /* effect.cpp in Sources */,
+				1F5878891F119A59001C3ACF /* named_logger.cpp in Sources */,
+				1F5878841F1198FE001C3ACF /* DatabaseAccessor.cpp in Sources */,
 				1F5FFBF31EA2830C00542178 /* mage.cpp in Sources */,
 				1F5FFBEA1EA2829700542178 /* rogue.cpp in Sources */,
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
@@ -320,7 +319,6 @@
 				1F5FFBE11EA281EC00542178 /* unit.cpp in Sources */,
 				1FEC14561E450ED5004EC380 /* main.cpp in Sources */,
 				1FEC14521E450ED5004EC380 /* gameserver.cpp in Sources */,
-				1F58786D1F0E0D3C001C3ACF /* named_logger.cpp in Sources */,
 				1F5FFBD71EA280C100542178 /* construction.cpp in Sources */,
 				1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */,
 			);

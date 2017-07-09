@@ -9,21 +9,24 @@
 #ifndef masterserver_hpp
 #define masterserver_hpp
 
-#include "flatbuffers/flatbuffers.h"
 
 #include "gameserver.hpp"
+#include "msnet_generated.h"
 #include "player.hpp"
 #include "services/system_monitor.hpp"
-#include "utils/named_logger.hpp"
+#include "services/DatabaseAccessor.hpp"
+#include "toolkit/named_logger.hpp"
 
 #include <Poco/Data/SessionFactory.h>
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/MailMessage.h>
-#include <Poco/Timer.h>
+#include <Poco/TaskManager.h>
 #include <Poco/ThreadPool.h>
+#include <Poco/Timer.h>
 
 #include <array>
 #include <deque>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <random>
@@ -33,6 +36,10 @@
 
 class MasterServer : public Poco::Runnable
 {
+private:
+    class RegistrationTask;
+    class LoginTask;
+
     using GameServers = std::vector<std::unique_ptr<GameServer>>;
 
 public:
@@ -63,7 +70,7 @@ protected:
 
     std::queue<uint32_t>            _availablePorts;
 
-    uint32_t m_nSystemStatus;
+    uint32_t                        _systemStatus;
 
     // Gameservers
     std::unique_ptr<Poco::ThreadPool>        _threadPool;
@@ -79,13 +86,16 @@ protected:
     std::array<uint8_t, 512>       _dataBuffer;
 
     // Logging
-    NamedLogger         _logger;
+    NamedLogger                          _logger;
 
-    // Labyrinth database
-    std::unique_ptr<Poco::Data::Session> _dbSession;
+    Poco::ThreadPool                     _taskWorkers;
+    Poco::TaskManager                    _taskManager;
 
-        // Services
+    // Services
     std::unique_ptr<SystemMonitor>       _systemMonitor;
+
+    friend RegistrationTask;
+    friend LoginTask;
 };
 
 #endif /* masterserver_hpp */

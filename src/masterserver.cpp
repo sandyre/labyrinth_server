@@ -9,9 +9,8 @@
 #include "masterserver.hpp"
 
 #include "msnet_generated.h"
+#include "services/DatabaseAccessor.hpp"
 
-#include <Poco/Data/MySQL/Connector.h>
-#include <Poco/Data/MySQL/MySQLException.h>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
@@ -27,12 +26,158 @@ using namespace Poco::Data::Keywords;
 using namespace std::chrono_literals;
 using Poco::Data::Statement;
 
+class MasterServer::RegistrationTask : public Poco::Task
+{
+public:
+    RegistrationTask(MasterServer& masterServer,
+                     const Poco::Net::SocketAddress& recipient,
+                     const std::string& email,
+                     const std::string& password)
+    : Task("registrationTask"),
+    _master(masterServer),
+    _logger("RegistrationTask", NamedLogger::Mode::STDIO),
+    _recipient(recipient),
+    _email(email),
+    _password(password)
+    { }
+
+    void runTask()
+    {
+        using namespace MasterEvent;
+
+        _logger.Info() << "Registration task acquired, waiting DatabaseAccessor response" << End();
+
+        DBQuery::RegisterQuery query;
+        query.Email = _email;
+        query.Password = _password;
+
+        auto queryResult = DatabaseAccessor::Instance().Query(query);
+        queryResult.wait();
+
+        flatbuffers::FlatBufferBuilder builder;
+        if(queryResult.get().Success)
+        {
+            _logger.Info() << "User " << _email << " registrated successfully" << End();
+                // Send response to client
+            auto response = CreateSVRegister(builder,
+                                             RegistrationStatus_SUCCESS);
+            auto msg      = CreateMessage(builder,
+                                          Messages_SVRegister,
+                                          response.Union());
+            builder.Finish(msg);
+
+            _master._socket.sendTo(builder.GetBufferPointer(),
+                                   builder.GetSize(),
+                                   _recipient);
+        }
+        else
+        {
+            _logger.Info() << "User " << _email << " failed to register: email has been already taken" << End();
+
+                // Send response to client
+            auto response = CreateSVRegister(builder,
+                                             RegistrationStatus_EMAIL_TAKEN);
+            auto msg      = CreateMessage(builder,
+                                          Messages_SVRegister,
+                                          response.Union());
+            builder.Finish(msg);
+
+            _master._socket.sendTo(builder.GetBufferPointer(),
+                                   builder.GetSize(),
+                                   _recipient);
+        }
+
+        setProgress(1.0f);
+    }
+
+private:
+    MasterServer&                                           _master;
+    NamedLogger                                             _logger;
+    Poco::Net::SocketAddress                                _recipient;
+    const std::string                                       _email;
+    const std::string                                       _password;
+};
+
+class MasterServer::LoginTask : public Poco::Task
+{
+public:
+    LoginTask(MasterServer& masterServer,
+              const Poco::Net::SocketAddress& recipient,
+              const std::string& email,
+              const std::string& password)
+    : Task("loginTask"),
+    _master(masterServer),
+    _logger("LoginTask", NamedLogger::Mode::STDIO),
+    _recipient(recipient),
+    _email(email),
+    _password(password)
+    { }
+
+    void runTask()
+    {
+        using namespace MasterEvent;
+
+        _logger.Info() << "Login task acquired, waiting DatabaseAccessor response" << End();
+
+        DBQuery::LoginQuery query;
+        query.Email = _email;
+        query.Password = _password;
+
+        auto queryResult = DatabaseAccessor::Instance().Query(query);
+        queryResult.wait();
+
+        flatbuffers::FlatBufferBuilder builder;
+        if(queryResult.get().Success)
+        {
+            _logger.Info() << "Player " << _email << " logged in" << End();
+                // Send response to client
+            auto response = CreateSVLogin(builder,
+                                          LoginStatus_SUCCESS);
+            auto msg      = CreateMessage(builder,
+                                          Messages_SVLogin,
+                                          response.Union());
+            builder.Finish(msg);
+
+            _master._socket.sendTo(builder.GetBufferPointer(),
+                                   builder.GetSize(),
+                                   _recipient);
+        }
+        else // player is not registered, or wrong password
+        {
+            _logger.Info() << "Player " << _email << " failed to log in: wrong pass or email" << End();
+
+                // Send response to client
+            auto response = CreateSVLogin(builder,
+                                          LoginStatus_WRONG_INPUT);
+            auto msg      = CreateMessage(builder,
+                                          Messages_SVLogin,
+                                          response.Union());
+            builder.Finish(msg);
+
+            _master._socket.sendTo(builder.GetBufferPointer(),
+                                   builder.GetSize(),
+                                   _recipient);
+        }
+
+        setProgress(1.0f);
+    }
+
+private:
+    MasterServer&                                           _master;
+    NamedLogger                                             _logger;
+    Poco::Net::SocketAddress                                _recipient;
+    const std::string                                       _email;
+    const std::string                                       _password;
+};
+
 MasterServer::MasterServer() :
-m_nSystemStatus(0),
+_systemStatus(0),
 _randGenerator(228),
 _randDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
                                            std::numeric_limits<int32_t>::max())),
-_logger("MasterServer", NamedLogger::Mode::STDIO)
+_logger("MasterServer", NamedLogger::Mode::STDIO),
+_taskWorkers("MasterServerQueryWorkers"),
+_taskManager(_taskWorkers)
 {
 
 }
@@ -46,11 +191,13 @@ MasterServer::~MasterServer()
 void MasterServer::init(uint32_t Port)
 {
     // Init logging
-    m_nSystemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
+    _systemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
 
     _logger.Warning() << "MasterServer booting starts" << End();
 
     _logger.Warning() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD << End();
+
+    _logger.Warning() << "Number of workers in MasterServer: " << _taskWorkers.capacity() << End();
 
     // Init Net
     _logger.Warning() << "Initializing network..." << End();
@@ -80,7 +227,7 @@ void MasterServer::init(uint32_t Port)
                                                Port);
             _socket.bind(sock_addr);
 
-            m_nSystemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
+            _systemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
 
             _logger.Info() << "Network initialization done" << End();
         }
@@ -122,23 +269,16 @@ void MasterServer::init(uint32_t Port)
 
     try
     {
-        using namespace Poco::Data;
-        MySQL::Connector::registerConnector();
-        std::string con_params =
-                            "host=127.0.0.1;user=masterserver;db=labyrinth;password=2(3oOS1E;compress=true;auto-reconnect=true";
-        _dbSession = std::make_unique<Session>("MySQL",
-                                               con_params);
-        
-        m_nSystemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
-        _logger.Info() << "Database initialization done" << End();
+        DatabaseAccessor::Instance();
+        _systemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
     }
     catch(const std::exception& e)
     {
         _logger.Error() << "Failed. Exception thrown: " << e.what() << End();
     }
 
-    if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & m_nSystemStatus) ||
-       !(SystemStatus::DATABASE_SYSTEM_ACTIVE & m_nSystemStatus))
+    if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & _systemStatus) ||
+       !(SystemStatus::DATABASE_SYSTEM_ACTIVE & _systemStatus))
     {
         _logger.Error() << "Critical systems failed to start, aborting" << End();
 
@@ -222,125 +362,25 @@ void MasterServer::service_loop()
                 
             case Messages_CLRegister:
             {
-                auto        registr        = static_cast<const CLRegister *>(msg->message());
-                size_t      mail_presented = 0;
-                std::string email(registr->email()->c_str());
-                std::string password(registr->password()->c_str());
-                
-                    // Check that player isnt registered already
-                Poco::Data::Statement select(* _dbSession);
-                select << "SELECT COUNT(*) FROM players WHERE email=?", into(mail_presented), use(email), now;
-                
-                    // New user, add him
-                if(mail_presented == 0)
-                {
-                    _logger.Info() << "Player registered: {" << email << ";" << password << "}" << End();
-                    
-                        // Add to DB
-                    Poco::Data::Statement insert(*_dbSession);
-                    insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(email), use(password), now;
-                    
-                        // Send response to client
-                    auto response = CreateSVRegister(_flatBuilder,
-                                                     RegistrationStatus_SUCCESS);
-                    auto msg      = CreateMessage(_flatBuilder,
-                                                  Messages_SVRegister,
-                                                  response.Union());
-                    _flatBuilder.Finish(msg);
-                    
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                }
-                else // email already taken
-                {
-                    _logger.Info() << "Player tried to register: " << email << " already taken" << End();
-                    
-                        // Send response to client
-                    auto response = CreateSVRegister(_flatBuilder,
-                                                     RegistrationStatus_EMAIL_TAKEN);
-                    auto msg      = CreateMessage(_flatBuilder,
-                                                  Messages_SVRegister,
-                                                  response.Union());
-                    _flatBuilder.Finish(msg);
-                    
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                }
+                auto registr        = static_cast<const CLRegister *>(msg->message());
+                RegistrationTask * regTask = new RegistrationTask(*this,
+                                                                  sender_addr,
+                                                                  registr->email()->c_str(),
+                                                                  registr->password()->c_str());
+                _taskManager.start(regTask);
                 
                 break;
             }
                 
             case Messages_CLLogin:
             {
-                auto registr = static_cast<const CLLogin*>(msg->message());
-                
-                Poco::Nullable<std::string> stored_pass;
-                std::string                 email(registr->email()->c_str());
-                std::string                 password(registr->password()->c_str());
-                
-                    // Check that player isnt registered already
-                Poco::Data::Statement select(*_dbSession);
-                select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(stored_pass), use(email), now;
-                
-                if(!stored_pass.isNull())
-                {
-                        // password is correct, notify player
-                    if(stored_pass == password)
-                    {
-                        _logger.Info() << "Player " << email << " logged in" << End();
-                        
-                            // Send response to client
-                        auto response = CreateSVLogin(_flatBuilder,
-                                                      LoginStatus_SUCCESS);
-                        auto msg      = CreateMessage(_flatBuilder,
-                                                      Messages_SVLogin,
-                                                      response.Union());
-                        _flatBuilder.Finish(msg);
-                        
-                        _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                       _flatBuilder.GetSize(),
-                                       sender_addr);
-                        _flatBuilder.Clear();
-                    } else // password is wrong
-                    {
-                        _logger.Info() << "Player " << email << " failed to log in: wrong password" << End();
-                        
-                            // Send response to client
-                        auto response = CreateSVLogin(_flatBuilder,
-                                                      LoginStatus_WRONG_INPUT);
-                        auto msg      = CreateMessage(_flatBuilder,
-                                                      Messages_SVLogin,
-                                                      response.Union());
-                        _flatBuilder.Finish(msg);
-                        
-                        _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                       _flatBuilder.GetSize(),
-                                       sender_addr);
-                        _flatBuilder.Clear();
-                    }
-                }
-                else // player is not registered, or wrong password
-                {
-                    _logger.Info() << "Player " << email << " failed to log in: wrong pass or email" << End();
-                    
-                        // Send response to client
-                    auto response = CreateSVLogin(_flatBuilder,
-                                                  LoginStatus_WRONG_INPUT);
-                    auto msg      = CreateMessage(_flatBuilder,
-                                                  Messages_SVLogin,
-                                                  response.Union());
-                    _flatBuilder.Finish(msg);
-                    
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                }
-                
+                auto login = static_cast<const CLLogin*>(msg->message());
+                LoginTask * loginTask = new LoginTask(*this,
+                                                      sender_addr,
+                                                      login->email()->c_str(),
+                                                      login->password()->c_str());
+                _taskManager.start(loginTask);
+
                 break;
             }
                 

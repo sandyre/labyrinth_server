@@ -8,7 +8,7 @@
 
 #include "gameserver.hpp"
 
-#include "utils/elapsed_time.hpp"
+#include "toolkit/elapsed_time.hpp"
 
 #include <Poco/Thread.h>
 #include <Poco/Timer.h>
