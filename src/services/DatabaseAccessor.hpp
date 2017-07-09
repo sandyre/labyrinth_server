@@ -51,19 +51,18 @@ private:
     {
     public:
         ProgressHandler()
-        : _logger("TasksProgressHandler", NamedLogger::Mode::STDIO)
+        : _logger("TasksProgressReporter", NamedLogger::Mode::STDIO)
         { }
 
-        void onProgress(Poco::TaskProgressNotification* pNf)
+        void onStarted(Poco::TaskStartedNotification* pNf)
         {
-            _logger.Info() << pNf->task()->name()
-            << " progress: " << pNf->progress();
+            _logger.Debug() << pNf->task()->name() << " started.";
             pNf->release();
         }
 
         void onFinished(Poco::TaskFinishedNotification* pNf)
         {
-            _logger.Info() << pNf->task()->name() << " finished.";
+            _logger.Debug() << pNf->task()->name() << " finished.";
             pNf->release();
         }
 

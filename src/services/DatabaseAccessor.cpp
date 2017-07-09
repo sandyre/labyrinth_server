@@ -131,9 +131,19 @@ DatabaseAccessor::DatabaseAccessor()
 {
     Poco::Data::MySQL::Connector::registerConnector();
 
-    _logger.Info() << "DatabaseAccessor service is up, number of workers: " << _workers.capacity();
-    _taskManager.addObserver(Poco::Observer<ProgressHandler, Poco::TaskProgressNotification>(_progressHandler,
-                                                                                             &ProgressHandler::onProgress));
+        // Check the database connectivity
+    {
+        using namespace Poco::Data::Keywords;
+        size_t registered_players = 0;
+        Poco::Data::Session test_session(_dbSessions.get());
+        Poco::Data::Statement select(test_session);
+        select << "SELECT COUNT(*) FROM players", into(registered_players), now;
+    }
+
+    _logger.Debug() << "DatabaseAccessor service is up, number of workers: " << _workers.capacity() << ", size of SessionsPool: " << _dbSessions.available();
+
+    _taskManager.addObserver(Poco::Observer<ProgressHandler, Poco::TaskStartedNotification>(_progressHandler,
+                                                                                            &ProgressHandler::onStarted));
     _taskManager.addObserver(Poco::Observer<ProgressHandler, Poco::TaskFinishedNotification>(_progressHandler,
                                                                                              &ProgressHandler::onFinished));
 }
@@ -148,11 +158,9 @@ DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
     try
     {
         _taskManager.start(new RegisterTask(_dbSessions.get(), std::move(promise), reg));
-        _logger.Warning() << "Available DBSessions: " << _dbSessions.available() << " Threads: " << _workers.available();
     }
     catch(const std::exception& e)
     {
-        _logger.Error() << "Failed to start a new task. Exception thrown: " << e.what();
         promise->set_exception(std::current_exception());
     }
 
@@ -169,11 +177,9 @@ DatabaseAccessor::Query(const DBQuery::LoginQuery& login)
     try
     {
         _taskManager.start(new LoginTask(_dbSessions.get(), std::move(promise), login));
-        _logger.Warning() << "Available DBSessions: " << _dbSessions.available() << " Threads: " << _workers.available();
     }
     catch(const std::exception& e)
     {
-        _logger.Error() << "Failed to start a new task. Exception thrown: " << e.what();
         promise->set_exception(std::current_exception());
     }
 

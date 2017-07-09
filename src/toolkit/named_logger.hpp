@@ -37,8 +37,9 @@ private:
         friend NamedLogger;
 
     public:
-        enum Level
+        enum class Level
         {
+            DBG,
             INFO,
             WARNING,
             ERROR
@@ -86,6 +87,9 @@ public:
 
 public:
     NamedLogger(const std::string& name, Mode mode = STDIO);
+
+    LoggerStream Debug()
+    { return LoggerStream(*this, LoggerStream::Level::DBG); }
 
     LoggerStream Info()
     { return LoggerStream(*this, LoggerStream::Level::INFO); }

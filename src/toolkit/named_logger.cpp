@@ -21,15 +21,19 @@ NamedLogger::LoggerStream::LoggerStream(const NamedLogger& parent,
 {
     switch(level)
     {
-        case INFO:
+        case Level::DBG:
+            _prefix += Color::RESET;
+            _prefix += "[ Debug ] ";
+            break;
+        case Level::INFO:
             _prefix += Color::WHITE;
             _prefix += "[ Info ] ";
             break;
-        case WARNING:
+        case Level::WARNING:
             _prefix += Color::YELLOW;
             _prefix += "[ Warning ] ";
             break;
-        case ERROR:
+        case Level::ERROR:
             _prefix += Color::RED;
             _prefix += "[ Error ] ";
             break;

@@ -9,7 +9,6 @@
 #ifndef masterserver_hpp
 #define masterserver_hpp
 
-
 #include "gameserver.hpp"
 #include "msnet_generated.h"
 #include "player.hpp"
@@ -74,11 +73,7 @@ protected:
 
     // Gameservers
     std::unique_ptr<Poco::ThreadPool>        _threadPool;
-    std::mutex                               _serversMutex;
     GameServers                              _gameServers;
-
-    // System timers and flags
-    std::unique_ptr<Poco::Timer>   _freementTimer;
 
     // Network
     Poco::Net::DatagramSocket      _socket;
