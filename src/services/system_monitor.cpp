@@ -140,5 +140,5 @@ SystemMonitor::SystemMonitor()
 void
 SystemMonitor::PrintStats(Poco::Timer& timer)
 {
-    _logger.Info() << "Current/Peak memory usage: " << (getCurrentRSS()/1024) << "kB / " << (getPeakRSS()/1024) << "kB" << End();
+    _logger.Info() << "Current/Peak memory usage: " << (getCurrentRSS()/1024) << "kB / " << (getPeakRSS()/1024) << "kB";
 }

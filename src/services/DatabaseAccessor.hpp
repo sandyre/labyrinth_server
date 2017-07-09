@@ -11,9 +11,10 @@
 
 #include "../toolkit/named_logger.hpp"
 
-#include <Poco/Data/SessionFactory.h>
+#include <Poco/Data/SessionPool.h>
 #include <Poco/TaskManager.h>
 #include <Poco/ThreadPool.h>
+#include <Poco/TaskNotification.h>
 
 #include <future>
 
@@ -43,98 +44,31 @@ namespace DBQuery
 class DatabaseAccessor
 {
 private:
-    class RegisterTask : public Poco::Task
+    class RegisterTask;
+    class LoginTask;
+
+    class ProgressHandler
     {
     public:
-        RegisterTask(std::shared_ptr<Poco::Data::Session> db,
-                     std::shared_ptr<std::promise<DBQuery::RegisterResult>> promise,
-                     const DBQuery::RegisterQuery& reg)
-        : Task("registrationTask"),
-          _db(db),
-          _logger("RegistrationTask", NamedLogger::Mode::STDIO),
-          _promise(promise),
-          _taskInfo(reg)
+        ProgressHandler()
+        : _logger("TasksProgressHandler", NamedLogger::Mode::STDIO)
         { }
 
-        void runTask()
+        void onProgress(Poco::TaskProgressNotification* pNf)
         {
-            using namespace Poco::Data::Keywords;
+            _logger.Info() << pNf->task()->name()
+            << " progress: " << pNf->progress();
+            pNf->release();
+        }
 
-            DBQuery::RegisterResult result;
-            size_t already_registered = 0;
-
-            _logger.Info() << "Processing SQL register query (select)" << End();
-
-            Poco::Data::Statement select(*_db);
-            select << "SELECT COUNT(*) FROM players WHERE email=?", into(already_registered), use(_taskInfo.Email), now;
-
-            if(!already_registered)
-            {
-                _logger.Info() << "Processing SQL register query (insert)" << End();
-
-                Poco::Data::Statement insert(*_db);
-                insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(_taskInfo.Email), use(_taskInfo.Password), now;
-
-                result.Success = true;
-            }
-            else
-                result.Success = false;
-            
-            _promise->set_value(result);
-            setProgress(1.0f);
+        void onFinished(Poco::TaskFinishedNotification* pNf)
+        {
+            _logger.Info() << pNf->task()->name() << " finished.";
+            pNf->release();
         }
 
     private:
-        NamedLogger                                              _logger;
-        std::shared_ptr<Poco::Data::Session>                     _db;
-        std::shared_ptr<std::promise<DBQuery::RegisterResult>>   _promise;
-        DBQuery::RegisterQuery                                   _taskInfo;
-    };
-
-    class LoginTask : public Poco::Task
-    {
-    public:
-        LoginTask(std::shared_ptr<Poco::Data::Session> db,
-                  std::shared_ptr<std::promise<DBQuery::LoginResult>> promise,
-                  const DBQuery::LoginQuery& log)
-        : Task("loginTask"),
-          _db(db),
-          _logger("RegistrationTask", NamedLogger::Mode::STDIO),
-          _promise(promise),
-          _taskInfo(log)
-        { }
-
-        void runTask()
-        {
-            using namespace Poco::Data::Keywords;
-
-            DBQuery::LoginResult result;
-            Poco::Nullable<std::string> storedPass;
-
-            _logger.Info() << "Processing SQL query (select)" << End();
-
-            Poco::Data::Statement select(*_db);
-            select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(storedPass), use(_taskInfo.Email), now;
-
-            if(!storedPass.isNull())
-            {
-                if(storedPass == _taskInfo.Password)
-                    result.Success = true;
-                else
-                    result.Success = false;
-            }
-            else
-                result.Success = false;
-
-            _promise->set_value(result);
-            setProgress(1.0f);
-        }
-
-    private:
-        NamedLogger                                          _logger;
-        std::shared_ptr<Poco::Data::Session>                 _db;
-        std::shared_ptr<std::promise<DBQuery::LoginResult>>  _promise;
-        DBQuery::LoginQuery                                  _taskInfo;
+        NamedLogger             _logger;
     };
 
 public:
@@ -153,10 +87,12 @@ private:
 private:
     NamedLogger                             _logger;
 
+    std::mutex                              _callGuard;
     Poco::TaskManager                       _taskManager;
     Poco::ThreadPool                        _workers;
+    ProgressHandler                         _progressHandler;
 
-    std::shared_ptr<Poco::Data::Session>    _db;
+    Poco::Data::SessionPool                 _dbSessions;
 };
 
 

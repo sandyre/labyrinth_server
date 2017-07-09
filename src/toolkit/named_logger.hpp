@@ -47,6 +47,12 @@ private:
     private:
         LoggerStream(const NamedLogger& parent,
                      Level level);
+        LoggerStream(const LoggerStream& other)
+        : _logger(other._logger),
+          _prefix(other._prefix)
+        {
+
+        }
 
     public:
         template<typename T>
@@ -57,16 +63,10 @@ private:
             return *this;
         }
 
-        LoggerStream& operator<<(End e)
+        ~LoggerStream()
         {
             _stream << Color::RESET;
-
             _logger.Write(_stream.str());
-            _stream.str("");
-
-            _stream << _prefix;
-
-            return *this;
         }
 
     private:
@@ -87,23 +87,14 @@ public:
 public:
     NamedLogger(const std::string& name, Mode mode = STDIO);
 
-    LoggerStream& Info()
-    {
-        thread_local LoggerStream ls(*this, LoggerStream::Level::INFO);
-        return ls;
-    }
+    LoggerStream Info()
+    { return LoggerStream(*this, LoggerStream::Level::INFO); }
 
-    LoggerStream& Warning()
-    {
-        thread_local LoggerStream ls(*this, LoggerStream::Level::WARNING);
-        return ls;
-    }
+    LoggerStream Warning()
+    { return LoggerStream(*this, LoggerStream::Level::WARNING); }
 
-    LoggerStream& Error()
-    {
-        thread_local LoggerStream ls(*this, LoggerStream::Level::ERROR);
-        return ls;
-    }
+    LoggerStream Error()
+    { return LoggerStream(*this, LoggerStream::Level::ERROR); }
 
 private:
     void Write(const std::string& str) const;
