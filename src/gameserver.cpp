@@ -19,13 +19,13 @@
 using namespace GameEvent;
 using namespace std::chrono;
 
-GameServer::GameServer(const Configuration& config) :
-_state(GameServer::State::LOBBY_FORMING),
-_config(config),
-_startTime(steady_clock::now()),
-_msPerUpdate(10),
-_pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
-_logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
+GameServer::GameServer(const Configuration& config)
+: _state(GameServer::State::LOBBY_FORMING),
+  _config(config),
+  _startTime(steady_clock::now()),
+  _msPerUpdate(10),
+  _pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
+  _logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
 {
     _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed;
     _logger.Info() << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
@@ -90,7 +90,7 @@ void GameServer::Ping(Poco::Timer& timer)
                              Events_SVPing,
                              ping.Union());
     _flatBuilder.Finish(msg);
-    
+
     SendMulticast(std::vector<uint8_t>(_flatBuilder.GetBufferPointer(),
                                        _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
 }
@@ -112,11 +112,11 @@ void GameServer::lobby_forming_stage()
 {
     Poco::Net::SocketAddress sender_addr;
     std::array<uint8_t, 512> dataBuffer;
-    
+
     while(_state == State::LOBBY_FORMING)
     {
         std::this_thread::sleep_for(_msPerUpdate);
-        
+
         while(_socket.available())
         {
             if(_socket.available() > dataBuffer.size())
@@ -124,15 +124,15 @@ void GameServer::lobby_forming_stage()
                 auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                      dataBuffer.size(),
                                                      sender_addr);
-                
+
                 _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
-            
+
             flatbuffers::Verifier verifier(dataBuffer.data(),
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
@@ -140,30 +140,30 @@ void GameServer::lobby_forming_stage()
                 _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto gs_event = GetMessage(dataBuffer.data());
             auto sender = FindPlayerByUID(gs_event->sender_id());
             if(sender != _players.end()) // FIXME: should be sync'd via mutex. BTW, pingerThread does not modify that shit.
                 sender->SetLastMsgTimepoint(steady_clock::now());
-            
+
             switch(gs_event->event_type())
             {
                 case GameEvent::Events_CLConnection:
                 {
                     auto con_info = static_cast<const CLConnection *>(gs_event->event());
                     auto player = FindPlayerByUID(gs_event->sender_id());
-                    
+
                     if(player == _players.end())
                     {
                         Player new_player(gs_event->sender_id(),
                                           sender_addr,
                                           con_info->nickname()->c_str());
                         new_player.SetLastMsgTimepoint(steady_clock::now());
-                        
+
                         _logger.Info() << "Player \'" << new_player.GetNickname() << "\' [" << sender_addr.toString() << "]" << " connected";
-                        
+
                         _players.emplace_back(std::move(new_player));
-                        
+
                             // notify connector that he is accepted
                         auto gs_accept = CreateSVConnectionStatus(_flatBuilder,
                                                                   ConnectionStatus_ACCEPTED);
@@ -172,12 +172,12 @@ void GameServer::lobby_forming_stage()
                                                        Events_SVConnectionStatus,
                                                        gs_accept.Union());
                         _flatBuilder.Finish(gs_event);
-                        
+
                         _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                        _flatBuilder.GetSize(),
                                        sender_addr);
                         _flatBuilder.Clear();
-                        
+
                             // send him info about all current players in lobby
                         for(auto& player : _players)
                         {
@@ -190,13 +190,13 @@ void GameServer::lobby_forming_stage()
                                                      Events_SVPlayerConnected,
                                                      player_info.Union());
                             _flatBuilder.Finish(gs_event);
-                            
+
                             _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                            _flatBuilder.GetSize(),
                                            sender_addr);
                             _flatBuilder.Clear();
                         }
-                        
+
                             // notify all players about connected one
                         auto nick          = _flatBuilder.CreateString(con_info->nickname()->c_str(),
                                                                        con_info->nickname()->size());
@@ -215,7 +215,7 @@ void GameServer::lobby_forming_stage()
                     }
                     break;
                 }
-                
+
                 case GameEvent::Events_CLPing:
                 {
                         // we aren't interested in processing this event
@@ -226,7 +226,7 @@ void GameServer::lobby_forming_stage()
                     break;
             }
         }
-        
+
             // check players last message time (should be less than 2 secs)
         {
             std::lock_guard<std::mutex> lock(_playersMutex);
@@ -244,12 +244,12 @@ void GameServer::lobby_forming_stage()
                                           }),
                                           _players.end());
         }
-        
+
         if(_players.size() == _config.Players)
         {
             _state = GameServer::State::HERO_PICK;
             _logger.Info() << "Starting hero-pick stage";
-            
+
             auto gs_heropick = CreateSVHeroPickStage(_flatBuilder);
             auto gs_event    = CreateMessage(_flatBuilder,
                                              0,
@@ -268,11 +268,11 @@ void GameServer::hero_picking_stage()
 {
     Poco::Net::SocketAddress sender_addr;
     std::array<uint8_t, 512> dataBuffer;
-    
+
     while(_state == State::HERO_PICK)
     {
         std::this_thread::sleep_for(_msPerUpdate);
-        
+
         while(_socket.available())
         {
             if(_socket.available() > dataBuffer.size())
@@ -280,15 +280,15 @@ void GameServer::hero_picking_stage()
                 auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                      dataBuffer.size(),
                                                      sender_addr);
-                
+
                 _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
-            
+
             flatbuffers::Verifier verifier(dataBuffer.data(),
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
@@ -296,9 +296,9 @@ void GameServer::hero_picking_stage()
                 _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto gs_event = GetMessage(dataBuffer.data());
-            
+
             auto sender = FindPlayerByUID(gs_event->sender_id());
             if(sender != _players.end())
                 sender->SetLastMsgTimepoint(steady_clock::now());
@@ -346,7 +346,7 @@ void GameServer::hero_picking_stage()
                             _flatBuilder.GetBufferPointer(),
                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize()));
                     _flatBuilder.Clear();
-                    
+
                     _logger.Info() << "Player " << player->GetNickname() << " is ready";
                     break;
                 }
@@ -356,7 +356,7 @@ void GameServer::hero_picking_stage()
                     break;
             }
         }
-        
+
             // check players last message time (should be less than 2 secs)
         {
             std::lock_guard<std::mutex> lock(_playersMutex);
@@ -374,14 +374,14 @@ void GameServer::hero_picking_stage()
                                           }),
                            _players.end());
         }
-        
+
         bool bEveryoneReady = std::all_of(_players.begin(),
                                           _players.end(),
                                           [](Player& player)
                                           {
                                               return player.GetState() == Player::State::PRE_READY_TO_START;
                                           });
-        
+
         if(_players.size() != _config.Players)
         {
             throw std::runtime_error("Unhandled situation: num of players < lobby size in HERO_PICKING phase");
@@ -389,9 +389,9 @@ void GameServer::hero_picking_stage()
         if(bEveryoneReady)
         {
             _state = GameServer::State::GENERATING_WORLD;
-            
+
             _logger.Info() << "Generating world";
-            
+
             for(auto& player : _players)
             {
                 player.SetState(Player::State::IN_GAME);
@@ -444,15 +444,15 @@ void GameServer::world_generation_stage()
                 auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                      dataBuffer.size(),
                                                      sender_addr);
-                
+
                 _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
-            
+
             flatbuffers::Verifier verifier(dataBuffer.data(),
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
@@ -460,7 +460,7 @@ void GameServer::world_generation_stage()
                 _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto gs_event = GetMessage(dataBuffer.data());
 
             if(gs_event->event_type() == Events_CLMapGenerated)
@@ -517,15 +517,15 @@ void GameServer::running_game_stage()
                 auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                      dataBuffer.size(),
                                                      sender_addr);
-                
+
                 _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto pack_size = _socket.receiveFrom(dataBuffer.data(),
                                                  dataBuffer.size(),
                                                  sender_addr);
-            
+
             flatbuffers::Verifier verifier(dataBuffer.data(),
                                            pack_size);
             if(!VerifyMessageBuffer(verifier))
@@ -533,16 +533,16 @@ void GameServer::running_game_stage()
                 _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
                 continue;
             }
-            
+
             auto gs_event = GetMessage(dataBuffer.data());
-            
+
             auto sender = FindPlayerByUID(gs_event->sender_id());
             if(sender != _players.end())
             {
                 if(sender->GetAddress() != sender_addr)
                 {
                     _logger.Warning() << "Player" << sender->GetNickname() << " dynamic change IP to " << sender_addr.toString();
-                    
+
                     sender->SetAddress(sender_addr);
                 }
 

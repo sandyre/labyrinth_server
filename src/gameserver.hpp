@@ -72,22 +72,22 @@ private:
     inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
 
 private:
-    GameServer::State         _state;
-    GameServer::Configuration _config;
-    std::string               _serverName;
-    Poco::Net::DatagramSocket _socket;
-    steady_clock::time_point  _startTime;
-    std::chrono::milliseconds _msPerUpdate;
+    GameServer::State               _state;
+    GameServer::Configuration       _config;
+    std::string                     _serverName;
+    Poco::Net::DatagramSocket       _socket;
+    steady_clock::time_point        _startTime;
+    std::chrono::milliseconds       _msPerUpdate;
 
     std::unique_ptr<Poco::Timer>    _pingerTimer;
-    
-    std::unique_ptr<GameWorld> _gameWorld;
-    std::mutex                 _playersMutex;
-    std::vector<Player>        _players;
 
-    NamedLogger                _logger;
+    std::unique_ptr<GameWorld>      _gameWorld;
+    std::mutex                      _playersMutex;
+    std::vector<Player>             _players;
 
-    flatbuffers::FlatBufferBuilder _flatBuilder;
+    NamedLogger                     _logger;
+
+    flatbuffers::FlatBufferBuilder  _flatBuilder;
 };
 
 #endif /* gameserver_hpp */
