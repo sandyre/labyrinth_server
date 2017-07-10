@@ -14,7 +14,7 @@
 #include "toolkit/named_logger.hpp"
 
 #include <Poco/Net/DatagramSocket.h>
-#include <Poco/Runnable.h>
+#include <Poco/Task.h>
 #include <Poco/Timer.h>
 
 #include <chrono>
@@ -27,7 +27,7 @@
 
 using std::chrono::steady_clock;
 
-class GameServer : public Poco::Runnable
+class GameServer : public Poco::Task
 {
 public:
     enum class State
@@ -50,7 +50,7 @@ public:
     GameServer(const Configuration&);
     ~GameServer();
 
-    virtual void run();
+    virtual void runTask();
 
     GameServer::State GetState() const
     { return _state; }

@@ -9,7 +9,7 @@
 #ifndef masterserver_hpp
 #define masterserver_hpp
 
-#include "gameserver.hpp"
+#include "GameServersController.hpp"
 #include "msnet_generated.h"
 #include "player.hpp"
 #include "services/system_monitor.hpp"
@@ -38,6 +38,7 @@ class MasterServer : public Poco::Runnable
 private:
     class RegistrationTask;
     class LoginTask;
+    class FindGameTask;
 
     using GameServers = std::vector<std::unique_ptr<GameServer>>;
 
@@ -72,8 +73,7 @@ protected:
     uint32_t                        _systemStatus;
 
     // Gameservers
-    std::unique_ptr<Poco::ThreadPool>        _threadPool;
-    GameServers                              _gameServers;
+    std::unique_ptr<GameServersController>  _gameserversController;
 
     // Network
     Poco::Net::DatagramSocket      _socket;
@@ -91,6 +91,7 @@ protected:
 
     friend RegistrationTask;
     friend LoginTask;
+    friend FindGameTask;
 };
 
 #endif /* masterserver_hpp */

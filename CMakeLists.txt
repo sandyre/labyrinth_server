@@ -21,6 +21,7 @@ set(SOURCES
 	src/toolkit/named_logger.cpp
     src/services/system_monitor.cpp
     src/services/DatabaseAccessor.cpp
+    src/GameServersController.cpp
 	src/masterserver.cpp
 	src/gamelogic/construction.cpp
 	src/gamelogic/effect.cpp
@@ -41,8 +42,8 @@ set(SOURCES
 set(HEADERS
 	src/gameserver.hpp
 	src/toolkit/named_logger.hpp
-    src/services/system_monitor.hpp
-    src/servies/DatabaseAccessor.hpp
+  src/services/system_monitor.hpp
+  src/services/DatabaseAccessor.hpp
 	src/masterserver.hpp
 	src/player.hpp
 	src/date.h

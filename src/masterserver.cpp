@@ -11,6 +11,7 @@
 #include "msnet_generated.h"
 #include "services/DatabaseAccessor.hpp"
 
+#include <Poco/Environment.h>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
@@ -33,7 +34,7 @@ public:
                      const Poco::Net::SocketAddress& recipient,
                      const std::string& email,
                      const std::string& password)
-    : Task("registrationTask"),
+    : Task("RegistrationTask"),
       _master(masterServer),
       _logger("RegistrationTask", NamedLogger::Mode::STDIO),
       _recipient(recipient),
@@ -116,7 +117,7 @@ public:
               const Poco::Net::SocketAddress& recipient,
               const std::string& email,
               const std::string& password)
-    : Task("loginTask"),
+    : Task("LoginTask"),
       _master(masterServer),
       _logger("LoginTask", NamedLogger::Mode::STDIO),
       _recipient(recipient),
@@ -192,6 +193,54 @@ private:
     const std::string                                       _password;
 };
 
+class MasterServer::FindGameTask : public Poco::Task
+{
+public:
+    FindGameTask(MasterServer& masterServer,
+                 const Poco::Net::SocketAddress& recipient)
+    : Task("FindGameTask"),
+    _master(masterServer),
+    _logger("FindGameTask", NamedLogger::Mode::STDIO),
+    _recipient(recipient)
+    { }
+
+    void runTask()
+    {
+        using namespace MasterEvent;
+
+        _logger.Debug() << "FindGame task acquired, waiting GameServersController response";
+
+        auto serverPort = _master._gameserversController->GetServerAddress();
+        if(!serverPort)
+        {
+            _logger.Warning() << "GameServersController returned no address (no servers available)";
+            setState(Poco::Task::TaskState::TASK_FINISHED);
+        }
+
+        flatbuffers::FlatBufferBuilder builder;
+        _logger.Debug() << "Found game for [" << _recipient.toString() << "]";
+
+        auto game_found = CreateSVGameFound(builder,
+                                            *serverPort);
+        auto ms_event = CreateMessage(builder,
+                                      Messages_SVGameFound,
+                                      game_found.Union());
+        builder.Finish(ms_event);
+
+        _master._socket.sendTo(builder.GetBufferPointer(),
+                               builder.GetSize(),
+                               _recipient);
+
+        setState(Poco::Task::TaskState::TASK_FINISHED);
+    }
+
+private:
+    MasterServer&                                           _master;
+    NamedLogger                                             _logger;
+    Poco::Net::SocketAddress                                _recipient;
+};
+
+
 MasterServer::MasterServer()
 : _systemStatus(0),
   _randGenerator(228),
@@ -218,6 +267,17 @@ void MasterServer::init(uint32_t Port)
     _logger.Info() << "Booting starts";
 
     _logger.Info() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
+    _logger.Info() << "[----------------------PLATFORM INFO---------------------]";
+    {
+        _logger.Info() << "Operating System: " << Poco::Environment::osDisplayName() << " "
+                << Poco::Environment::osVersion() << " "
+                << Poco::Environment::osArchitecture();
+        _logger.Info() << "MasterServer linked against POCO version: "
+                << ((Poco::Environment::libraryVersion() >> 24) & 0xFF) << "."
+                << ((Poco::Environment::libraryVersion() >> 16) & 0xFF) << "."
+                << ((Poco::Environment::libraryVersion() >> 8) & 0xFF) << "."
+                << ((Poco::Environment::libraryVersion() & 0xFF));
+    }
 
     _logger.Info() << "[------------------SYBSYSTEMS BOOTSTRAP------------------]";
 
@@ -277,12 +337,15 @@ void MasterServer::init(uint32_t Port)
     }
 
     // Init gameservers threadpool
-    _logger.Warning() << "Initializing gameservers threadpool...";
-    _threadPool = std::make_unique<Poco::ThreadPool>(std::thread::hardware_concurrency(), // min
-                                                     std::thread::hardware_concurrency() * 4, // max
-                                                     120, // idle time
-                                                     0); // stack size
-    _logger.Info() << "DONE";
+    _logger.Info() << "[----------------GAME SERVERS CONTROLLER-----------------]";
+    try
+    {
+        _gameserversController = std::make_unique<GameServersController>();
+    }
+    catch(const std::exception& e)
+    {
+        _logger.Error() << "Failed. Exception thrown: " << e.what();
+    }
 
     // Init DB
     _logger.Info() << "[---------------DATABASE ACCESSOR SERVICE----------------]";
@@ -410,83 +473,15 @@ void MasterServer::service_loop()
                 
             case Messages_CLFindGame:
             {
-                auto finder = static_cast<const CLFindGame*>(msg->message());
-                
-                if(finder->cl_version_major() == GAMEVERSION_MAJOR)
+                if(_taskWorkers.available())
                 {
-                    _logger.Info() << "Player " << finder->player_uid() << " version is OK";
-                    
-                    auto gs_accepted = CreateSVFindGame(_flatBuilder,
-                                                        finder->player_uid(),
-                                                        ConnectionResponse_ACCEPTED);
-                    auto gs_event    = CreateMessage(_flatBuilder,
-                                                     Messages_SVFindGame,
-                                                     gs_accepted.Union());
-                    _flatBuilder.Finish(gs_event);
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
+                    auto finder = static_cast<const CLFindGame*>(msg->message());
+                    _taskManager.start(new FindGameTask(*this,
+                                                        sender_addr));
                 }
                 else
-                {
-                    _logger.Warning() << "Player " << finder->player_uid() << " connection refused: old client version"
-                            << " (" << std::to_string(finder->cl_version_major()) << "."
-                            << std::to_string(finder->cl_version_minor()) << "."
-                            << std::to_string(finder->cl_version_build()) << ")";
-                    
-                    auto gs_refused = CreateSVFindGame(_flatBuilder,
-                                                       finder->player_uid(),
-                                                       ConnectionResponse_REFUSED);
-                    auto gs_event   = CreateMessage(_flatBuilder,
-                                                    Messages_SVFindGame,
-                                                    gs_refused.Union());
-                    _flatBuilder.Finish(gs_event);
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                    break;
-                }
-                
-                GameServers::const_iterator server_available;
-                {
-                    server_available = std::find_if(_gameServers.cbegin(),
-                                                    _gameServers.cend(),
-                                                    [this](std::unique_ptr<GameServer> const& gs)
-                                                    {
-                                                        return gs->GetState() == GameServer::State::LOBBY_FORMING;
-                                                    });
-                    if(server_available == _gameServers.cend())
-                    {
-                        GameServer::Configuration config;
-                        config.Players    = 1; // +-
-                        config.RandomSeed = _randDistr(_randGenerator);
-                        config.Port       = _availablePorts.front();
-                        _availablePorts.pop();
-                        
-                        _gameServers.emplace_back(std::make_unique<GameServer>(config));
-                        _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
-                                                       *_gameServers.back(),
-                                                       "GameServer");
-                        server_available = _gameServers.end()-1;
-                    }
-                }
-                
-                _logger.Info() << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
-                
-                    // transfer player to GS
-                auto game_found = CreateSVGameFound(_flatBuilder,
-                                                    (*server_available)->GetConfig().Port);
-                auto ms_event = CreateMessage(_flatBuilder,
-                                              Messages_SVGameFound,
-                                              game_found.Union());
-                _flatBuilder.Finish(ms_event);
-                
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
+                    _logger.Warning() << "No workers available, task skipped";
+
                 break;
             }
                 

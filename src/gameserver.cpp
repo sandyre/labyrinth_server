@@ -19,17 +19,17 @@
 using namespace GameEvent;
 using namespace std::chrono;
 
-GameServer::GameServer(const Configuration& config) :
-_state(GameServer::State::LOBBY_FORMING),
-_config(config),
-_startTime(steady_clock::now()),
-_msPerUpdate(10),
-_pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
-_logger(("GameServer" + std::to_string(_config.Port)), NamedLogger::Mode::STDIO)
+GameServer::GameServer(const Configuration& config)
+: Task(("GameServer" + std::to_string(config.Port))),
+  _state(GameServer::State::LOBBY_FORMING),
+  _config(config),
+  _startTime(steady_clock::now()),
+  _msPerUpdate(10),
+  _pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
+  _logger("Server", NamedLogger::Mode::STDIO)
 {
-    _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed;
-    _logger.Info() << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
-    _logger.Info();
+    _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed
+            << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
 
     try
     {
@@ -58,11 +58,13 @@ void GameServer::shutdown()
 {
     if(_pingerTimer)
         _pingerTimer->stop();
+
+    Task::setState(Poco::Task::TaskState::TASK_FINISHED);
     _state = GameServer::State::FINISHED;
     _logger.Info() << "Finished";
 }
 
-void GameServer::run()
+void GameServer::runTask()
 {
     try
     {

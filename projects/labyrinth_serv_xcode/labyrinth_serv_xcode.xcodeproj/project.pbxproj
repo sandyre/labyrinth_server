@@ -14,6 +14,7 @@
 		1F5878791F0EBB02001C3ACF /* system_monitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878781F0EBB02001C3ACF /* system_monitor.cpp */; };
 		1F5878841F1198FE001C3ACF /* DatabaseAccessor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878821F1198FE001C3ACF /* DatabaseAccessor.cpp */; };
 		1F5878891F119A59001C3ACF /* named_logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878861F119A59001C3ACF /* named_logger.cpp */; };
+		1F58788C1F12E4C5001C3ACF /* GameServersController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F58788A1F12E4C5001C3ACF /* GameServersController.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
 		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
 		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
@@ -66,6 +67,8 @@
 		1F5878861F119A59001C3ACF /* named_logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = named_logger.cpp; path = ../../../src/toolkit/named_logger.cpp; sourceTree = "<group>"; };
 		1F5878871F119A59001C3ACF /* elapsed_time.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = elapsed_time.hpp; path = ../../../src/toolkit/elapsed_time.hpp; sourceTree = "<group>"; };
 		1F5878881F119A59001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/toolkit/date.h; sourceTree = "<group>"; };
+		1F58788A1F12E4C5001C3ACF /* GameServersController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GameServersController.cpp; path = ../../../src/GameServersController.cpp; sourceTree = "<group>"; };
+		1F58788B1F12E4C5001C3ACF /* GameServersController.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = GameServersController.hpp; path = ../../../src/GameServersController.hpp; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -224,6 +227,8 @@
 				1F40F96D1E49F2A7003861AF /* msnet_generated.h */,
 				1F3E69BD1E4A1AD700A102C1 /* msnet.fbs */,
 				1FEC14491E450ED5004EC380 /* player.hpp */,
+				1F58788A1F12E4C5001C3ACF /* GameServersController.cpp */,
+				1F58788B1F12E4C5001C3ACF /* GameServersController.hpp */,
 			);
 			path = labyrinth_serv_xcode;
 			sourceTree = "<group>";
@@ -301,6 +306,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1F58788C1F12E4C5001C3ACF /* GameServersController.cpp in Sources */,
 				1F23AEC81EC51B060048C59A /* effect.cpp in Sources */,
 				1F5878891F119A59001C3ACF /* named_logger.cpp in Sources */,
 				1F5878841F1198FE001C3ACF /* DatabaseAccessor.cpp in Sources */,
