@@ -15,6 +15,7 @@
 		1F5878841F1198FE001C3ACF /* DatabaseAccessor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878821F1198FE001C3ACF /* DatabaseAccessor.cpp */; };
 		1F5878891F119A59001C3ACF /* named_logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5878861F119A59001C3ACF /* named_logger.cpp */; };
 		1F58788C1F12E4C5001C3ACF /* GameServersController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F58788A1F12E4C5001C3ACF /* GameServersController.cpp */; };
+		1F58788F1F14B09E001C3ACF /* SafePacketGetter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F58788D1F14B09E001C3ACF /* SafePacketGetter.cpp */; };
 		1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBC91EA27FB400542178 /* gameobject.cpp */; };
 		1F5FFBCE1EA2801900542178 /* gameworld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBCC1EA2801900542178 /* gameworld.cpp */; };
 		1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5FFBD21EA2805E00542178 /* gamemap.cpp */; };
@@ -69,6 +70,8 @@
 		1F5878881F119A59001C3ACF /* date.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = date.h; path = ../../../src/toolkit/date.h; sourceTree = "<group>"; };
 		1F58788A1F12E4C5001C3ACF /* GameServersController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GameServersController.cpp; path = ../../../src/GameServersController.cpp; sourceTree = "<group>"; };
 		1F58788B1F12E4C5001C3ACF /* GameServersController.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = GameServersController.hpp; path = ../../../src/GameServersController.hpp; sourceTree = "<group>"; };
+		1F58788D1F14B09E001C3ACF /* SafePacketGetter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SafePacketGetter.cpp; path = ../../../src/toolkit/SafePacketGetter.cpp; sourceTree = "<group>"; };
+		1F58788E1F14B09E001C3ACF /* SafePacketGetter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SafePacketGetter.hpp; path = ../../../src/toolkit/SafePacketGetter.hpp; sourceTree = "<group>"; };
 		1F5FFBC91EA27FB400542178 /* gameobject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameobject.cpp; path = ../../../src/gamelogic/gameobject.cpp; sourceTree = "<group>"; };
 		1F5FFBCA1EA27FB400542178 /* gameobject.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gameobject.hpp; path = ../../../src/gamelogic/gameobject.hpp; sourceTree = "<group>"; };
 		1F5FFBCC1EA2801900542178 /* gameworld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gameworld.cpp; path = ../../../src/gamelogic/gameworld.cpp; sourceTree = "<group>"; };
@@ -146,6 +149,8 @@
 				1F5878871F119A59001C3ACF /* elapsed_time.hpp */,
 				1F5878881F119A59001C3ACF /* date.h */,
 				1F58787B1F1197DE001C3ACF /* optional.hpp */,
+				1F58788D1F14B09E001C3ACF /* SafePacketGetter.cpp */,
+				1F58788E1F14B09E001C3ACF /* SafePacketGetter.hpp */,
 			);
 			name = toolkit;
 			sourceTree = "<group>";
@@ -315,6 +320,7 @@
 				1FEC14551E450ED5004EC380 /* masterserver.cpp in Sources */,
 				1F5FFBE71EA2825A00542178 /* monster.cpp in Sources */,
 				1F5FFBDA1EA280ED00542178 /* mapblock.cpp in Sources */,
+				1F58788F1F14B09E001C3ACF /* SafePacketGetter.cpp in Sources */,
 				1F5FFBCB1EA27FB400542178 /* gameobject.cpp in Sources */,
 				1F5FFBD41EA2805E00542178 /* gamemap.cpp in Sources */,
 				1F5FFBF01EA282F000542178 /* warrior.cpp in Sources */,

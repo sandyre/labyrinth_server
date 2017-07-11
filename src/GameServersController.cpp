@@ -17,6 +17,9 @@ GameServersController::GameServersController()
 {
     _logger.Debug() << "GameServerController is up, number of workers: " << _workers.available();
 
+    for(auto idx = 1931; idx < 1931 + _workers.available(); ++idx)
+        _availablePorts.push_back(idx);
+
     using namespace Poco;
     _taskManager.addObserver(Observer<GameServersController, TaskStartedNotification>(*this,
                                                                                       &GameServersController::onStarted));
@@ -24,6 +27,7 @@ GameServersController::GameServersController()
                                                                                        &GameServersController::onFinished));
 }
 
+    // TODO: should return future<uint16_t>, and callee wait in queue for available server.
 std::experimental::optional<uint16_t>
 GameServersController::GetServerAddress()
 {
@@ -41,7 +45,12 @@ GameServersController::GetServerAddress()
         GameServer::Configuration config;
         config.Players    = 1;
         config.RandomSeed = 0;
-        config.Port       = 1931;
+
+        {
+            std::lock_guard<std::mutex> lock(_availablePortsMutex);
+            config.Port = _availablePorts.back();
+            _availablePorts.pop_back();
+        }
         _taskManager.start(new GameServer(config));
 
         result = config.Port;

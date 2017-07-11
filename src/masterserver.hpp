@@ -45,9 +45,7 @@ private:
 public:
     struct SystemStatus
     {
-        static const int LOG_SYSTEM_ACTIVE      = 0x01;
         static const int NETWORK_SYSTEM_ACTIVE  = 0x02;
-        static const int EMAIL_SYSTEM_ACTIVE    = 0x04;
         static const int DATABASE_SYSTEM_ACTIVE = 0x08;
     };
 
@@ -61,8 +59,6 @@ public:
 
 protected:
     void service_loop();
-    
-    void FreeResourcesAndSaveResults(Poco::Timer&);
 
 protected:
     std::mt19937                    _randGenerator;

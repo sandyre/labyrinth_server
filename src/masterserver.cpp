@@ -9,6 +9,7 @@
 #include "masterserver.hpp"
 
 #include "msnet_generated.h"
+#include "toolkit/SafePacketGetter.hpp"
 #include "services/DatabaseAccessor.hpp"
 
 #include <Poco/Environment.h>
@@ -215,6 +216,7 @@ public:
         {
             _logger.Warning() << "GameServersController returned no address (no servers available)";
             setState(Poco::Task::TaskState::TASK_FINISHED);
+            return;
         }
 
         flatbuffers::FlatBufferBuilder builder;
@@ -250,45 +252,32 @@ MasterServer::MasterServer()
   _taskWorkers("MasterServerQueryWorkers", 8, 16, 60),
   _taskManager(_taskWorkers)
 {
-
-}
-
-MasterServer::~MasterServer()
-{
-    _socket.close();
-    _logger.Info() << "Shutdown";
-}
-
-void MasterServer::init(uint32_t Port)
-{
-    // Init logging
-    _systemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
-
+    uint16_t Port = 1930;
     _logger.Info() << "Booting starts";
 
     _logger.Info() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
     _logger.Info() << "[----------------------PLATFORM INFO---------------------]";
     {
         _logger.Info() << "Operating System: " << Poco::Environment::osDisplayName() << " "
-                << Poco::Environment::osVersion() << " "
-                << Poco::Environment::osArchitecture();
+        << Poco::Environment::osVersion() << " "
+        << Poco::Environment::osArchitecture();
         _logger.Info() << "MasterServer linked against POCO version: "
-                << ((Poco::Environment::libraryVersion() >> 24) & 0xFF) << "."
-                << ((Poco::Environment::libraryVersion() >> 16) & 0xFF) << "."
-                << ((Poco::Environment::libraryVersion() >> 8) & 0xFF) << "."
-                << ((Poco::Environment::libraryVersion() & 0xFF));
+        << ((Poco::Environment::libraryVersion() >> 24) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() >> 16) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() >> 8) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() & 0xFF));
     }
 
     _logger.Info() << "[------------------SYBSYSTEMS BOOTSTRAP------------------]";
 
-    // Init Net
+        // Init Net
     _logger.Info() << "[------------------------NETWORK-------------------------]";
 
-    // Check inet connection
+        // Check inet connection
     try
     {
         _logger.Debug() << "Sending HTTP request to api.ipify.org";
-        
+
         Poco::Net::HTTPClientSession session("api.ipify.org");
         session.setTimeout(Poco::Timespan(1,
                                           0));
@@ -317,7 +306,7 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Failed. Exception thrown: " << e.what();
     }
 
-    // Fill ports pool
+        // Fill ports pool
     for(uint32_t i = 1931; i < (1931 + 150); ++i)
     {
         Poco::Net::DatagramSocket socket;
@@ -336,7 +325,7 @@ void MasterServer::init(uint32_t Port)
         }
     }
 
-    // Init gameservers threadpool
+        // Init gameservers threadpool
     _logger.Info() << "[----------------GAME SERVERS CONTROLLER-----------------]";
     try
     {
@@ -347,7 +336,7 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Failed. Exception thrown: " << e.what();
     }
 
-    // Init DB
+        // Init DB
     _logger.Info() << "[---------------DATABASE ACCESSOR SERVICE----------------]";
 
     try
@@ -382,46 +371,29 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Failed. Exception thrown: " << e.what();
     }
 
-    // Everything done
+        // Everything done
     _logger.Info() << "[-------------SYBSYSTEMS BOOTSTRAP COMPLETED-------------]\n\n";
 }
 
-void MasterServer::run()
+MasterServer::~MasterServer()
 {
-    this->init(1930);
-    this->service_loop();
+    _logger.Info() << "Waiting all workers to complete";
+    _taskWorkers.collect();
 }
 
-void MasterServer::service_loop()
+
+void MasterServer::run()
 {
+    _logger.Info() << "[----------------MASTERSERVER IS RUNNING-----------------]";
     while(true)
     {
-        Poco::Net::SocketAddress sender_addr;
-        
-        if(_socket.available() > _dataBuffer.size())
-        {
-            auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
-                                                 _dataBuffer.size(),
-                                                 sender_addr);
+        SafePacketGetter packetGetter(_socket);
+        auto packet = packetGetter.Get<MasterEvent::Message>();
+        if(!packet)
+            continue;
 
-            _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
-            continue;
-        }
-        
-        auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
-                                             _dataBuffer.size(),
-                                             sender_addr);
-        
-        flatbuffers::Verifier verifier(_dataBuffer.data(),
-                                       pack_size);
-        if(!VerifyMessageBuffer(verifier))
-        {
-            _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
-            continue;
-        }
-        
-        auto msg  = GetMessage(_dataBuffer.data());
-        
+        auto msg = GetMessage(packet->Data.data());
+
         switch(msg->message_type())
         {
             case Messages_CLPing:
@@ -431,21 +403,21 @@ void MasterServer::service_loop()
                                           Messages_CLPing,
                                           pong.Union());
                 _flatBuilder.Finish(smsg);
-                
+
                 _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                _flatBuilder.GetSize(),
-                               sender_addr);
+                               packet->Sender);
                 _flatBuilder.Clear();
                 break;
             }
-                
+
             case Messages_CLRegister:
             {
                 if(_taskWorkers.available())
                 {
                     auto registr = static_cast<const CLRegister*>(msg->message());
                     _taskManager.start(new RegistrationTask(*this,
-                                                            sender_addr,
+                                                            packet->Sender,
                                                             std::string(registr->email()->c_str()),
                                                             std::string(registr->password()->c_str())));
                 }
@@ -454,14 +426,14 @@ void MasterServer::service_loop()
 
                 break;
             }
-                
+
             case Messages_CLLogin:
             {
                 if(_taskWorkers.available())
                 {
                     auto login = static_cast<const CLLogin*>(msg->message());
                     _taskManager.start(new LoginTask(*this,
-                                                     sender_addr,
+                                                     packet->Sender,
                                                      std::string(login->email()->c_str()),
                                                      std::string(login->password()->c_str())));
                 }
@@ -470,21 +442,21 @@ void MasterServer::service_loop()
 
                 break;
             }
-                
+
             case Messages_CLFindGame:
             {
                 if(_taskWorkers.available())
                 {
                     auto finder = static_cast<const CLFindGame*>(msg->message());
                     _taskManager.start(new FindGameTask(*this,
-                                                        sender_addr));
+                                                        packet->Sender));
                 }
                 else
                     _logger.Warning() << "No workers available, task skipped";
 
                 break;
             }
-                
+
             default:
                 _logger.Warning() << "Undefined packet received";
                 break;

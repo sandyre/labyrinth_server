@@ -43,10 +43,16 @@ private:
     {
         _logger.Debug() << pNf->task()->name() << " finished.";
         pNf->release();
+
+        std::lock_guard<std::mutex> l(_availablePortsMutex);
+        _availablePorts.push_back(dynamic_cast<GameServer*>(pNf->task())->GetConfig().Port);
     }
     
 private:
     NamedLogger             _logger;
+
+    std::mutex              _availablePortsMutex;
+    std::deque<uint16_t>    _availablePorts;
 
     Poco::TaskManager       _taskManager;
     Poco::ThreadPool        _workers;

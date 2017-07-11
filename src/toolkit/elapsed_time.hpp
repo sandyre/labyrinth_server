@@ -15,7 +15,8 @@ class ElapsedTime
 {
 public:
     ElapsedTime()
-    { _started = std::chrono::steady_clock::now(); }
+    : _started(std::chrono::steady_clock::now())
+    { }
 
     void Reset()
     { _started = std::chrono::steady_clock::now(); }

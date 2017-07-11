@@ -130,7 +130,7 @@ size_t getCurrentRSS( )
 
 SystemMonitor::SystemMonitor()
 : _logger("SystemMonitor", NamedLogger::Mode::STDIO),
-  _timer(std::make_unique<Poco::Timer>(0, 180000))
+  _timer(std::make_unique<Poco::Timer>(180000, 180000))
 {
     _logger.Debug() << "SystemMonitor is up, report interval: " << _timer->getPeriodicInterval() << "ms";
 
