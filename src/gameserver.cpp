@@ -47,12 +47,8 @@ GameServer::GameServer(const Configuration& config)
     Poco::TimerCallback<GameServer> free_callback(*this,
                                                   &GameServer::Ping);
     _pingerTimer->start(free_callback);
-}
 
-GameServer::~GameServer()
-{
-    _logger.Info() << "Destructor called";
-    _socket.close();
+    Task::setState(Poco::Task::TaskState::TASK_IDLE);
 }
 
 void GameServer::shutdown()
@@ -61,8 +57,6 @@ void GameServer::shutdown()
         _pingerTimer->stop();
 
     Task::setState(Poco::Task::TaskState::TASK_FINISHED);
-    _state = GameServer::State::FINISHED;
-    _logger.Info() << "Finished";
 }
 
 void GameServer::runTask()
@@ -346,9 +340,8 @@ void GameServer::hero_picking_stage()
                                           });
         
         if(_players.size() != _config.Players)
-        {
             throw std::runtime_error("Unhandled situation: num of players < lobby size in HERO_PICKING phase");
-        }
+
         if(bEveryoneReady)
         {
             _state = GameServer::State::GENERATING_WORLD;
@@ -466,7 +459,7 @@ void GameServer::running_game_stage()
             {
                 if(sender->GetAddress() != packet->Sender)
                 {
-                    _logger.Warning() << "Player" << sender->GetNickname() << " dynamic change IP to " << packet->Sender.toString();
+                    _logger.Warning() << "Player" << sender->GetNickname() << " dynamicly changed IP to " << packet->Sender.toString();
                     
                     sender->SetAddress(packet->Sender);
                 }
@@ -477,9 +470,7 @@ void GameServer::running_game_stage()
                                                             packet->Data.end());
             }
             else
-            {
                 _logger.Warning() << "Received packet from unexisting player with IP [" << packet->Sender.toString() << "]";
-            }
         }
 
         auto& out_events = _gameWorld->GetOutgoingEvents();

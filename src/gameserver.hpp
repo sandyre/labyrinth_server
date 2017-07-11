@@ -20,8 +20,8 @@
 #include <chrono>
 #include <cstring>
 #include <memory>
-#include <string>
 #include <sstream>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -48,7 +48,6 @@ public:
 
 public:
     GameServer(const Configuration&);
-    ~GameServer();
 
     virtual void runTask();
 
