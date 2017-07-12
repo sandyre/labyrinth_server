@@ -18,11 +18,11 @@ using namespace std::chrono_literals;
 
 using namespace GameEvent;
 
-GameWorld::GameWorld() :
-_objUIDSeq(1),
-_monsterSpawnInterval(30s),
-_monsterSpawnTimer(30s),
-_logger("GameWorld", NamedLogger::Mode::STDIO)
+GameWorld::GameWorld()
+: _objUIDSeq(1),
+  _monsterSpawnInterval(30s),
+  _monsterSpawnTimer(30s),
+  _logger("World", NamedLogger::Mode::STDIO)
 { }
 
 GameWorld::~GameWorld()

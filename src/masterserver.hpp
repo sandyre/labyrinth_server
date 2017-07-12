@@ -9,7 +9,7 @@
 #ifndef masterserver_hpp
 #define masterserver_hpp
 
-#include "gameserver.hpp"
+#include "GameServersController.hpp"
 #include "msnet_generated.h"
 #include "player.hpp"
 #include "services/system_monitor.hpp"
@@ -38,15 +38,14 @@ class MasterServer : public Poco::Runnable
 private:
     class RegistrationTask;
     class LoginTask;
+    class FindGameTask;
 
     using GameServers = std::vector<std::unique_ptr<GameServer>>;
 
 public:
     struct SystemStatus
     {
-        static const int LOG_SYSTEM_ACTIVE      = 0x01;
         static const int NETWORK_SYSTEM_ACTIVE  = 0x02;
-        static const int EMAIL_SYSTEM_ACTIVE    = 0x04;
         static const int DATABASE_SYSTEM_ACTIVE = 0x08;
     };
 
@@ -60,8 +59,6 @@ public:
 
 protected:
     void service_loop();
-    
-    void FreeResourcesAndSaveResults(Poco::Timer&);
 
 protected:
     std::mt19937                    _randGenerator;
@@ -72,8 +69,7 @@ protected:
     uint32_t                        _systemStatus;
 
     // Gameservers
-    std::unique_ptr<Poco::ThreadPool>        _threadPool;
-    GameServers                              _gameServers;
+    std::unique_ptr<GameServersController>  _gameserversController;
 
     // Network
     Poco::Net::DatagramSocket      _socket;
@@ -91,6 +87,7 @@ protected:
 
     friend RegistrationTask;
     friend LoginTask;
+    friend FindGameTask;
 };
 
 #endif /* masterserver_hpp */

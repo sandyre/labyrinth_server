@@ -9,8 +9,10 @@
 #include "masterserver.hpp"
 
 #include "msnet_generated.h"
+#include "toolkit/SafePacketGetter.hpp"
 #include "services/DatabaseAccessor.hpp"
 
+#include <Poco/Environment.h>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
@@ -33,7 +35,7 @@ public:
                      const Poco::Net::SocketAddress& recipient,
                      const std::string& email,
                      const std::string& password)
-    : Task("registrationTask"),
+    : Task("RegistrationTask"),
       _master(masterServer),
       _logger("RegistrationTask", NamedLogger::Mode::STDIO),
       _recipient(recipient),
@@ -116,7 +118,7 @@ public:
               const Poco::Net::SocketAddress& recipient,
               const std::string& email,
               const std::string& password)
-    : Task("loginTask"),
+    : Task("LoginTask"),
       _master(masterServer),
       _logger("LoginTask", NamedLogger::Mode::STDIO),
       _recipient(recipient),
@@ -192,6 +194,55 @@ private:
     const std::string                                       _password;
 };
 
+class MasterServer::FindGameTask : public Poco::Task
+{
+public:
+    FindGameTask(MasterServer& masterServer,
+                 const Poco::Net::SocketAddress& recipient)
+    : Task("FindGameTask"),
+    _master(masterServer),
+    _logger("FindGameTask", NamedLogger::Mode::STDIO),
+    _recipient(recipient)
+    { }
+
+    void runTask()
+    {
+        using namespace MasterEvent;
+
+        _logger.Debug() << "FindGame task acquired, waiting GameServersController response";
+
+        auto serverPort = _master._gameserversController->GetServerAddress();
+        if(!serverPort)
+        {
+            _logger.Warning() << "GameServersController returned no address (no servers available)";
+            setState(Poco::Task::TaskState::TASK_FINISHED);
+            return;
+        }
+
+        flatbuffers::FlatBufferBuilder builder;
+        _logger.Debug() << "Found game for [" << _recipient.toString() << "]";
+
+        auto game_found = CreateSVGameFound(builder,
+                                            *serverPort);
+        auto ms_event = CreateMessage(builder,
+                                      Messages_SVGameFound,
+                                      game_found.Union());
+        builder.Finish(ms_event);
+
+        _master._socket.sendTo(builder.GetBufferPointer(),
+                               builder.GetSize(),
+                               _recipient);
+
+        setState(Poco::Task::TaskState::TASK_FINISHED);
+    }
+
+private:
+    MasterServer&                                           _master;
+    NamedLogger                                             _logger;
+    Poco::Net::SocketAddress                                _recipient;
+};
+
+
 MasterServer::MasterServer()
 : _systemStatus(0),
   _randGenerator(228),
@@ -201,34 +252,32 @@ MasterServer::MasterServer()
   _taskWorkers("MasterServerQueryWorkers", 8, 16, 60),
   _taskManager(_taskWorkers)
 {
-
-}
-
-MasterServer::~MasterServer()
-{
-    _socket.close();
-    _logger.Info() << "Shutdown";
-}
-
-void MasterServer::init(uint32_t Port)
-{
-    // Init logging
-    _systemStatus |= SystemStatus::LOG_SYSTEM_ACTIVE;
-
+    uint16_t Port = 1930;
     _logger.Info() << "Booting starts";
 
     _logger.Info() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
+    _logger.Info() << "[----------------------PLATFORM INFO---------------------]";
+    {
+        _logger.Info() << "Operating System: " << Poco::Environment::osDisplayName() << " "
+        << Poco::Environment::osVersion() << " "
+        << Poco::Environment::osArchitecture();
+        _logger.Info() << "MasterServer linked against POCO version: "
+        << ((Poco::Environment::libraryVersion() >> 24) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() >> 16) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() >> 8) & 0xFF) << "."
+        << ((Poco::Environment::libraryVersion() & 0xFF));
+    }
 
     _logger.Info() << "[------------------SYBSYSTEMS BOOTSTRAP------------------]";
 
-    // Init Net
+        // Init Net
     _logger.Info() << "[------------------------NETWORK-------------------------]";
 
-    // Check inet connection
+        // Check inet connection
     try
     {
         _logger.Debug() << "Sending HTTP request to api.ipify.org";
-        
+
         Poco::Net::HTTPClientSession session("api.ipify.org");
         session.setTimeout(Poco::Timespan(1,
                                           0));
@@ -257,7 +306,7 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Failed. Exception thrown: " << e.what();
     }
 
-    // Fill ports pool
+        // Fill ports pool
     for(uint32_t i = 1931; i < (1931 + 150); ++i)
     {
         Poco::Net::DatagramSocket socket;
@@ -276,15 +325,18 @@ void MasterServer::init(uint32_t Port)
         }
     }
 
-    // Init gameservers threadpool
-    _logger.Warning() << "Initializing gameservers threadpool...";
-    _threadPool = std::make_unique<Poco::ThreadPool>(std::thread::hardware_concurrency(), // min
-                                                     std::thread::hardware_concurrency() * 4, // max
-                                                     120, // idle time
-                                                     0); // stack size
-    _logger.Info() << "DONE";
+        // Init gameservers threadpool
+    _logger.Info() << "[----------------GAME SERVERS CONTROLLER-----------------]";
+    try
+    {
+        _gameserversController = std::make_unique<GameServersController>();
+    }
+    catch(const std::exception& e)
+    {
+        _logger.Error() << "Failed. Exception thrown: " << e.what();
+    }
 
-    // Init DB
+        // Init DB
     _logger.Info() << "[---------------DATABASE ACCESSOR SERVICE----------------]";
 
     try
@@ -319,46 +371,29 @@ void MasterServer::init(uint32_t Port)
         _logger.Error() << "Failed. Exception thrown: " << e.what();
     }
 
-    // Everything done
+        // Everything done
     _logger.Info() << "[-------------SYBSYSTEMS BOOTSTRAP COMPLETED-------------]\n\n";
 }
 
-void MasterServer::run()
+MasterServer::~MasterServer()
 {
-    this->init(1930);
-    this->service_loop();
+    _logger.Info() << "Waiting all workers to complete";
+    _taskWorkers.collect();
 }
 
-void MasterServer::service_loop()
+
+void MasterServer::run()
 {
+    _logger.Info() << "[----------------MASTERSERVER IS RUNNING-----------------]";
     while(true)
     {
-        Poco::Net::SocketAddress sender_addr;
-        
-        if(_socket.available() > _dataBuffer.size())
-        {
-            auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
-                                                 _dataBuffer.size(),
-                                                 sender_addr);
+        SafePacketGetter packetGetter(_socket);
+        auto packet = packetGetter.Get<MasterEvent::Message>();
+        if(!packet)
+            continue;
 
-            _logger.Warning() << "Received packet which size is more than buffer_size. Probably, its a hack or DDoS. Sender addr: " << sender_addr.toString();
-            continue;
-        }
-        
-        auto pack_size = _socket.receiveFrom(_dataBuffer.data(),
-                                             _dataBuffer.size(),
-                                             sender_addr);
-        
-        flatbuffers::Verifier verifier(_dataBuffer.data(),
-                                       pack_size);
-        if(!VerifyMessageBuffer(verifier))
-        {
-            _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << sender_addr.toString();
-            continue;
-        }
-        
-        auto msg  = GetMessage(_dataBuffer.data());
-        
+        auto msg = GetMessage(packet->Data.data());
+
         switch(msg->message_type())
         {
             case Messages_CLPing:
@@ -368,21 +403,21 @@ void MasterServer::service_loop()
                                           Messages_CLPing,
                                           pong.Union());
                 _flatBuilder.Finish(smsg);
-                
+
                 _socket.sendTo(_flatBuilder.GetBufferPointer(),
                                _flatBuilder.GetSize(),
-                               sender_addr);
+                               packet->Sender);
                 _flatBuilder.Clear();
                 break;
             }
-                
+
             case Messages_CLRegister:
             {
                 if(_taskWorkers.available())
                 {
                     auto registr = static_cast<const CLRegister*>(msg->message());
                     _taskManager.start(new RegistrationTask(*this,
-                                                            sender_addr,
+                                                            packet->Sender,
                                                             std::string(registr->email()->c_str()),
                                                             std::string(registr->password()->c_str())));
                 }
@@ -391,14 +426,14 @@ void MasterServer::service_loop()
 
                 break;
             }
-                
+
             case Messages_CLLogin:
             {
                 if(_taskWorkers.available())
                 {
                     auto login = static_cast<const CLLogin*>(msg->message());
                     _taskManager.start(new LoginTask(*this,
-                                                     sender_addr,
+                                                     packet->Sender,
                                                      std::string(login->email()->c_str()),
                                                      std::string(login->password()->c_str())));
                 }
@@ -407,89 +442,21 @@ void MasterServer::service_loop()
 
                 break;
             }
-                
+
             case Messages_CLFindGame:
             {
-                auto finder = static_cast<const CLFindGame*>(msg->message());
-                
-                if(finder->cl_version_major() == GAMEVERSION_MAJOR)
+                if(_taskWorkers.available())
                 {
-                    _logger.Info() << "Player " << finder->player_uid() << " version is OK";
-                    
-                    auto gs_accepted = CreateSVFindGame(_flatBuilder,
-                                                        finder->player_uid(),
-                                                        ConnectionResponse_ACCEPTED);
-                    auto gs_event    = CreateMessage(_flatBuilder,
-                                                     Messages_SVFindGame,
-                                                     gs_accepted.Union());
-                    _flatBuilder.Finish(gs_event);
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
+                    auto finder = static_cast<const CLFindGame*>(msg->message());
+                    _taskManager.start(new FindGameTask(*this,
+                                                        packet->Sender));
                 }
                 else
-                {
-                    _logger.Warning() << "Player " << finder->player_uid() << " connection refused: old client version"
-                            << " (" << std::to_string(finder->cl_version_major()) << "."
-                            << std::to_string(finder->cl_version_minor()) << "."
-                            << std::to_string(finder->cl_version_build()) << ")";
-                    
-                    auto gs_refused = CreateSVFindGame(_flatBuilder,
-                                                       finder->player_uid(),
-                                                       ConnectionResponse_REFUSED);
-                    auto gs_event   = CreateMessage(_flatBuilder,
-                                                    Messages_SVFindGame,
-                                                    gs_refused.Union());
-                    _flatBuilder.Finish(gs_event);
-                    _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                                   _flatBuilder.GetSize(),
-                                   sender_addr);
-                    _flatBuilder.Clear();
-                    break;
-                }
-                
-                GameServers::const_iterator server_available;
-                {
-                    server_available = std::find_if(_gameServers.cbegin(),
-                                                    _gameServers.cend(),
-                                                    [this](std::unique_ptr<GameServer> const& gs)
-                                                    {
-                                                        return gs->GetState() == GameServer::State::LOBBY_FORMING;
-                                                    });
-                    if(server_available == _gameServers.cend())
-                    {
-                        GameServer::Configuration config;
-                        config.Players    = 1; // +-
-                        config.RandomSeed = _randDistr(_randGenerator);
-                        config.Port       = _availablePorts.front();
-                        _availablePorts.pop();
-                        
-                        _gameServers.emplace_back(std::make_unique<GameServer>(config));
-                        _threadPool->startWithPriority(Poco::Thread::Priority::PRIO_NORMAL,
-                                                       *_gameServers.back(),
-                                                       "GameServer");
-                        server_available = _gameServers.end()-1;
-                    }
-                }
-                
-                _logger.Info() << "TRANSFER: Player " << finder->player_uid() << " -> GS" << (*server_available)->GetConfig().Port;
-                
-                    // transfer player to GS
-                auto game_found = CreateSVGameFound(_flatBuilder,
-                                                    (*server_available)->GetConfig().Port);
-                auto ms_event = CreateMessage(_flatBuilder,
-                                              Messages_SVGameFound,
-                                              game_found.Union());
-                _flatBuilder.Finish(ms_event);
-                
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               sender_addr);
-                _flatBuilder.Clear();
+                    _logger.Warning() << "No workers available, task skipped";
+
                 break;
             }
-                
+
             default:
                 _logger.Warning() << "Undefined packet received";
                 break;
