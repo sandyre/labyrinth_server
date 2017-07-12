@@ -27,6 +27,7 @@ public:
         
         IN_GAME
     };
+
 public:
     Player(PlayerUID uid,
            Poco::Net::SocketAddress addr,

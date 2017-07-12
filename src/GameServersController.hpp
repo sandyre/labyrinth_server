@@ -41,11 +41,11 @@ private:
 
     void onFinished(Poco::TaskFinishedNotification* pNf)
     {
-        _logger.Debug() << pNf->task()->name() << " finished.";
-        pNf->release();
-
         std::lock_guard<std::mutex> l(_availablePortsMutex);
         _availablePorts.push_back(dynamic_cast<GameServer*>(pNf->task())->GetConfig().Port);
+
+        _logger.Debug() << pNf->task()->name() << " finished.";
+        pNf->release();
     }
     
 private:

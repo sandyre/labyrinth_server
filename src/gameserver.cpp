@@ -494,15 +494,10 @@ void GameServer::running_game_stage()
 std::vector<Player>::iterator GameServer::FindPlayerByUID(PlayerUID uid)
 {
     std::lock_guard<std::mutex> lock(_playersMutex);
-    for(auto iter = _players.begin();
-        iter != _players.end();
-        ++iter)
-    {
-        if((*iter).GetUID() == uid)
-        {
-            return iter;
-        }
-    }
-
-    return _players.end();
+    return std::find_if(_players.begin(),
+                        _players.end(),
+                        [uid](const auto& player)
+                        {
+                            return player.GetUID() == uid;
+                        });
 }

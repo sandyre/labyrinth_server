@@ -26,9 +26,6 @@ namespace Color
     static const std::string RESET      = "\033[0m";
 }
 
-struct End
-{ };
-
 class NamedLogger
 {
 private:
