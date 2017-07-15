@@ -25,17 +25,16 @@ public:
         MAGE = 0x01,
         ROGUE = 0x02,
         PRIEST = 0x03,
-        LAST_HERO = 0x03
+        LAST_HERO = 0x03,
+        UNDEFINED
     };
 public:
     Hero::Type      GetHero() const;
     
     virtual void    update(std::chrono::microseconds) override;
-    
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) = 0;
 
 protected:
-    Hero();
+    Hero(GameWorld& world);
     
 protected:
     Hero::Type      _heroType;

@@ -8,8 +8,9 @@
 
 #include "item.hpp"
 
-Item::Item() :
-_carrierUID(0)
+Item::Item(GameWorld& world)
+: GameObject(world),
+  _carrierUID(0)
 {
     _objType = GameObject::Type::ITEM;
     _objAttributes |= GameObject::Attributes::PASSABLE;
@@ -21,24 +22,14 @@ Item::GetType() const
     return _itemType;
 }
 
-uint32_t
-Item::GetCarrierID() const
-{
-    return _carrierUID;
-}
-
-void
-Item::SetCarrierID(uint32_t id)
-{
-    _carrierUID = id;
-}
-
-Key::Key()
+Key::Key(GameWorld& world)
+: Item(world)
 {
     _itemType = Item::Type::KEY;
 }
 
-Sword::Sword()
+Sword::Sword(GameWorld& world)
+: Item(world)
 {
     _itemType = Item::Type::SWORD;
 }

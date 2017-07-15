@@ -19,14 +19,14 @@ public:
         KEY,
         SWORD
     };
-    
+
+public:
     Item::Type  GetType() const;
-    
-    uint32_t    GetCarrierID() const;
-    void        SetCarrierID(uint32_t);
+
+    virtual void update(std::chrono::microseconds) override { }
     
 protected:
-    Item();
+    Item(GameWorld& world);
     
     Item::Type  _itemType;
     uint32_t    _carrierUID;
@@ -35,13 +35,13 @@ protected:
 class Key : public Item
 {
 public:
-    Key();
+    Key(GameWorld& world);
 };
 
 class Sword : public Item
 {
 public:
-    Sword();
+    Sword(GameWorld& world);
 };
 
 #endif /* item_hpp */

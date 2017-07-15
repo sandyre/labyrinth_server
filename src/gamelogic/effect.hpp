@@ -33,16 +33,17 @@ public:
     const std::string& GetName() const
     { return _name; }
     
-    void         SetTargetUnit(Unit * target)
+    void SetTargetUnit(std::shared_ptr<Unit> target)
     { _targetUnit = target; }
     
     virtual void start() = 0;
     virtual void update(std::chrono::microseconds) = 0; // called each frame by unit its applied to
     virtual void stop() = 0;
+
 protected:
     State                       _state;
     std::chrono::microseconds   _timer;
-    Unit *                      _targetUnit;
+    std::shared_ptr<Unit>       _targetUnit;
     std::string                 _name;
 };
 

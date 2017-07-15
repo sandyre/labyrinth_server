@@ -14,8 +14,9 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-Monster::Monster() :
-_chasingUnit(nullptr)
+Monster::Monster(GameWorld& world)
+: Unit(world),
+  _chasingUnit(nullptr)
 {
     _unitType = Unit::Type::MONSTER;
     _name = "Skeleton";
@@ -81,7 +82,7 @@ Monster::update(std::chrono::microseconds delta)
                         return;
                     
                         // Log damage event
-                    _gameWorld->_logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
+                    _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
                     
                         // set up CD
                     std::get<0>(_spellsCDs[0]) = false;
@@ -104,13 +105,15 @@ Monster::update(std::chrono::microseconds delta)
                                                           spell1.Union());
                     builder.Finish(event);
                     
-                    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                                        builder.GetBufferPointer() + builder.GetSize());
+                    _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                                 builder.GetBufferPointer() + builder.GetSize());
                     
                         // deal PHYSICAL damage
-                    _duelTarget->TakeDamage(_actualDamage,
-                                              Unit::DamageType::PHYSICAL,
-                                              this);
+                    auto dmgDescr = Unit::DamageDescriptor();
+                    dmgDescr.DealerName = _name;
+                    dmgDescr.Value = _actualDamage;
+                    dmgDescr.Type = Unit::DamageDescriptor::DamageType::PHYSICAL;
+                    _duelTarget->TakeDamage(dmgDescr);
                     
                     _castSequence[0].Refresh();
                 }
@@ -125,7 +128,7 @@ Monster::update(std::chrono::microseconds delta)
 }
 
 void
-Monster::Spawn(Point2 log_pos)
+Monster::Spawn(Point<> log_pos)
 {
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE |
@@ -136,7 +139,7 @@ Monster::Spawn(Point2 log_pos)
     Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
-    _logPos = log_pos;
+    _pos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameEvent::CreateSVSpawnMonster(builder,
@@ -148,19 +151,15 @@ Monster::Spawn(Point2 log_pos)
                                         GameEvent::Events_SVSpawnMonster,
                                         spawn.Union());
     builder.Finish(msg);
-    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                        builder.GetBufferPointer() + builder.GetSize());
+    _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                 builder.GetBufferPointer() + builder.GetSize());
 }
 
 void
-Monster::Die(Unit * killer)
+Monster::Die(const std::string& killerName)
 {
-    if(killer->GetDuelTarget() == this)
-    {
-        killer->EndDuel();
-    }
         // Log death event
-    _gameWorld->_logger.Info() << this->GetName() << " KILLED BY " << killer->GetName() << " DIED AT (" << _logPos.x << ";" << _logPos.y << ")";
+    _world._logger.Info() << this->GetName() << " KILLED BY " << killerName << " DIED AT (" << _pos.x << ";" << _pos.y << ")";
     
         // drop items
     while(!_inventory.empty())
@@ -174,14 +173,14 @@ Monster::Die(Unit * killer)
     flatbuffers::FlatBufferBuilder builder;
     auto move = GameEvent::CreateSVActionDeath(builder,
                                                this->GetUID(),
-                                               killer->GetUID());
+                                               0);
     auto msg = GameEvent::CreateMessage(builder,
                                         0,
                                         GameEvent::Events_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
-    _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                        builder.GetBufferPointer() + builder.GetSize());
+    _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                 builder.GetBufferPointer() + builder.GetSize());
     
     _state = Unit::State::DEAD;
     _objAttributes = GameObject::Attributes::PASSABLE;

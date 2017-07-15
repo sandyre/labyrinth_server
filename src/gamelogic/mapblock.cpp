@@ -8,7 +8,8 @@
 
 #include "mapblock.hpp"
 
-MapBlock::MapBlock()
+MapBlock::MapBlock(GameWorld& world)
+: GameObject(world)
 {
     _objType = GameObject::Type::MAPBLOCK;
 }
@@ -19,18 +20,21 @@ MapBlock::GetType() const
     return _blockType;
 }
 
-NoBlock::NoBlock()
+NoBlock::NoBlock(GameWorld& world)
+: MapBlock(world)
 {
     _blockType = MapBlock::Type::NOBLOCK;
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
-WallBlock::WallBlock()
+WallBlock::WallBlock(GameWorld& world)
+: MapBlock(world)
 {
     _blockType = MapBlock::Type::WALL;
 }
 
-BorderBlock::BorderBlock()
+BorderBlock::BorderBlock(GameWorld& world)
+: MapBlock(world)
 {
     _blockType = MapBlock::Type::BORDER;
 }

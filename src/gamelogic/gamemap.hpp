@@ -13,11 +13,9 @@
 #include <vector>
 #include <cstdint>
 
-class GameWorld;
-
-class GameMap
+class GameMapGenerator
 {
-private:
+public:
     enum class MapBlockType : unsigned char
     {
         NOBLOCK = 0x00,
@@ -34,8 +32,7 @@ public:
     };
     
 public:
-    void    GenerateMap(const Configuration&, GameWorld*);
-    
+    static std::vector<std::vector<MapBlockType>> GenerateMap(const Configuration& conf);
 };
 
 #endif /* gamemap_hpp */

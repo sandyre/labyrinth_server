@@ -17,7 +17,7 @@
 class Warrior : public Hero
 {
 public:
-    Warrior();
+    Warrior(GameWorld& world);
     
     virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
 };

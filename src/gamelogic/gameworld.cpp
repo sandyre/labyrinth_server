@@ -10,6 +10,7 @@
 
 #include "construction.hpp"
 #include "item.hpp"
+#include "mapblock.hpp"
 #include "units/monster.hpp"
 #include "../player.hpp"
 
@@ -18,30 +19,84 @@ using namespace std::chrono_literals;
 
 using namespace GameEvent;
 
-GameWorld::GameWorld()
-: _objUIDSeq(1),
-  _monsterSpawnInterval(30s),
+GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
+                     std::vector<PlayerInfo>& players)
+: _monsterSpawnInterval(30s),
   _monsterSpawnTimer(30s),
+  _mapConf(conf),
   _logger("World", NamedLogger::Mode::STDIO)
-{ }
-
-GameWorld::~GameWorld()
 {
-    for(auto obj : _objects)
+    auto map = GameMapGenerator::GenerateMap(conf);
+
+        // create floor
+    for(int i = map.size()-1; i >= 0; --i)
     {
-        delete obj;
+        for(int j = map.size()-1; j >= 0; --j)
+        {
+            auto block = _objectFactory.Create<NoBlock>(*this);
+            block->SetPosition(Point<>(i, j));
+            _objects.push_back(block);
+        }
     }
-}
 
-void
-GameWorld::CreateGameMap(const GameMap::Configuration& _conf)
-{
-    m_stMapConf = _conf;
-    
-    GameMap gamemap;
-    gamemap.GenerateMap(m_stMapConf, this);
-    _objUIDSeq = _objects.back()->GetUID();
-    ++_objUIDSeq;
+    for(int i = map.size()-1; i >= 0; --i)
+    {
+        for(int j = map.size()-1; j >= 0; --j)
+        {
+            if(map[i][j] == GameMapGenerator::MapBlockType::WALL)
+            {
+                auto block = _objectFactory.Create<WallBlock>(*this);
+                block->SetPosition(Point<>(i, j));
+                _objects.push_back(block);
+            }
+            else if(map[i][j] == GameMapGenerator::MapBlockType::BORDER)
+            {
+                auto block = _objectFactory.Create<BorderBlock>(*this);
+                block->SetPosition(Point<>(i, j));
+                _objects.push_back(block);
+            }
+        }
+    }
+
+    for(auto& player : players)
+    {
+    switch(player.Hero)
+    {
+    case Hero::Type::ROGUE:
+    {
+        auto rogue = _objectFactory.Create<Rogue>(*this, player.LocalUid);
+        rogue->SetName(player.Name);
+        _objects.push_back(rogue);
+        break;
+    }
+    case Hero::Type::WARRIOR:
+    {
+        auto warrior = _objectFactory.Create<Warrior>(*this, player.LocalUid);
+        warrior->SetName(player.Name);
+        _objects.push_back(warrior);
+        break;
+    }
+    case Hero::Type::MAGE:
+    {
+        auto mage = _objectFactory.Create<Mage>(*this, player.LocalUid);
+        mage->SetName(player.Name);
+        _objects.push_back(mage);
+        break;
+    }
+    case Hero::Type::PRIEST:
+    {
+        auto priest = _objectFactory.Create<Priest>(*this, player.LocalUid);
+        priest->SetName(player.Name);
+        _objects.push_back(priest);
+        break;
+    }
+    default:
+        assert(false);
+        break;
+    }
+    }
+
+    InitialSpawn();
 }
 
 std::queue<std::vector<uint8_t>>&
@@ -57,81 +112,31 @@ GameWorld::GetOutgoingEvents()
 }
 
 void
-GameWorld::AddPlayer(Player player)
-{
-    switch(player.GetHeroPicked())
-    {
-        case Hero::Type::ROGUE:
-        {
-            auto rogue = new Rogue();
-            rogue->SetGameWorld(this);
-            rogue->SetUID(player.GetUID());
-            rogue->SetName(player.GetNickname());
-            _objects.push_back(rogue);
-            break;
-        }
-        case Hero::Type::WARRIOR:
-        {
-            auto warrior = new Warrior();
-            warrior->SetGameWorld(this);
-            warrior->SetUID(player.GetUID());
-            warrior->SetName(player.GetNickname());
-            _objects.push_back(warrior);
-            break;
-        }
-        case Hero::Type::MAGE:
-        {
-            auto mage = new Mage();
-            mage->SetGameWorld(this);
-            mage->SetUID(player.GetUID());
-            mage->SetName(player.GetNickname());
-            _objects.push_back(mage);
-            break;
-        }
-        case Hero::Type::PRIEST:
-        {
-            auto priest = new Priest();
-            priest->SetGameWorld(this);
-            priest->SetUID(player.GetUID());
-            priest->SetName(player.GetNickname());
-            _objects.push_back(priest);
-            break;
-        }
-        default:
-            assert(false);
-            break;
-    }
-}
-
-void
 GameWorld::InitialSpawn()
 {
-    for(auto object : _objects)
+    for(auto& object : _objects)
     {
-            // spawn players first
-        if(object->GetObjType() == GameObject::Type::UNIT)
+        if(object->GetType() == GameObject::Type::UNIT)
         {
-            auto unit = static_cast<Unit*>(object);
+            auto unit = std::dynamic_pointer_cast<Unit>(object);
             unit->Spawn(GetRandomPosition());
         }
     }
     
         // spawn key
-    auto key = new Key();
+    auto key = _objectFactory.Create<Key>(*this);
     {
-        key->SetLogicalPosition(GetRandomPosition());
-        key->SetUID(_objUIDSeq);
+        key->SetPosition(GetRandomPosition());
         _objects.push_back(key);
-        ++_objUIDSeq;
         
             // Log key spawn event
-        _logger.Info() << "Key spawned at (" << key->GetLogicalPosition().x << "," << key->GetLogicalPosition().y << ")";
+        _logger.Info() << "Key spawned at (" << key->GetPosition().x << "," << key->GetPosition().y << ")";
 
         auto key_spawn = CreateSVSpawnItem(_flatBuilder,
                                            key->GetUID(),
                                            ItemType_KEY,
-                                           key->GetLogicalPosition().x,
-                                           key->GetLogicalPosition().y);
+                                           key->GetPosition().x,
+                                           key->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
                                  Events_SVSpawnItem,
@@ -144,20 +149,18 @@ GameWorld::InitialSpawn()
     
         // spawn door
     {
-        auto door = new Door();
-        door->SetLogicalPosition(GetRandomPosition());
-        door->SetUID(_objUIDSeq);
+        auto door = _objectFactory.Create<Door>(*this);
+        door->SetPosition(GetRandomPosition());
         _objects.push_back(door);
-        ++_objUIDSeq;
         
             // Log key spawn event
-        _logger.Info() << "Door spawned at (" << door->GetLogicalPosition().x << "," << door->GetLogicalPosition().y << ")";
+        _logger.Info() << "Door spawned at (" << door->GetPosition().x << "," << door->GetPosition().y << ")";
         
         auto door_spawn = CreateSVSpawnConstr(_flatBuilder,
                                               door->GetUID(),
                                               ConstrType_DOOR,
-                                              door->GetLogicalPosition().x,
-                                              door->GetLogicalPosition().y);
+                                              door->GetPosition().x,
+                                              door->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
                                  Events_SVSpawnConstr,
@@ -170,20 +173,18 @@ GameWorld::InitialSpawn()
     
         // spawn graveyard
     {
-        auto grave = new Graveyard();
-        grave->SetLogicalPosition(GetRandomPosition());
-        grave->SetUID(_objUIDSeq);
+        auto grave = _objectFactory.Create<Graveyard>(*this);
+        grave->SetPosition(GetRandomPosition());
         _objects.push_back(grave);
-        ++_objUIDSeq;
         
             // Log key spawn event
-        _logger.Info() << "Graveyard spawned at (" << grave->GetLogicalPosition().x << "," << grave->GetLogicalPosition().y << ")";
+        _logger.Info() << "Graveyard spawned at (" << grave->GetPosition().x << "," << grave->GetPosition().y << ")";
         
         auto grave_spawn = CreateSVSpawnConstr(_flatBuilder,
                                                grave->GetUID(),
                                                ConstrType_GRAVEYARD,
-                                               grave->GetLogicalPosition().x,
-                                               grave->GetLogicalPosition().y);
+                                               grave->GetPosition().x,
+                                               grave->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
                                  Events_SVSpawnConstr,
@@ -196,16 +197,12 @@ GameWorld::InitialSpawn()
     
     {
             // spawn monster
-        auto monster = new Monster();
-        monster->SetUID(_objUIDSeq);
-        monster->SetGameWorld(this);
+        auto monster = _objectFactory.Create<Monster>(*this);
         _objects.push_back(monster);
         monster->Spawn(GetRandomPosition());
         
             // Log monster spawn event
-        _logger.Info() << "Monster spawned at (" << monster->GetLogicalPosition().x << "," << monster->GetLogicalPosition().y << ")";
-        
-        ++_objUIDSeq; // dont forget!
+        _logger.Info() << "Monster spawned at (" << monster->GetPosition().x << "," << monster->GetPosition().y << ")";
     }
 }
 
@@ -219,201 +216,217 @@ GameWorld::ApplyInputEvents()
 
         switch(gs_event->event_type())
         {
-            case GameEvent::Events_CLActionMove:
+        case GameEvent::Events_CLActionMove:
+        {
+            auto cl_mov = static_cast<const GameEvent::CLActionMove*>(gs_event->event());
+
+            auto obj = std::find_if(_objects.begin(),
+                                    _objects.end(),
+                                    [cl_mov](const std::shared_ptr<GameObject>& obj)
+                                    {
+                                        return obj->GetUID() == cl_mov->target_uid();
+                                    });
+
+            if(obj == _objects.end())
             {
-                auto cl_mov = static_cast<const GameEvent::CLActionMove*>(gs_event->event());
+                _logger.Warning() << "Received CLMove with unknown target_uid";
+                continue;
+            }
+
+            auto unit = std::dynamic_pointer_cast<Unit>(*obj);
+            unit->Move((Unit::MoveDirection)cl_mov->mov_dir());
+
+            break;
+        }
+
+        case GameEvent::Events_CLActionItem:
+        {
+            auto cl_item = static_cast<const GameEvent::CLActionItem*>(gs_event->event());
+
+            switch(cl_item->act_type())
+            {
+            case ActionItemType_TAKE:
+            {
+                auto item_obj = std::find_if(_objects.begin(),
+                                             _objects.end(),
+                                             [cl_item](const std::shared_ptr<GameObject>& obj)
+                                             {
+                                                 return obj->GetUID() == cl_item->item_uid();
+                                             });
+                auto unit_obj = std::find_if(_objects.begin(),
+                                             _objects.end(),
+                                             [cl_item](const std::shared_ptr<GameObject>& obj)
+                                             {
+                                                 return obj->GetUID() == cl_item->player_uid();
+                                             });
+
+                if(item_obj == _objects.end() ||
+                   unit_obj == _objects.end())
+                {
+                    _logger.Warning() << "Received CLItem::TAKE with invalid item_uid and/or player_uid";
+                    continue;
+                }
+
+                auto item = std::dynamic_pointer_cast<Item>(*item_obj);
+                auto player = std::dynamic_pointer_cast<Unit>(*unit_obj);
+
+                player->TakeItem(item);
+                _objects.erase(item_obj);
+
+                break;
+            }
+
+            case ActionItemType_DROP:
+            {
+                auto unit_obj = std::find_if(_objects.begin(),
+                                             _objects.end(),
+                                             [cl_item](const std::shared_ptr<GameObject>& obj)
+                                             {
+                                                 return obj->GetUID() == cl_item->player_uid();
+                                             });
+
+                if(unit_obj == _objects.end())
+                {
+                    _logger.Warning() << "Received CLItem::DROP with invalid target_uid";
+                    continue;
+                }
+
+                auto player = std::dynamic_pointer_cast<Unit>(*unit_obj);
+                auto item = player->DropItem(cl_item->item_uid());
+                if(item)
+                    _objects.push_back(item);
+
+                break;
+            }
+
+            default:
+                _logger.Warning() << "Received unhandled CLItem packet type";
+                break;
+            }
+
+            break;
+        }
+
+        case GameEvent::Events_CLActionDuel:
+        {
+            auto sv_duel = static_cast<const GameEvent::CLActionDuel*>(gs_event->event());
+
+            switch(sv_duel->act_type())
+            {
+            case GameEvent::ActionDuelType_STARTED:
+            {
+                std::shared_ptr<Unit> first, second;
+
+                for(auto object : _objects)
+                {
+                    if(object->GetUID() == sv_duel->target1_uid())
+                        first = std::dynamic_pointer_cast<Unit>(object);
+                    else if(object->GetUID() == sv_duel->target2_uid())
+                        second = std::dynamic_pointer_cast<Unit>(object);
+                }
                 
-                for(auto object : _objects)
+                if(first->GetState() == Unit::State::WALKING &&
+                   second->GetState() == Unit::State::WALKING &&
+                   first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
+                   first->GetPosition().Distance(second->GetPosition()) <= 1.0)
                 {
-                    if(object->GetObjType() == GameObject::Type::UNIT)
-                    {
-                        auto unit = dynamic_cast<Unit*>(object);
-
-                        if(unit->GetUID() == cl_mov->target_uid())
-                        {
-                            unit->Move((Unit::MoveDirection)cl_mov->mov_dir());
-                            break;
-                        }
-                    }
+                    first->StartDuel(second);
+                    second->StartDuel(first);
                 }
                 break;
             }
-
-            case GameEvent::Events_CLActionItem:
-            {
-                auto gs_item = static_cast<const GameEvent::CLActionItem*>(gs_event->event());
-                Item * item = nullptr;
-                Hero * player = nullptr;
-
-                auto key_id = gs_item->item_uid();
-                for(auto object : _objects)
-                {
-                    if(object->GetUID() == gs_item->item_uid())
-                    {
-                        item = static_cast<Item*>(object);
-                    }
-                    else if(object->GetUID() == gs_event->sender_id())
-                    {
-                        player = static_cast<Hero*>(object);
-                    }
-                }
-
-                switch(gs_item->act_type())
-                {
-                    case GameEvent::ActionItemType_TAKE:
-                    {
-                        player->TakeItem(item);
-                        break;
-                    }
-
-                    case GameEvent::ActionItemType_DROP:
-                    {
-                        item->SetLogicalPosition(player->GetLogicalPosition());
-
-                            // delete item from players inventory
-                        for(auto it = player->GetInventory().begin();
-                            it != player->GetInventory().end();
-                            ++it)
-                        {
-                            if((*it)->GetUID() == item->GetUID())
-                            {
-                                player->GetInventory().erase(it);
-                                break;
-                            }
-                        }
-                        player->UpdateStats();
-
-                        break;
-                    }
-
-                    default:
-                        assert(false);
-                        break;
-                }
-
+            default:
+                _logger.Warning() << "Received unhandled CLDuel event type";
                 break;
             }
+            break;
+        }
+        
+        case GameEvent::Events_CLActionSpell:
+        {
+            auto cl_spell = static_cast<const GameEvent::CLActionSpell*>(gs_event->event());
 
-            case GameEvent::Events_CLActionDuel:
+            auto unit_obj = std::find_if(_objects.begin(),
+                                         _objects.end(),
+                                         [cl_spell](const std::shared_ptr<GameObject>& obj)
+                                         {
+                                             return obj->GetUID() == cl_spell->player_uid();
+                                         });
+
+            if(unit_obj == _objects.end())
             {
-                auto sv_duel = static_cast<const GameEvent::CLActionDuel*>(gs_event->event());
+                _logger.Warning() << "Received CLSpell event with unknown player_uid";
+                continue;
+            }
 
-                switch(sv_duel->act_type())
-                {
-                    case GameEvent::ActionDuelType_STARTED:
-                    {
-                        Unit * first = nullptr;
-                        Unit * second = nullptr;
+            std::shared_ptr<Unit> unit = std::dynamic_pointer_cast<Unit>(*unit_obj);
+            
+            unit->SpellCast(cl_spell);
+            break;
+        }
+            
+        case GameEvent::Events_CLRequestWin:
+        {
+            auto cl_win = static_cast<const GameEvent::CLRequestWin*>(gs_event->event());
 
-                        for(auto object : _objects)
-                        {
-                            if(object->GetUID() == sv_duel->target1_uid())
-                            {
-                                first = dynamic_cast<Unit*>(object);
-                            }
-                            else if(object->GetUID() == sv_duel->target2_uid())
-                            {
-                                second = dynamic_cast<Unit*>(object);
-                            }
-                        }
-                        
-                        if(first->GetState() == Unit::State::WALKING &&
-                           second->GetState() == Unit::State::WALKING &&
-                           first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
-                           Distance(first->GetLogicalPosition(), second->GetLogicalPosition()) <= 1.0)
-                        {
-                            first->StartDuel(second);
-                            second->StartDuel(first);
-                        }
-                        break;
-                    }
-                    default:
-                        assert(false);
-                        break;
-                }
-                break;
+            auto unit_obj = std::find_if(_objects.begin(),
+                                         _objects.end(),
+                                         [cl_win](const std::shared_ptr<GameObject>& obj)
+                                         {
+                                             return obj->GetUID() == cl_win->player_uid();
+                                         });
+
+            if(unit_obj == _objects.end())
+            {
+                _logger.Warning() << "Received CLRequestWin event with unknown player_uid";
+                continue;
+            }
+
+            auto player = std::dynamic_pointer_cast<Unit>(*unit_obj);
+            auto& inventory = player->GetInventory();
+            bool has_key = std::any_of(inventory.begin(),
+                                       inventory.end(),
+                                       [](const std::shared_ptr<Item>& item)
+                                       {
+                                           return item->GetType() == Item::Type::KEY;
+                                       });
+
+            auto door_obj = std::find_if(_objects.begin(),
+                                         _objects.end(),
+                                         [](const std::shared_ptr<GameObject>& obj)
+                                         {
+                                             if(obj->GetType() == GameObject::Type::CONSTRUCTION &&
+                                                std::dynamic_pointer_cast<Construction>(obj)->GetType() == Construction::Type::DOOR)
+                                             {
+                                                 return true;
+                                             }
+                                             return false;
+                                         });
+            poco_assert_msg(door_obj != _objects.end(), "Door is not presented in gameworld!!!");
+
+            if(has_key && player->GetPosition() == (*door_obj)->GetPosition())
+            {
+                    // GAME ENDS
+                auto game_end = CreateSVGameEnd(_flatBuilder,
+                                                player->GetUID());
+                auto msg = CreateMessage(_flatBuilder,
+                                         0,
+                                         Events_SVGameEnd,
+                                         game_end.Union());
+                _flatBuilder.Finish(msg);
+                _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
+                                      _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
+                _flatBuilder.Clear();
+
+                _logger.Info() << "Player with name '" << player->GetName() << "' won! Escaped from LABYRINTH!";
             }
             
-            case GameEvent::Events_CLActionSpell:
-            {
-                auto gs_spell = static_cast<const GameEvent::CLActionSpell*>(gs_event->event());
-                
-                Hero * player = nullptr;
-                for(auto object : _objects)
-                {
-                    if(object->GetUID() == gs_spell->player_uid())
-                    {
-                        player = static_cast<Hero*>(object);
-                        break;
-                    }
-                }
-                
-                player->SpellCast(gs_spell);
-                break;
-            }
-                
-            case GameEvent::Events_CLRequestWin:
-            {
-                auto gs_win = static_cast<const GameEvent::CLRequestWin*>(gs_event->event());
-                
-                Hero * player = nullptr;
-                for(auto obj : _objects)
-                {
-                    if(obj->GetUID() == gs_win->player_uid())
-                    {
-                        player = static_cast<Hero*>(obj);
-                        break;
-                    }
-                }
-                
-                bool has_key = false;
-                for(auto& item : player->GetInventory())
-                {
-                    if(item->GetType() == Item::Type::KEY)
-                    {
-                        has_key = true;
-                        break;
-                    }
-                }
-                
-                bool at_the_door = false;
-                for(auto obj : _objects)
-                {
-                    if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
-                       static_cast<Construction*>(obj)->GetType() == Construction::Type::DOOR)
-                    {
-                        if(Distance(player->GetLogicalPosition(), obj->GetLogicalPosition()) <= 1.0)
-                        {
-                            at_the_door = true;
-                            break;
-                        }
-                    }
-                }
-                
-                if(has_key && at_the_door)
-                {
-                        // GAME ENDS
-                    auto game_end = CreateSVGameEnd(_flatBuilder,
-                                                    player->GetUID());
-                    auto msg = CreateMessage(_flatBuilder,
-                                             0,
-                                             Events_SVGameEnd,
-                                             game_end.Union());
-                    _flatBuilder.Finish(msg);
-                    _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
-                                         _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
-                    _flatBuilder.Clear();
-                    
-                        // Log key spawn event
-                    _logger.Info() << "Player with name '" << player->GetName() << "' won the escaped from LABYRINTH!";
-                }
-                
-                break;
-            }
-                
-            default:
-                assert(false);
-                break;
+            break;
+        }
+            
+        default:
+            _logger.Warning() << "Received undefined packet type";
+            break;
         }
         
         _inputEvents.pop();
@@ -428,14 +441,15 @@ GameWorld::update(std::chrono::microseconds delta)
     {
         object->update(delta);
     }
+
         // respawn deads
-    Graveyard * grave = nullptr;
+    std::shared_ptr<Graveyard> grave = nullptr;
     for(auto& obj : _objects)
     {
-        if(obj->GetObjType() == GameObject::Type::CONSTRUCTION &&
-           dynamic_cast<Construction*>(obj)->GetType() == Construction::GRAVEYARD)
+        if(obj->GetType() == GameObject::Type::CONSTRUCTION &&
+           std::dynamic_pointer_cast<Construction>(obj)->GetType() == Construction::GRAVEYARD)
         {
-            grave = dynamic_cast<Graveyard*>(obj);
+            grave = std::dynamic_pointer_cast<Graveyard>(obj);
         }
     }
     
@@ -446,7 +460,7 @@ GameWorld::update(std::chrono::microseconds delta)
                                         {
                                             if(unit.first <= 0s)
                                             {
-                                                unit.second->Respawn(grave->GetLogicalPosition());
+                                                unit.second->Respawn(grave->GetPosition());
                                                 return true;
                                             }
                                             else
@@ -463,38 +477,32 @@ GameWorld::update(std::chrono::microseconds delta)
     if(_monsterSpawnTimer <= 0s)
     {
             // spawn monster
-        auto monster = new Monster();
-        monster->SetUID(_objUIDSeq);
-        monster->SetGameWorld(this);
+        auto monster = _objectFactory.Create<Monster>(*this);
         _objects.push_back(monster);
+        
         monster->Spawn(GetRandomPosition());
-        
-            // Log monster spawn event
-        _logger.Info() << "Monster spawned at (" << monster->GetLogicalPosition().x << "," << monster->GetLogicalPosition().y << ")";
-        
-        ++_objUIDSeq; // dont forget!
-        
+
         _monsterSpawnTimer = _monsterSpawnInterval;
     }
 }
 
-Point2
+Point<>
 GameWorld::GetRandomPosition()
 {
-    Point2 point;
+    Point<> point;
     
     bool point_found = false;
     do
     {
-        point.x = _randDistr(_randGenerator) % (m_stMapConf.MapSize * m_stMapConf.RoomSize + 1);
-        point.y = _randDistr(_randGenerator) % (m_stMapConf.MapSize * m_stMapConf.RoomSize + 1);
+        point.x = _randDistr(_randGenerator) % (_mapConf.MapSize * _mapConf.RoomSize + 1);
+        point.y = _randDistr(_randGenerator) % (_mapConf.MapSize * _mapConf.RoomSize + 1);
         point_found = true;
         
         for(auto object : _objects)
         {
-            if(object->GetLogicalPosition() == point)
+            if(object->GetPosition() == point)
             {
-                if(object->GetObjType() != GameObject::Type::MAPBLOCK ||
+                if(object->GetType() != GameObject::Type::MAPBLOCK ||
                    !(object->GetAttributes() & GameObject::Attributes::PASSABLE))
                 {
                     point_found = false;

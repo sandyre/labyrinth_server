@@ -29,6 +29,36 @@
 
 class GameWorld
 {
+private:
+    class ObjectFactory
+    {
+    public:
+        ObjectFactory()
+        : _uidSequence(1)
+        { }
+
+        template<typename T>
+        std::shared_ptr<T> Create(GameWorld& world)
+        {
+            auto object = std::make_shared<T>(world);
+            object->SetUID(_uidSequence++);
+
+            return object;
+        }
+
+        template<typename T>
+        std::shared_ptr<T> Create(GameWorld& world, uint32_t uid)
+        {
+            auto object = std::make_shared<T>(world);
+            object->SetUID(uid);
+
+            return object;
+        }
+
+    private:
+        uint32_t    _uidSequence;
+    };
+
 public:
     enum State
     {
@@ -36,35 +66,43 @@ public:
         PAUSE,
         FINISHED
     };
+
+    struct PlayerInfo
+    {
+        uint32_t LocalUid;
+        std::string Name;
+        Hero::Type Hero;
+    };
+
 public:
-    GameWorld();
-    ~GameWorld();
+    GameWorld(const GameMapGenerator::Configuration& conf,
+              std::vector<PlayerInfo>& players);
 
     virtual void update(std::chrono::microseconds);
 
-    void AddPlayer(Player);
-    void CreateGameMap(const GameMap::Configuration&);
-    void InitialSpawn();
-
     std::queue<std::vector<uint8_t>>& GetOutgoingEvents();
     std::queue<std::vector<uint8_t>>& GetIncomingEvents();
+
 protected:
     void        ApplyInputEvents();
 
     Monster *   SpawnMonster();
 
-    Point2      GetRandomPosition();
+    Point<>     GetRandomPosition();
+    
 protected:
-    GameMap::Configuration m_stMapConf;
+    void InitialSpawn();
+
+    GameMapGenerator::Configuration  _mapConf;
 
     // contains outgoing events
     std::queue<std::vector<uint8_t>> _inputEvents;
     std::queue<std::vector<uint8_t>> _outputEvents;
     flatbuffers::FlatBufferBuilder   _flatBuilder;
 
+    ObjectFactory               _objectFactory;
     // basicly contains all objects on scene
-    std::vector<GameObject*>    _objects;
-    uint32_t                    _objUIDSeq;
+    std::deque<std::shared_ptr<GameObject>> _objects;
 
     // contains objects that should be respawned
     std::vector<std::pair<std::chrono::microseconds, Unit *>> _respawnQueue;
@@ -79,9 +117,7 @@ protected:
 
     // logsystem from gameserver
     NamedLogger         _logger;
-    std::ostringstream  _logBuilder;
 
-    friend GameMap;
     friend Unit;
     friend Monster;
     friend Hero;

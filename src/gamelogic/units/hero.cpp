@@ -8,8 +8,9 @@
 
 #include "hero.hpp"
 
-Hero::Hero() :
-_heroType(Hero::Type::FIRST_HERO)
+Hero::Hero(GameWorld& world)
+: Unit(world),
+  _heroType(Hero::Type::FIRST_HERO)
 {
     _unitType = Unit::Type::HERO;
 }

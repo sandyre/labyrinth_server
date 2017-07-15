@@ -9,13 +9,14 @@
 #ifndef gameobject_hpp
 #define gameobject_hpp
 
-#include "../globals.h"
+#include "../toolkit/Point.hpp"
 
 #include <chrono>
+#include <memory>
 
 class GameWorld;
 
-class GameObject
+class GameObject : public std::enable_shared_from_this<GameObject>
 {
 public:
     struct Attributes
@@ -25,7 +26,7 @@ public:
         static const int DAMAGABLE = 0x04;
         static const int PASSABLE = 0x08;
     };
-public:
+
     enum Type
     {
         UNDEFINED,
@@ -34,29 +35,44 @@ public:
         CONSTRUCTION,
         UNIT
     };
-    GameObject();
-    ~GameObject();
+
+public:
+    GameObject(GameWorld& world)
+    : _objType(GameObject::Type::UNDEFINED),
+      _uid(0),
+      _objAttributes(0),
+      _world(world)
+    {
+        _objAttributes |= GameObject::Attributes::VISIBLE;
+    }
     
-    virtual void        update(std::chrono::microseconds) { } // FIXME: should be pure
+    virtual void update(std::chrono::microseconds) = 0;
     
-    GameObject::Type    GetObjType() const;
-    uint32_t            GetAttributes() const;
+    GameObject::Type GetType() const
+    { return _objType; }
+
+    uint32_t GetAttributes() const
+    { return _objAttributes; }
     
-    void            SetGameWorld(GameWorld*);
+    uint32_t GetUID() const
+    { return _uid; }
+
+    void SetUID(uint32_t uid)
+    { _uid = uid; }
     
-    uint32_t        GetUID() const;
-    void            SetUID(uint32_t);
+    Point<> GetPosition() const
+    { return _pos; }
+
+    void SetPosition(Point<> pos)
+    { _pos = pos; }
     
-    Point2          GetLogicalPosition() const;
-    void            SetLogicalPosition(Point2);
 protected:
-        // no need for memory management, gameworld will outlive GO anyway
-    GameWorld *         _gameWorld;
+    GameWorld&          _world;
     
     GameObject::Type    _objType;
     uint32_t            _objAttributes;
-    uint32_t            _UID;
-    Point2              _logPos;
+    uint32_t            _uid;
+    Point<>               _pos;
 };
 
 #endif /* gameobject_hpp */

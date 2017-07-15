@@ -45,19 +45,21 @@ struct InputSequence
 class Monster : public Unit
 {
 public:
-    Monster();
+    Monster(GameWorld& world);
     
     virtual void    update(std::chrono::microseconds) override;
-    
-    virtual void    Spawn(Point2) override;
-    virtual void    Die(Unit * killer) override;
+
+    virtual void    SpellCast(const GameEvent::CLActionSpell*) override { }
+
+    virtual void    Spawn(Point<>) override;
+    virtual void    Die(const std::string& killerName) override;
     
 protected:
     std::chrono::microseconds   _moveCD;;
     std::chrono::microseconds   _moveACD;
     
     Unit *                      _chasingUnit;
-    std::queue<Point2>          _pathToUnit;
+    std::queue<Point<>>         _pathToUnit;
 
     std::chrono::microseconds   _castTime;
     std::chrono::microseconds   _castATime;

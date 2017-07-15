@@ -15,7 +15,8 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-Warrior::Warrior()
+Warrior::Warrior(GameWorld& world)
+: Hero(world)
 {
     _heroType = Hero::Type::WARRIOR;
     _moveSpeed = 0.4;
@@ -55,13 +56,12 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
-        
-        WarriorDash * pDash = new WarriorDash(3s,
-                                              5.5);
-        pDash->SetTargetUnit(this);
-        this->ApplyEffect(pDash);
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
+
+        auto warDash = std::make_shared<WarriorDash>(3s, 5.5);
+        warDash->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
+        this->ApplyEffect(warDash);
     }
     else if(spell->spell_id() == 1 &&
             std::get<0>(_spellsCDs[1]) == true) // warrior attack (2 spell)
@@ -70,8 +70,7 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
             return;
         
             // Log damage event
-        auto& logger = _gameWorld->_logger;
-        logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
+        _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
         
             // set up CD
         std::get<0>(_spellsCDs[1]) = false;
@@ -94,13 +93,15 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
         
             // deal PHYSICAL damage
-        _duelTarget->TakeDamage(_actualDamage,
-                                  Unit::DamageType::PHYSICAL,
-                                  this);
+        DamageDescriptor dmgDescr;
+        dmgDescr.DealerName = _name;
+        dmgDescr.Value = _actualDamage;
+        dmgDescr.Type = DamageDescriptor::DamageType::PHYSICAL;
+        _duelTarget->TakeDamage(dmgDescr);
     }
         // warrior armor up cast (2 spell)
     else if(spell->spell_id() == 2 &&
@@ -120,12 +121,11 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
-        
-        WarriorArmorUp * pArmUp = new WarriorArmorUp(5s,
-                                                     4);
-        pArmUp->SetTargetUnit(this);
-        this->ApplyEffect(pArmUp);
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
+
+        auto armorUp = std::make_shared<WarriorArmorUp>(5s, 4);
+        armorUp->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
+        this->ApplyEffect(armorUp);
     }
 }

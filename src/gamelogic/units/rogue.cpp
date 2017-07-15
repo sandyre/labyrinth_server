@@ -16,7 +16,8 @@
 using namespace std::chrono_literals;
 using Attributes = GameObject::Attributes;
 
-Rogue::Rogue()
+Rogue::Rogue(GameWorld& world)
+: Hero(world)
 {
     _heroType = Hero::Type::ROGUE;
     _moveSpeed = 0.1;
@@ -41,10 +42,10 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
             // set up CD
         std::get<0>(_spellsCDs[0]) = false;
         std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
-        
-        RogueInvisibility * pInvis = new RogueInvisibility(5s);
-        pInvis->SetTargetUnit(this);
-        this->ApplyEffect(pInvis);
+
+        auto invis = std::make_shared<RogueInvisibility>(5s);
+        invis->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
+        this->ApplyEffect(invis);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameEvent::CreateSVActionSpell(builder,
@@ -56,8 +57,8 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
     }
         // missing knife cast (1 spell)
     else if(spell->spell_id() == 1)
@@ -67,7 +68,7 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
 }
 
 void
-Rogue::TakeItem(Item * item)
+Rogue::TakeItem(std::shared_ptr<Item> item)
 {
     Unit::TakeItem(item);
 }

@@ -16,7 +16,8 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-Mage::Mage()
+Mage::Mage(GameWorld& world)
+: Hero(world)
 {
     _heroType = Hero::Type::MAGE;
     _moveSpeed = 0.3;
@@ -46,8 +47,8 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         std::get<0>(_spellsCDs[0]) = false;
         std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
         
-        Point2 new_pos;
-        while(Distance(this->GetLogicalPosition(), new_pos = _gameWorld->GetRandomPosition()) > 10.0)
+        Point<> new_pos;
+        while(this->GetPosition().Distance(new_pos = _world.GetRandomPosition()) > 10.0)
         {
         }
         
@@ -68,10 +69,10 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
                                             builder.GetBufferPointer() + builder.GetSize());
         
-        this->SetLogicalPosition(new_pos);
+        SetPosition(new_pos);
     }
         // attack cast (1 spell)
     else if(spell->spell_id() == 1 &&
@@ -81,8 +82,7 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
             return;
         
             // Log damage event
-        auto& logger = _gameWorld->_logger;
-        logger.Info() << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName();
+        _world._logger.Info() << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName();
         
             // set up CD
         std::get<0>(_spellsCDs[1]) = false;
@@ -104,14 +104,16 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               GameEvent::Events_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
-        
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
+
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
         
             // deal MAGIC damage
-        _duelTarget->TakeDamage(_actualDamage,
-                                  Unit::DamageType::MAGICAL,
-                                  this);
+        DamageDescriptor dmgDescr;
+        dmgDescr.DealerName = _name;
+        dmgDescr.Value = _actualDamage;
+        dmgDescr.Type = Unit::DamageDescriptor::DamageType::MAGICAL;
+        _duelTarget->TakeDamage(dmgDescr);
     }
         // frostbolt casted (2 spell)
     else if(spell->spell_id() == 2 &&
@@ -141,13 +143,13 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
                                               cl_spell.Union());
         builder.Finish(event);
         
-        _gameWorld->_outputEvents.emplace(builder.GetBufferPointer(),
-                                            builder.GetBufferPointer() + builder.GetSize());
+        _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                     builder.GetBufferPointer() + builder.GetSize());
         
             // apply freeze effect
-        MageFreeze * pFreeze = new MageFreeze(3s);
-        pFreeze->SetTargetUnit(_duelTarget);
-        _duelTarget->ApplyEffect(pFreeze);
+        auto mageFreeze = std::make_shared<MageFreeze>(3s);
+        mageFreeze->SetTargetUnit(_duelTarget);
+        _duelTarget->ApplyEffect(mageFreeze);
     }
 }
 

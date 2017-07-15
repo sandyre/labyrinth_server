@@ -29,6 +29,9 @@ using std::chrono::steady_clock;
 
 class GameServer : public Poco::Task
 {
+private:
+    class PlayerConnection;
+
 public:
     enum class State
     {
@@ -66,9 +69,14 @@ private:
 
     void update();
     void Ping(Poco::Timer&);
-    void SendMulticast(const std::vector<uint8_t>&);
 
-    inline std::vector<Player>::iterator FindPlayerByUID(PlayerUID);
+    void SendSingle(flatbuffers::FlatBufferBuilder& builder,
+                    Poco::Net::SocketAddress& address);
+    void SendMulticast(const std::vector<uint8_t>& buffer);
+    void SendMulticast(flatbuffers::FlatBufferBuilder& builder);
+
+    inline bool PlayerExists(PlayerUID);
+    inline std::vector<PlayerConnection>::iterator FindPlayerByUID(PlayerUID);
 
 private:
     GameServer::State               _state;
@@ -80,13 +88,11 @@ private:
 
     std::unique_ptr<Poco::Timer>    _pingerTimer;
 
-    std::unique_ptr<GameWorld>      _gameWorld;
-    std::mutex                      _playersMutex;
-    std::vector<Player>             _players;
+    std::unique_ptr<GameWorld>      _world;
+    std::recursive_mutex            _playersMutex;
+    std::vector<PlayerConnection>   _playersConnections;
 
     NamedLogger                     _logger;
-
-    flatbuffers::FlatBufferBuilder  _flatBuilder;
 };
 
 #endif /* gameserver_hpp */

@@ -8,14 +8,12 @@
 
 #include "gamemap.hpp"
 
-#include "gameworld.hpp"
-#include "mapblock.hpp"
-#include "../globals.h"
+#include "../toolkit/Point.hpp"
 
 #include <random>
 
-void
-GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
+std::vector<std::vector<GameMapGenerator::MapBlockType>>
+GameMapGenerator::GenerateMap(const Configuration& settings)
 {
     auto m_oRandGen = std::mt19937(settings.Seed);
     auto m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
@@ -37,7 +35,7 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
     };
     
     struct Room {
-        Point2 coord;
+        Point<> coord;
         std::vector<std::vector<MapBlockType>> cells;
     };
     
@@ -195,57 +193,6 @@ GameMap::GenerateMap(const Configuration& settings, GameWorld * world)
         tmp_map[0][i] = MapBlockType::BORDER;
         tmp_map[size - 1][i] = MapBlockType::BORDER;
     }
-    
-        // create floor
-    uint32_t current_block_uid = 1;
-    for(auto i = size-1; i >= 0; --i)
-    {
-        for(auto j = size-1; j >= 0; --j)
-        {
-            auto block = new NoBlock();
-            
-            Point2 log_coords(i,j);
-            block->SetGameWorld(world);
-            block->SetUID(current_block_uid);
-            block->SetLogicalPosition(log_coords);
-            
-            world->_objects.emplace_back(block);
-            
-            ++current_block_uid;
-        }
-    }
-    
-    for(auto i = size-1; i >= 0; --i)
-    {
-        for(auto j = size-1; j >= 0; --j)
-        {
-            if(tmp_map[i][j] == MapBlockType::WALL)
-            {
-                auto block = new WallBlock();
-                
-                Point2 log_coords(i,j);
-                block->SetGameWorld(world);
-                block->SetUID(current_block_uid);
-                block->SetLogicalPosition(log_coords);
-                
-                world->_objects.emplace_back(block);
-                
-                ++current_block_uid;
-            }
-            else if(tmp_map[i][j] == MapBlockType::BORDER)
-            {
-                auto block = new BorderBlock();
-                
-                Point2 log_coords(i,j);
-                block->SetGameWorld(world);
-                block->SetUID(current_block_uid);
-                block->SetLogicalPosition(log_coords);
-                
-                world->_objects.emplace_back(block);
-                
-                ++current_block_uid;
-            }
-        }
-    }
+    return tmp_map;
 }
 

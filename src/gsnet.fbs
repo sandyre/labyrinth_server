@@ -12,6 +12,11 @@ player_uid:uint;
 nickname:string;
 }
 
+table CLDisconnect
+{
+player_uid:uint;
+}
+
 enum HeroType : byte
 {
 WARRIOR = 0x00,
@@ -30,6 +35,11 @@ table SVPlayerConnected
 {
 player_uid:uint;
 nickname:string;
+}
+
+table SVPlayerDisconnected
+{
+player_uid:uint;
 }
 
 table SVHeroPickStage
@@ -287,8 +297,10 @@ table SVPing
 union Events
 {
 CLConnection,
+CLDisconnect,
 SVConnectionStatus,
 SVPlayerConnected,
+SVPlayerDisconnected,
 SVHeroPickStage,
 CLHeroPick,
 SVHeroPick,

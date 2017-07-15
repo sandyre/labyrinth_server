@@ -22,12 +22,15 @@ public:
         GRAVEYARD = 0x01,
         SWAMP = 0x02
     };
+
 public:
     Construction::Type  GetType() const
     { return _constrType; }
-    
+
+    virtual void update(std::chrono::microseconds) override { }
+
 protected:
-    Construction();
+    Construction(GameWorld& world);
     
     Construction::Type  _constrType;
 };
@@ -35,19 +38,19 @@ protected:
 class Door : public Construction
 {
 public:
-    Door();
+    Door(GameWorld& world);
 };
 
 class Graveyard : public Construction
 {
 public:
-    Graveyard();
+    Graveyard(GameWorld& world);
 };
 
 class Swamp : public Construction
 {
 public:
-    Swamp();
+    Swamp(GameWorld& world);
 };
 
 #endif /* construction_hpp */

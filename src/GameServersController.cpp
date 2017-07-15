@@ -43,7 +43,7 @@ GameServersController::GetServerAddress()
     if(!result && _workers.available())
     {
         GameServer::Configuration config;
-        config.Players    = 1;
+        config.Players = 1;
         config.RandomSeed = 0;
 
         {

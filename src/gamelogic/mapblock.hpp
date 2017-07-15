@@ -25,9 +25,11 @@ public:
     
 public:
     MapBlock::Type  GetType() const;
+
+    virtual void update(std::chrono::microseconds) override { }
     
 protected:
-    MapBlock();
+    MapBlock(GameWorld& world);
     
     MapBlock::Type  _blockType;
 };
@@ -35,19 +37,19 @@ protected:
 class NoBlock : public MapBlock
 {
 public:
-    NoBlock();
+    NoBlock(GameWorld& world);
 };
 
 class WallBlock : public MapBlock
 {
 public:
-    WallBlock();
+    WallBlock(GameWorld& world);
 };
 
 class BorderBlock : public MapBlock
 {
 public:
-    BorderBlock();
+    BorderBlock(GameWorld& world);
 };
 
 

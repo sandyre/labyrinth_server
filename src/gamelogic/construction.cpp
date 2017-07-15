@@ -8,24 +8,28 @@
 
 #include "construction.hpp"
 
-Construction::Construction()
+Construction::Construction(GameWorld& world)
+: GameObject(world)
 {
     _objType = GameObject::Type::CONSTRUCTION;
 }
 
-Door::Door()
+Door::Door(GameWorld& world)
+: Construction(world)
 {
     _constrType = Construction::Type::DOOR;
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
-Graveyard::Graveyard()
+Graveyard::Graveyard(GameWorld& world)
+: Construction(world)
 {
     _constrType = Construction::Type::GRAVEYARD;
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
-Swamp::Swamp()
+Swamp::Swamp(GameWorld& world)
+: Construction(world)
 {
     _constrType = Construction::Type::SWAMP;
 }

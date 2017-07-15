@@ -18,7 +18,7 @@
 class Mage : public Hero
 {
 public:
-    Mage();
+    Mage(GameWorld& world);
 
     virtual void update(std::chrono::microseconds) override;
 

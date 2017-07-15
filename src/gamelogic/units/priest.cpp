@@ -13,7 +13,8 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-Priest::Priest()
+Priest::Priest(GameWorld& world)
+: Hero(world)
 {
     _heroType = Hero::Type::PRIEST;
     _moveSpeed = 0.1;

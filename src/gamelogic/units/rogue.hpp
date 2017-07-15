@@ -19,11 +19,11 @@
 class Rogue : public Hero
 {
 public:
-    Rogue();
+    Rogue(GameWorld& world);
     
     virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
     
-    virtual void    TakeItem(Item*) override;
+    virtual void    TakeItem(std::shared_ptr<Item> item) override;
     
     virtual void    update(std::chrono::microseconds) override;
 protected:

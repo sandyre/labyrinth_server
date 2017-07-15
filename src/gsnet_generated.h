@@ -10,9 +10,13 @@ namespace GameEvent {
 
 struct CLConnection;
 
+struct CLDisconnect;
+
 struct SVConnectionStatus;
 
 struct SVPlayerConnected;
+
+struct SVPlayerDisconnected;
 
 struct SVHeroPickStage;
 
@@ -293,34 +297,36 @@ inline const char *EnumNameConstrType(ConstrType e) {
 enum Events {
   Events_NONE = 0,
   Events_CLConnection = 1,
-  Events_SVConnectionStatus = 2,
-  Events_SVPlayerConnected = 3,
-  Events_SVHeroPickStage = 4,
-  Events_CLHeroPick = 5,
-  Events_SVHeroPick = 6,
-  Events_CLReadyToStart = 7,
-  Events_SVReadyToStart = 8,
-  Events_SVGenerateMap = 9,
-  Events_CLMapGenerated = 10,
-  Events_SVGameStart = 11,
-  Events_CLActionMove = 12,
-  Events_SVActionMove = 13,
-  Events_CLActionItem = 14,
-  Events_SVActionItem = 15,
-  Events_CLActionDuel = 16,
-  Events_SVActionDuel = 17,
-  Events_CLActionSpell = 18,
-  Events_SVActionSpell = 19,
-  Events_CLRequestWin = 20,
-  Events_SVActionDeath = 21,
-  Events_SVSpawnPlayer = 22,
-  Events_SVRespawnPlayer = 23,
-  Events_SVSpawnMonster = 24,
-  Events_SVSpawnItem = 25,
-  Events_SVSpawnConstr = 26,
-  Events_SVGameEnd = 27,
-  Events_CLPing = 28,
-  Events_SVPing = 29,
+  Events_CLDisconnect = 2,
+  Events_SVConnectionStatus = 3,
+  Events_SVPlayerConnected = 4,
+  Events_SVPlayerDisconnected = 5,
+  Events_SVHeroPickStage = 6,
+  Events_CLHeroPick = 7,
+  Events_SVHeroPick = 8,
+  Events_CLReadyToStart = 9,
+  Events_SVReadyToStart = 10,
+  Events_SVGenerateMap = 11,
+  Events_CLMapGenerated = 12,
+  Events_SVGameStart = 13,
+  Events_CLActionMove = 14,
+  Events_SVActionMove = 15,
+  Events_CLActionItem = 16,
+  Events_SVActionItem = 17,
+  Events_CLActionDuel = 18,
+  Events_SVActionDuel = 19,
+  Events_CLActionSpell = 20,
+  Events_SVActionSpell = 21,
+  Events_CLRequestWin = 22,
+  Events_SVActionDeath = 23,
+  Events_SVSpawnPlayer = 24,
+  Events_SVRespawnPlayer = 25,
+  Events_SVSpawnMonster = 26,
+  Events_SVSpawnItem = 27,
+  Events_SVSpawnConstr = 28,
+  Events_SVGameEnd = 29,
+  Events_CLPing = 30,
+  Events_SVPing = 31,
   Events_MIN = Events_NONE,
   Events_MAX = Events_SVPing
 };
@@ -329,8 +335,10 @@ inline const char **EnumNamesEvents() {
   static const char *names[] = {
     "NONE",
     "CLConnection",
+    "CLDisconnect",
     "SVConnectionStatus",
     "SVPlayerConnected",
+    "SVPlayerDisconnected",
     "SVHeroPickStage",
     "CLHeroPick",
     "SVHeroPick",
@@ -375,12 +383,20 @@ template<> struct EventsTraits<CLConnection> {
   static const Events enum_value = Events_CLConnection;
 };
 
+template<> struct EventsTraits<CLDisconnect> {
+  static const Events enum_value = Events_CLDisconnect;
+};
+
 template<> struct EventsTraits<SVConnectionStatus> {
   static const Events enum_value = Events_SVConnectionStatus;
 };
 
 template<> struct EventsTraits<SVPlayerConnected> {
   static const Events enum_value = Events_SVPlayerConnected;
+};
+
+template<> struct EventsTraits<SVPlayerDisconnected> {
+  static const Events enum_value = Events_SVPlayerDisconnected;
 };
 
 template<> struct EventsTraits<SVHeroPickStage> {
@@ -551,6 +567,46 @@ inline flatbuffers::Offset<CLConnection> CreateCLConnectionDirect(
       nickname ? _fbb.CreateString(nickname) : 0);
 }
 
+struct CLDisconnect FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER_UID = 4
+  };
+  uint32_t player_uid() const {
+    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           verifier.EndTable();
+  }
+};
+
+struct CLDisconnectBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player_uid(uint32_t player_uid) {
+    fbb_.AddElement<uint32_t>(CLDisconnect::VT_PLAYER_UID, player_uid, 0);
+  }
+  CLDisconnectBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CLDisconnectBuilder &operator=(const CLDisconnectBuilder &);
+  flatbuffers::Offset<CLDisconnect> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<CLDisconnect>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CLDisconnect> CreateCLDisconnect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player_uid = 0) {
+  CLDisconnectBuilder builder_(_fbb);
+  builder_.add_player_uid(player_uid);
+  return builder_.Finish();
+}
+
 struct SVConnectionStatus FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_PLAYER_UID = 4,
@@ -660,6 +716,46 @@ inline flatbuffers::Offset<SVPlayerConnected> CreateSVPlayerConnectedDirect(
       _fbb,
       player_uid,
       nickname ? _fbb.CreateString(nickname) : 0);
+}
+
+struct SVPlayerDisconnected FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_PLAYER_UID = 4
+  };
+  uint32_t player_uid() const {
+    return GetField<uint32_t>(VT_PLAYER_UID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_PLAYER_UID) &&
+           verifier.EndTable();
+  }
+};
+
+struct SVPlayerDisconnectedBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_player_uid(uint32_t player_uid) {
+    fbb_.AddElement<uint32_t>(SVPlayerDisconnected::VT_PLAYER_UID, player_uid, 0);
+  }
+  SVPlayerDisconnectedBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SVPlayerDisconnectedBuilder &operator=(const SVPlayerDisconnectedBuilder &);
+  flatbuffers::Offset<SVPlayerDisconnected> Finish() {
+    const auto end = fbb_.EndTable(start_, 1);
+    auto o = flatbuffers::Offset<SVPlayerDisconnected>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SVPlayerDisconnected> CreateSVPlayerDisconnected(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t player_uid = 0) {
+  SVPlayerDisconnectedBuilder builder_(_fbb);
+  builder_.add_player_uid(player_uid);
+  return builder_.Finish();
 }
 
 struct SVHeroPickStage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -2543,12 +2639,20 @@ inline bool VerifyEvents(flatbuffers::Verifier &verifier, const void *obj, Event
       auto ptr = reinterpret_cast<const CLConnection *>(obj);
       return verifier.VerifyTable(ptr);
     }
+    case Events_CLDisconnect: {
+      auto ptr = reinterpret_cast<const CLDisconnect *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
     case Events_SVConnectionStatus: {
       auto ptr = reinterpret_cast<const SVConnectionStatus *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Events_SVPlayerConnected: {
       auto ptr = reinterpret_cast<const SVPlayerConnected *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Events_SVPlayerDisconnected: {
+      auto ptr = reinterpret_cast<const SVPlayerDisconnected *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case Events_SVHeroPickStage: {
