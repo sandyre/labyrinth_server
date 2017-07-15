@@ -9,7 +9,7 @@
 #include "rogue.hpp"
 
 #include "../gameworld.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 #include "../effect.hpp"
 
 #include <chrono>
@@ -33,7 +33,7 @@ Rogue::Rogue(GameWorld& world)
 }
 
 void
-Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
+Rogue::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // invisibility cast (0 spell)
     if(spell->spell_id() == 0 &&
@@ -48,12 +48,12 @@ Rogue::SpellCast(const GameEvent::CLActionSpell* spell)
         this->ApplyEffect(invis);
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      0);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
         

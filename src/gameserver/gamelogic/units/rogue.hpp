@@ -10,7 +10,7 @@
 #define rogue_hpp
 
 #include "hero.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 
 #include <string>
 #include <vector>
@@ -21,7 +21,7 @@ class Rogue : public Hero
 public:
     Rogue(GameWorld& world);
     
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
+    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
     
     virtual void    TakeItem(std::shared_ptr<Item> item) override;
     

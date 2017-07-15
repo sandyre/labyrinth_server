@@ -8,8 +8,8 @@
 
 #include "gameserver.hpp"
 
-#include "toolkit/elapsed_time.hpp"
-#include "toolkit/SafePacketGetter.hpp"
+#include "../toolkit/elapsed_time.hpp"
+#include "../toolkit/SafePacketGetter.hpp"
 
 #include <Poco/Thread.h>
 #include <Poco/Timer.h>
@@ -17,7 +17,7 @@
 #include <array>
 #include <iostream>
 
-using namespace GameEvent;
+using namespace GameMessage;
 using namespace std::chrono;
 
 using IPAddress = Poco::Net::SocketAddress;
@@ -91,7 +91,6 @@ GameServer::GameServer(const Configuration& config)
 : Task(("GameServer" + std::to_string(config.Port))),
   _state(GameServer::State::LOBBY_FORMING),
   _config(config),
-  _startTime(steady_clock::now()),
   _msPerUpdate(10),
   _pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
   _logger("Server", NamedLogger::Mode::STDIO)
@@ -152,7 +151,7 @@ void GameServer::Ping(Poco::Timer& timer)
     auto ping = CreateSVPing(builder);
     auto msg = CreateMessage(builder,
                              0,
-                             Events_SVPing,
+                             Messages_SVPing,
                              ping.Union());
     builder.Finish(msg);
 
@@ -204,18 +203,18 @@ void GameServer::lobby_forming_stage()
         while(_socket.available())
         {
             SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameEvent::Message>();
+            auto packet = packetGetter.Get<GameMessage::Message>();
             if(!packet)
                 continue;
             
             auto message = GetMessage(packet->Data.data());
             auto senderIp = packet->Sender;
 
-            switch(message->event_type())
+            switch(message->payload_type())
             {
-            case GameEvent::Events_CLConnection:
+            case GameMessage::Messages_CLConnection:
             {
-                auto con_info = static_cast<const CLConnection *>(message->event());
+                auto con_info = static_cast<const CLConnection *>(message->payload());
 
                 if(PlayerExists(con_info->player_uid()))
                 {
@@ -237,7 +236,7 @@ void GameServer::lobby_forming_stage()
                                                                ConnectionStatus_ACCEPTED);
                     auto message = CreateMessage(builder,
                                                  0,
-                                                 Events_SVConnectionStatus,
+                                                 Messages_SVConnectionStatus,
                                                  acceptance.Union());
                     builder.Finish(message);
 
@@ -254,7 +253,7 @@ void GameServer::lobby_forming_stage()
                                                                                     nickname);
                                       auto message = CreateMessage(builder,
                                                                    0,
-                                                                   Events_SVPlayerConnected,
+                                                                   Messages_SVPlayerConnected,
                                                                    connectionInfo.Union());
                                       builder.Finish(message);
 
@@ -272,7 +271,7 @@ void GameServer::lobby_forming_stage()
                                                                   nickname);
                     auto message = CreateMessage(builder,
                                                  0,
-                                                 Events_SVPlayerConnected,
+                                                 Messages_SVPlayerConnected,
                                                  connectionInfo.Union());
                     builder.Finish(message);
 
@@ -282,9 +281,9 @@ void GameServer::lobby_forming_stage()
                 break;
             }
 
-            case GameEvent::Events_CLPing:
+            case GameMessage::Messages_CLPing:
             {
-                auto ping = static_cast<const CLPing*>(message->event());
+                auto ping = static_cast<const CLPing*>(message->payload());
                 auto playerConnection = FindPlayerByUID(ping->player_uid());
 
                 if(playerConnection != _playersConnections.end())
@@ -315,7 +314,7 @@ void GameServer::lobby_forming_stage()
                                                                                                           playerConnection.GetLocalUID());
                                                              auto message = CreateMessage(builder,
                                                                                           0,
-                                                                                          Events_SVPlayerDisconnected,
+                                                                                          Messages_SVPlayerDisconnected,
                                                                                           disconnect.Union());
                                                              builder.Finish(message);
                                                              SendMulticast(builder);
@@ -337,7 +336,7 @@ void GameServer::lobby_forming_stage()
             auto pickStage = CreateSVHeroPickStage(builder);
             auto message = CreateMessage(builder,
                                          0,
-                                         Events_SVHeroPickStage,
+                                         Messages_SVHeroPickStage,
                                          pickStage.Union());
             builder.Finish(message);
 
@@ -369,12 +368,12 @@ void GameServer::hero_picking_stage()
         while(_socket.available())
         {
             SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameEvent::Message>();
+            auto packet = packetGetter.Get<GameMessage::Message>();
             if(!packet)
                 continue;
 
             auto message = GetMessage(packet->Data.data());
-            auto playerConnection = FindPlayerByUID(message->sender_id());
+            auto playerConnection = FindPlayerByUID(message->sender_uid());
 
             if(playerConnection == _playersConnections.end())
             {
@@ -384,11 +383,11 @@ void GameServer::hero_picking_stage()
 
             playerConnection->SetLastPacketTimepoint(Clock::now());
 
-            switch(message->event_type())
+            switch(message->payload_type())
             {
-            case Events_CLHeroPick:
+            case Messages_CLHeroPick:
             {
-                auto pick = static_cast<const CLHeroPick*>(message->event());
+                auto pick = static_cast<const CLHeroPick*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -405,26 +404,24 @@ void GameServer::hero_picking_stage()
                 playerInfo->first.Hero = (Hero::Type)pick->hero_type();
                 _logger.Info() << "Player" << playerInfo->first.LocalUid << " picked " << playerInfo->first.Hero;
 
-                {
-                    flatbuffers::FlatBufferBuilder builder;
-                    auto sv_pick = CreateSVHeroPick(builder,
-                                                    playerInfo->first.LocalUid,
-                                                    pick->hero_type());
-                    auto message = CreateMessage(builder,
-                                                 0,
-                                                 Events_SVHeroPick,
-                                                 sv_pick.Union());
-                    builder.Finish(message);
+                flatbuffers::FlatBufferBuilder builder;
+                auto sv_pick = CreateSVHeroPick(builder,
+                                                playerInfo->first.LocalUid,
+                                                pick->hero_type());
+                auto message = CreateMessage(builder,
+                                             0,
+                                             Messages_SVHeroPick,
+                                             sv_pick.Union());
+                builder.Finish(message);
 
-                    SendMulticast(builder);
-                }
+                SendMulticast(builder);
 
                 break;
             }
 
-            case Events_CLReadyToStart:
+            case Messages_CLReadyToStart:
             {
-                auto ready = static_cast<const CLReadyToStart*>(message->event());
+                auto ready = static_cast<const CLReadyToStart*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -448,7 +445,7 @@ void GameServer::hero_picking_stage()
                 break;
             }
 
-            case Events_CLPing:
+            case Messages_CLPing:
                 break;
 
             default:
@@ -493,7 +490,9 @@ void GameServer::hero_picking_stage()
             std::for_each(players.cbegin(),
                           players.cend(),
                           [&playersInfo](const Player& player)
-                          { playersInfo.push_back(player.first); });
+                          {
+                              playersInfo.push_back(player.first);
+                          });
 
                 // if we throw from constructor - no reason to live anyway, GS will fall
             _world = std::make_unique<GameWorld>(mapConf,
@@ -506,7 +505,7 @@ void GameServer::hero_picking_stage()
                                                    mapConf.Seed);
             auto message = CreateMessage(builder,
                                          0,
-                                         Events_SVGenerateMap,
+                                         Messages_SVGenerateMap,
                                          generateMap.Union());
             builder.Finish(message);
 
@@ -538,12 +537,12 @@ void GameServer::world_generation_stage()
         while(_socket.available())
         {
             SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameEvent::Message>();
+            auto packet = packetGetter.Get<GameMessage::Message>();
             if(!packet)
                 continue;
 
             auto message = GetMessage(packet->Data.data());
-            auto playerConnection = FindPlayerByUID(message->sender_id());
+            auto playerConnection = FindPlayerByUID(message->sender_uid());
 
             if(playerConnection == _playersConnections.end())
             {
@@ -553,11 +552,11 @@ void GameServer::world_generation_stage()
 
             playerConnection->SetLastPacketTimepoint(Clock::now());
 
-            switch(message->event_type())
+            switch(message->payload_type())
             {
-            case Events_CLMapGenerated:
+            case Messages_CLMapGenerated:
             {
-                auto generated = static_cast<const CLMapGenerated*>(message->event());
+                auto generated = static_cast<const CLMapGenerated*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -577,7 +576,7 @@ void GameServer::world_generation_stage()
                 break;
             }
 
-            case Events_CLPing:
+            case Messages_CLPing:
                 break;
 
             default:
@@ -616,7 +615,7 @@ void GameServer::world_generation_stage()
             auto start = CreateSVGameStart(builder);
             auto message = CreateMessage(builder,
                                          0,
-                                         Events_SVGameStart,
+                                         Messages_SVGameStart,
                                          start.Union());
             builder.Finish(message);
 
@@ -652,13 +651,13 @@ void GameServer::running_game_stage()
         while(_socket.available())
         {
             SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameEvent::Message>();
+            auto packet = packetGetter.Get<GameMessage::Message>();
             if(!packet)
                 continue;
 
             auto message = GetMessage(packet->Data.data());
 
-            auto player = FindPlayerByUID(message->sender_id());
+            auto player = FindPlayerByUID(message->sender_uid());
             if(player == _playersConnections.end())
             {
                 _logger.Warning() << "Received packet from unexisting player";
@@ -669,7 +668,7 @@ void GameServer::running_game_stage()
             player->SetAddress(packet->Sender);
 
                 // filter CLPing events
-            if(message->event_type() == Events_CLPing)
+            if(message->payload_type() == Messages_CLPing)
                 continue;
 
             _world->GetIncomingEvents().emplace(packet->Data.begin(),
@@ -679,8 +678,7 @@ void GameServer::running_game_stage()
         auto& out_events = _world->GetOutgoingEvents();
         while(out_events.size())
         {
-            auto event = out_events.front();
-            SendMulticast(event);
+            SendMulticast(out_events.front());
             out_events.pop();
         }
 

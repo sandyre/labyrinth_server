@@ -10,8 +10,7 @@
 #define gameserver_hpp
 
 #include "gamelogic/gameworld.hpp"
-#include "player.hpp"
-#include "toolkit/named_logger.hpp"
+#include "../toolkit/named_logger.hpp"
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Task.h>
@@ -24,8 +23,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-
-using std::chrono::steady_clock;
 
 class GameServer : public Poco::Task
 {
@@ -83,7 +80,6 @@ private:
     GameServer::Configuration       _config;
     std::string                     _serverName;
     Poco::Net::DatagramSocket       _socket;
-    steady_clock::time_point        _startTime;
     std::chrono::milliseconds       _msPerUpdate;
 
     std::unique_ptr<Poco::Timer>    _pingerTimer;

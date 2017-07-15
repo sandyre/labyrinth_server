@@ -11,7 +11,6 @@
 
 #include "GameServersController.hpp"
 #include "msnet_generated.h"
-#include "player.hpp"
 #include "services/system_monitor.hpp"
 #include "services/DatabaseAccessor.hpp"
 #include "toolkit/named_logger.hpp"

@@ -22,7 +22,7 @@ public:
 
     virtual void update(std::chrono::microseconds) override;
 
-    virtual void SpellCast(const GameEvent::CLActionSpell*) override;
+    virtual void SpellCast(const GameMessage::CLActionSpell*) override;
 };
 
 #endif /* mage_hpp */

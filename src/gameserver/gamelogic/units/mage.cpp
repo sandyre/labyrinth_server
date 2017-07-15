@@ -9,7 +9,7 @@
 #include "mage.hpp"
 
 #include "../gameworld.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 
 #include "../effect.hpp"
 
@@ -37,7 +37,7 @@ Mage::Mage(GameWorld& world)
 }
 
 void
-Mage::SpellCast(const GameEvent::CLActionSpell* spell)
+Mage::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // teleport cast (0 spell)
     if(spell->spell_id() == 0 &&
@@ -53,19 +53,19 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         }
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell_info = GameEvent::CreateMageTeleport(builder,
+        auto spell_info = GameMessage::CreateMageTeleport(builder,
                                                         new_pos.x,
                                                         new_pos.y);
-        auto spell = GameEvent::CreateSpell(builder,
-                                            GameEvent::Spells_MageTeleport,
+        auto spell = GameMessage::CreateSpell(builder,
+                                            GameMessage::Spells_MageTeleport,
                                             spell_info.Union());
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      0,
                                                      spell);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
         
@@ -89,19 +89,19 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         std::get<1>(_spellsCDs[1]) = std::get<2>(_spellsCDs[1]);
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell_info = GameEvent::CreateMageAttack(builder,
+        auto spell_info = GameMessage::CreateMageAttack(builder,
                                                       _duelTarget->GetUID(),
                                                       _actualDamage);
-        auto spell = GameEvent::CreateSpell(builder,
-                                            GameEvent::Spells_MageAttack,
+        auto spell = GameMessage::CreateSpell(builder,
+                                            GameMessage::Spells_MageAttack,
                                             spell_info.Union());
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      1,
                                                      spell);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
 
@@ -128,18 +128,18 @@ Mage::SpellCast(const GameEvent::CLActionSpell* spell)
         
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell1 = GameEvent::CreateMageFreeze(builder,
+        auto spell1 = GameMessage::CreateMageFreeze(builder,
                                                   _duelTarget->GetUID());
-        auto spell = GameEvent::CreateSpell(builder,
-                                            GameEvent::Spells_MageFreeze,
+        auto spell = GameMessage::CreateSpell(builder,
+                                            GameMessage::Spells_MageFreeze,
                                             spell1.Union());
-        auto cl_spell = GameEvent::CreateSVActionSpell(builder,
+        auto cl_spell = GameMessage::CreateSVActionSpell(builder,
                                                        this->GetUID(),
                                                        2,
                                                        spell);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               cl_spell.Union());
         builder.Finish(event);
         

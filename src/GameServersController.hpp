@@ -9,7 +9,7 @@
 #ifndef GameServersController_hpp
 #define GameServersController_hpp
 
-#include "gameserver.hpp"
+#include "gameserver/gameserver.hpp"
 #include "toolkit/named_logger.hpp"
 
 #include <Poco/TaskManager.h>

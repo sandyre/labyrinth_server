@@ -8,7 +8,7 @@
 
 #include "priest.hpp"
 
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 
 #include <chrono>
 using namespace std::chrono_literals;
@@ -34,7 +34,7 @@ Priest::Priest(GameWorld& world)
 }
 
 void
-Priest::SpellCast(const GameEvent::CLActionSpell*)
+Priest::SpellCast(const GameMessage::CLActionSpell*)
 {
         // does nothing
 }

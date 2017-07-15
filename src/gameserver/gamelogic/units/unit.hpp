@@ -11,7 +11,7 @@
 
 #include "../gameobject.hpp"
 #include "../item.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 
 #include <string>
 #include <vector>
@@ -112,7 +112,7 @@ public:
     virtual void TakeItem(std::shared_ptr<Item> enemy);
     virtual std::shared_ptr<Item> DropItem(int32_t uid);
 
-    virtual void SpellCast(const GameEvent::CLActionSpell*) = 0;
+    virtual void SpellCast(const GameMessage::CLActionSpell*) = 0;
 
     virtual void StartDuel(std::shared_ptr<Unit> enemy);
     virtual void EndDuel();

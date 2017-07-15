@@ -49,7 +49,7 @@ public:
     
     virtual void    update(std::chrono::microseconds) override;
 
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) override { }
+    virtual void    SpellCast(const GameMessage::CLActionSpell*) override { }
 
     virtual void    Spawn(Point<>) override;
     virtual void    Die(const std::string& killerName) override;

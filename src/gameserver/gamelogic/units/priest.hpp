@@ -19,7 +19,7 @@ class Priest : public Hero
 public:
     Priest(GameWorld& world);
     
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
+    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
     virtual void    update(std::chrono::microseconds) override;
 
 protected:

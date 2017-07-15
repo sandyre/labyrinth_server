@@ -12,12 +12,11 @@
 #include "item.hpp"
 #include "mapblock.hpp"
 #include "units/monster.hpp"
-#include "../player.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
 
-using namespace GameEvent;
+using namespace GameMessage;
 
 GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
                      std::vector<PlayerInfo>& players)
@@ -139,7 +138,7 @@ GameWorld::InitialSpawn()
                                            key->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
-                                 Events_SVSpawnItem,
+                                 Messages_SVSpawnItem,
                                  key_spawn.Union());
         _flatBuilder.Finish(msg);
         _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
@@ -163,7 +162,7 @@ GameWorld::InitialSpawn()
                                               door->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
-                                 Events_SVSpawnConstr,
+                                 Messages_SVSpawnConstr,
                                  door_spawn.Union());
         _flatBuilder.Finish(msg);
         _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
@@ -187,7 +186,7 @@ GameWorld::InitialSpawn()
                                                grave->GetPosition().y);
         auto msg = CreateMessage(_flatBuilder,
                                  0,
-                                 Events_SVSpawnConstr,
+                                 Messages_SVSpawnConstr,
                                  grave_spawn.Union());
         _flatBuilder.Finish(msg);
         _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
@@ -212,13 +211,13 @@ GameWorld::ApplyInputEvents()
     while(!_inputEvents.empty())
     {
         auto& event = _inputEvents.front();
-        auto gs_event = GameEvent::GetMessage(event.data());
+        auto gs_event = GameMessage::GetMessage(event.data());
 
-        switch(gs_event->event_type())
+        switch(gs_event->payload_type())
         {
-        case GameEvent::Events_CLActionMove:
+        case GameMessage::Messages_CLActionMove:
         {
-            auto cl_mov = static_cast<const GameEvent::CLActionMove*>(gs_event->event());
+            auto cl_mov = static_cast<const GameMessage::CLActionMove*>(gs_event->payload());
 
             auto obj = std::find_if(_objects.begin(),
                                     _objects.end(),
@@ -239,9 +238,9 @@ GameWorld::ApplyInputEvents()
             break;
         }
 
-        case GameEvent::Events_CLActionItem:
+        case GameMessage::Messages_CLActionItem:
         {
-            auto cl_item = static_cast<const GameEvent::CLActionItem*>(gs_event->event());
+            auto cl_item = static_cast<const GameMessage::CLActionItem*>(gs_event->payload());
 
             switch(cl_item->act_type())
             {
@@ -307,13 +306,13 @@ GameWorld::ApplyInputEvents()
             break;
         }
 
-        case GameEvent::Events_CLActionDuel:
+        case GameMessage::Messages_CLActionDuel:
         {
-            auto sv_duel = static_cast<const GameEvent::CLActionDuel*>(gs_event->event());
+            auto sv_duel = static_cast<const GameMessage::CLActionDuel*>(gs_event->payload());
 
             switch(sv_duel->act_type())
             {
-            case GameEvent::ActionDuelType_STARTED:
+            case GameMessage::ActionDuelType_STARTED:
             {
                 std::shared_ptr<Unit> first, second;
 
@@ -342,9 +341,9 @@ GameWorld::ApplyInputEvents()
             break;
         }
         
-        case GameEvent::Events_CLActionSpell:
+        case GameMessage::Messages_CLActionSpell:
         {
-            auto cl_spell = static_cast<const GameEvent::CLActionSpell*>(gs_event->event());
+            auto cl_spell = static_cast<const GameMessage::CLActionSpell*>(gs_event->payload());
 
             auto unit_obj = std::find_if(_objects.begin(),
                                          _objects.end(),
@@ -365,9 +364,9 @@ GameWorld::ApplyInputEvents()
             break;
         }
             
-        case GameEvent::Events_CLRequestWin:
+        case GameMessage::Messages_CLRequestWin:
         {
-            auto cl_win = static_cast<const GameEvent::CLRequestWin*>(gs_event->event());
+            auto cl_win = static_cast<const GameMessage::CLRequestWin*>(gs_event->payload());
 
             auto unit_obj = std::find_if(_objects.begin(),
                                          _objects.end(),
@@ -402,7 +401,8 @@ GameWorld::ApplyInputEvents()
                                              }
                                              return false;
                                          });
-            poco_assert_msg(door_obj != _objects.end(), "Door is not presented in gameworld!!!");
+            if(door_obj != _objects.end())
+                throw std::runtime_error("Door is not presented in gameworld!!!");
 
             if(has_key && player->GetPosition() == (*door_obj)->GetPosition())
             {
@@ -411,7 +411,7 @@ GameWorld::ApplyInputEvents()
                                                 player->GetUID());
                 auto msg = CreateMessage(_flatBuilder,
                                          0,
-                                         Events_SVGameEnd,
+                                         Messages_SVGameEnd,
                                          game_end.Union());
                 _flatBuilder.Finish(msg);
                 _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),

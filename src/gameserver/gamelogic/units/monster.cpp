@@ -8,7 +8,7 @@
 
 #include "monster.hpp"
 
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 #include "../gameworld.hpp"
 
 #include <chrono>
@@ -89,19 +89,19 @@ Monster::update(std::chrono::microseconds delta)
                     std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
                     
                     flatbuffers::FlatBufferBuilder builder;
-                    auto spell_info = GameEvent::CreateMonsterAttack(builder,
+                    auto spell_info = GameMessage::CreateMonsterAttack(builder,
                                                                      _duelTarget->GetUID(),
                                                                      _actualDamage);
-                    auto spell = GameEvent::CreateSpell(builder,
-                                                        GameEvent::Spells_MonsterAttack,
+                    auto spell = GameMessage::CreateSpell(builder,
+                                                        GameMessage::Spells_MonsterAttack,
                                                         spell_info.Union());
-                    auto spell1 = GameEvent::CreateSVActionSpell(builder,
+                    auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                                  this->GetUID(),
                                                                  0,
                                                                  spell);
-                    auto event = GameEvent::CreateMessage(builder,
+                    auto event = GameMessage::CreateMessage(builder,
                                                           0,
-                                                          GameEvent::Events_SVActionSpell,
+                                                          GameMessage::Messages_SVActionSpell,
                                                           spell1.Union());
                     builder.Finish(event);
                     
@@ -142,13 +142,13 @@ Monster::Spawn(Point<> log_pos)
     _pos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
-    auto spawn = GameEvent::CreateSVSpawnMonster(builder,
+    auto spawn = GameMessage::CreateSVSpawnMonster(builder,
                                                  this->GetUID(),
                                                  log_pos.x,
                                                  log_pos.y);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVSpawnMonster,
+                                        GameMessage::Messages_SVSpawnMonster,
                                         spawn.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -171,12 +171,12 @@ Monster::Die(const std::string& killerName)
         EndDuel();
     
     flatbuffers::FlatBufferBuilder builder;
-    auto move = GameEvent::CreateSVActionDeath(builder,
+    auto move = GameMessage::CreateSVActionDeath(builder,
                                                this->GetUID(),
                                                0);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVActionDeath,
+                                        GameMessage::Messages_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),

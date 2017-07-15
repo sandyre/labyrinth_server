@@ -9,7 +9,7 @@
 #include "warrior.hpp"
 
 #include "../gameworld.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 #include "../effect.hpp"
 
 #include <chrono>
@@ -36,7 +36,7 @@ Warrior::Warrior(GameWorld& world)
 }
 
 void
-Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
+Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // warrior dash cast (0 spell)
     if(spell->spell_id() == 0 &&
@@ -47,12 +47,12 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
         std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      0);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
         
@@ -77,19 +77,19 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
         std::get<1>(_spellsCDs[1]) = std::get<2>(_spellsCDs[1]);
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell_info = GameEvent::CreateWarriorAttack(builder,
+        auto spell_info = GameMessage::CreateWarriorAttack(builder,
                                                       _duelTarget->GetUID(),
                                                       _actualDamage);
-        auto spell = GameEvent::CreateSpell(builder,
-                                            GameEvent::Spells_WarriorAttack,
+        auto spell = GameMessage::CreateSpell(builder,
+                                            GameMessage::Spells_WarriorAttack,
                                             spell_info.Union());
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      1,
                                                      spell);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
         
@@ -112,12 +112,12 @@ Warrior::SpellCast(const GameEvent::CLActionSpell* spell)
         std::get<1>(_spellsCDs[2]) = std::get<2>(_spellsCDs[2]);
         
         flatbuffers::FlatBufferBuilder builder;
-        auto spell1 = GameEvent::CreateSVActionSpell(builder,
+        auto spell1 = GameMessage::CreateSVActionSpell(builder,
                                                      this->GetUID(),
                                                      2);
-        auto event = GameEvent::CreateMessage(builder,
+        auto event = GameMessage::CreateMessage(builder,
                                               0,
-                                              GameEvent::Events_SVActionSpell,
+                                              GameMessage::Messages_SVActionSpell,
                                               spell1.Union());
         builder.Finish(event);
         

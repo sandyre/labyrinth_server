@@ -11,7 +11,7 @@
 
 #include "unit.hpp"
 #include "../item.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 
 #include <vector>
 

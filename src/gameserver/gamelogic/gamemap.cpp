@@ -8,7 +8,7 @@
 
 #include "gamemap.hpp"
 
-#include "../toolkit/Point.hpp"
+#include "../../toolkit/Point.hpp"
 
 #include <random>
 

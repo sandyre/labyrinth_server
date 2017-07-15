@@ -19,7 +19,7 @@ class Warrior : public Hero
 public:
     Warrior(GameWorld& world);
     
-    virtual void    SpellCast(const GameEvent::CLActionSpell*) override;
+    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
 };
 
 #endif /* warrior_hpp */

@@ -1,4 +1,4 @@
-namespace GameEvent;
+namespace GameMessage;
 
 enum ConnectionStatus : byte
 {
@@ -294,7 +294,7 @@ table SVPing
 {
 }
 
-union Events
+union Messages
 {
 CLConnection,
 CLDisconnect,
@@ -338,8 +338,8 @@ SVPing
 
 table Message
 {
-sender_id:uint;
-event:Events;
+sender_uid:uint;
+payload:Messages;
 }
 
 root_type Message;

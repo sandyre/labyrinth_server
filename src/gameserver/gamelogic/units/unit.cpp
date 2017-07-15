@@ -9,7 +9,7 @@
 #include "unit.hpp"
 
 #include "../gameworld.hpp"
-#include "../../gsnet_generated.h"
+#include "../../GameMessage.h"
 #include "../effect.hpp"
 
 #include <chrono>
@@ -110,13 +110,13 @@ Unit::TakeItem(std::shared_ptr<Item> item)
     _inventory.push_back(item);
     
     flatbuffers::FlatBufferBuilder builder;
-    auto take = GameEvent::CreateSVActionItem(builder,
+    auto take = GameMessage::CreateSVActionItem(builder,
                                               this->GetUID(),
                                               item->GetUID(),
-                                              GameEvent::ActionItemType_TAKE);
-    auto msg = GameEvent::CreateMessage(builder,
+                                              GameMessage::ActionItemType_TAKE);
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVActionItem,
+                                        GameMessage::Messages_SVActionItem,
                                         take.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -141,13 +141,13 @@ Unit::Spawn(Point<> log_pos)
     _pos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
-    auto spawn = GameEvent::CreateSVSpawnPlayer(builder,
+    auto spawn = GameMessage::CreateSVSpawnPlayer(builder,
                                                 this->GetUID(),
                                                 log_pos.x,
                                                 log_pos.y);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVSpawnPlayer,
+                                        GameMessage::Messages_SVSpawnPlayer,
                                         spawn.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -176,13 +176,13 @@ Unit::Respawn(Point<> log_pos)
     this->ApplyEffect(respBuff);
     
     flatbuffers::FlatBufferBuilder builder;
-    auto resp = GameEvent::CreateSVRespawnPlayer(builder,
+    auto resp = GameMessage::CreateSVRespawnPlayer(builder,
                                                  this->GetUID(),
                                                  log_pos.x,
                                                  log_pos.y);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVRespawnPlayer,
+                                        GameMessage::Messages_SVRespawnPlayer,
                                         resp.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -230,12 +230,12 @@ Unit::Die(const std::string& killerName)
         EndDuel();
     
     flatbuffers::FlatBufferBuilder builder;
-    auto move = GameEvent::CreateSVActionDeath(builder,
+    auto move = GameMessage::CreateSVActionDeath(builder,
                                                this->GetUID(),
                                                0);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVActionDeath,
+                                        GameMessage::Messages_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -277,14 +277,14 @@ Unit::Move(MoveDirection dir)
     _pos = new_coord;
     
     flatbuffers::FlatBufferBuilder builder;
-    auto move = GameEvent::CreateSVActionMove(builder,
+    auto move = GameMessage::CreateSVActionMove(builder,
                                               this->GetUID(),
                                               (char)dir,
                                               new_coord.x,
                                               new_coord.y);
-    auto msg = GameEvent::CreateMessage(builder,
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVActionMove,
+                                        GameMessage::Messages_SVActionMove,
                                         move.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -327,13 +327,13 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
     _duelTarget = enemy;
     
     flatbuffers::FlatBufferBuilder builder;
-    auto duel = GameEvent::CreateSVActionDuel(builder,
+    auto duel = GameMessage::CreateSVActionDuel(builder,
                                               this->GetUID(),
                                               enemy->GetUID(),
-                                              GameEvent::ActionDuelType_STARTED);
-    auto msg = GameEvent::CreateMessage(builder,
+                                              GameMessage::ActionDuelType_STARTED);
+    auto msg = GameMessage::CreateMessage(builder,
                                         0,
-                                        GameEvent::Events_SVActionDuel,
+                                        GameMessage::Messages_SVActionDuel,
                                         duel.Union());
     builder.Finish(msg);
     

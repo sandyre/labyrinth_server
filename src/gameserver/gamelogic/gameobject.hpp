@@ -9,7 +9,7 @@
 #ifndef gameobject_hpp
 #define gameobject_hpp
 
-#include "../toolkit/Point.hpp"
+#include "../../toolkit/Point.hpp"
 
 #include <chrono>
 #include <memory>
