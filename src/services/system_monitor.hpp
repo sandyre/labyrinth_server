@@ -24,6 +24,8 @@ private:
 private:
     NamedLogger                     _logger;
     std::unique_ptr<Poco::Timer>    _timer;
+
+    uint32_t                        _lastRSS;
 };
 
 #endif /* system_monitor_hpp */
