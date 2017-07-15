@@ -1,4 +1,4 @@
-namespace MasterEvent;
+namespace MasterMessage;
 
 table CLPing
 {
@@ -109,7 +109,8 @@ union Messages
 
 table Message
 {
-  message:Messages;
+  sender_id:string;
+  payload:Messages;
 }
 
 root_type Message;

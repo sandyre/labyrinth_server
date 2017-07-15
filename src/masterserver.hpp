@@ -10,7 +10,6 @@
 #define masterserver_hpp
 
 #include "GameServersController.hpp"
-#include "msnet_generated.h"
 #include "services/system_monitor.hpp"
 #include "services/DatabaseAccessor.hpp"
 #include "toolkit/named_logger.hpp"

@@ -8,7 +8,7 @@
 
 #include "masterserver.hpp"
 
-#include "msnet_generated.h"
+#include "MasterMessage.h"
 #include "toolkit/SafePacketGetter.hpp"
 #include "services/DatabaseAccessor.hpp"
 
@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 
-using namespace MasterEvent;
+using namespace MasterMessage;
 using namespace Poco::Data::Keywords;
 using namespace std::chrono_literals;
 using Poco::Data::Statement;
@@ -45,8 +45,6 @@ public:
 
     void runTask()
     {
-        using namespace MasterEvent;
-
         _logger.Debug() << "Registration task acquired, waiting DatabaseAccessor response";
 
         DBQuery::RegisterQuery query;
@@ -74,9 +72,10 @@ public:
                 // Send response to client
             auto response = CreateSVRegister(builder,
                                              RegistrationStatus_SUCCESS);
-            auto msg      = CreateMessage(builder,
-                                          Messages_SVRegister,
-                                          response.Union());
+            auto msg = CreateMessage(builder,
+                                     0,
+                                     Messages_SVRegister,
+                                     response.Union());
             builder.Finish(msg);
 
             _master._socket.sendTo(builder.GetBufferPointer(),
@@ -90,9 +89,10 @@ public:
                 // Send response to client
             auto response = CreateSVRegister(builder,
                                              RegistrationStatus_EMAIL_TAKEN);
-            auto msg      = CreateMessage(builder,
-                                          Messages_SVRegister,
-                                          response.Union());
+            auto msg = CreateMessage(builder,
+                                     0,
+                                     Messages_SVRegister,
+                                     response.Union());
             builder.Finish(msg);
 
             _master._socket.sendTo(builder.GetBufferPointer(),
@@ -128,8 +128,6 @@ public:
 
     void runTask()
     {
-        using namespace MasterEvent;
-
         _logger.Debug() << "Login task acquired, waiting DatabaseAccessor response";
 
         DBQuery::LoginQuery query;
@@ -157,9 +155,10 @@ public:
                 // Send response to client
             auto response = CreateSVLogin(builder,
                                           LoginStatus_SUCCESS);
-            auto msg      = CreateMessage(builder,
-                                          Messages_SVLogin,
-                                          response.Union());
+            auto msg = CreateMessage(builder,
+                                     0,
+                                     Messages_SVLogin,
+                                     response.Union());
             builder.Finish(msg);
 
             _master._socket.sendTo(builder.GetBufferPointer(),
@@ -173,9 +172,10 @@ public:
                 // Send response to client
             auto response = CreateSVLogin(builder,
                                           LoginStatus_WRONG_INPUT);
-            auto msg      = CreateMessage(builder,
-                                          Messages_SVLogin,
-                                          response.Union());
+            auto msg = CreateMessage(builder,
+                                     0,
+                                     Messages_SVLogin,
+                                     response.Union());
             builder.Finish(msg);
 
             _master._socket.sendTo(builder.GetBufferPointer(),
@@ -207,8 +207,6 @@ public:
 
     void runTask()
     {
-        using namespace MasterEvent;
-
         _logger.Debug() << "FindGame task acquired, waiting GameServersController response";
 
         auto serverPort = _master._gameserversController->GetServerAddress();
@@ -225,6 +223,7 @@ public:
         auto game_found = CreateSVGameFound(builder,
                                             *serverPort);
         auto ms_event = CreateMessage(builder,
+                                      0,
                                       Messages_SVGameFound,
                                       game_found.Union());
         builder.Finish(ms_event);
@@ -388,18 +387,19 @@ void MasterServer::run()
     while(true)
     {
         SafePacketGetter packetGetter(_socket);
-        auto packet = packetGetter.Get<MasterEvent::Message>();
+        auto packet = packetGetter.Get<MasterMessage::Message>();
         if(!packet)
             continue;
 
         auto msg = GetMessage(packet->Data.data());
 
-        switch(msg->message_type())
+        switch(msg->payload_type())
         {
             case Messages_CLPing:
             {
                 auto pong = CreateSVPing(_flatBuilder);
                 auto smsg = CreateMessage(_flatBuilder,
+                                          0,
                                           Messages_CLPing,
                                           pong.Union());
                 _flatBuilder.Finish(smsg);
@@ -415,7 +415,7 @@ void MasterServer::run()
             {
                 if(_taskWorkers.available())
                 {
-                    auto registr = static_cast<const CLRegister*>(msg->message());
+                    auto registr = static_cast<const CLRegister*>(msg->payload());
                     _taskManager.start(new RegistrationTask(*this,
                                                             packet->Sender,
                                                             std::string(registr->email()->c_str()),
@@ -431,7 +431,7 @@ void MasterServer::run()
             {
                 if(_taskWorkers.available())
                 {
-                    auto login = static_cast<const CLLogin*>(msg->message());
+                    auto login = static_cast<const CLLogin*>(msg->payload());
                     _taskManager.start(new LoginTask(*this,
                                                      packet->Sender,
                                                      std::string(login->email()->c_str()),
@@ -447,7 +447,7 @@ void MasterServer::run()
             {
                 if(_taskWorkers.available())
                 {
-                    auto finder = static_cast<const CLFindGame*>(msg->message());
+                    auto finder = static_cast<const CLFindGame*>(msg->payload());
                     _taskManager.start(new FindGameTask(*this,
                                                         packet->Sender));
                 }

@@ -18,6 +18,4 @@ const int GAMEVERSION_BUILD = 0;
 
 const int ADMIN_KEY = 131313;
 
-using PlayerUID = uint32_t;
-
 #endif /* globals_h */

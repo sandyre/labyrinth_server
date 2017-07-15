@@ -338,7 +338,7 @@ SVPing
 
 table Message
 {
-sender_uid:uint;
+sender_uid:string;
 payload:Messages;
 }
 

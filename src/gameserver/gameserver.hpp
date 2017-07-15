@@ -11,6 +11,7 @@
 
 #include "gamelogic/gameworld.hpp"
 #include "../toolkit/named_logger.hpp"
+#include "../toolkit/Random.hpp"
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Task.h>
@@ -64,7 +65,6 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
-    void update();
     void Ping(Poco::Timer&);
 
     void SendSingle(flatbuffers::FlatBufferBuilder& builder,
@@ -72,8 +72,8 @@ private:
     void SendMulticast(const std::vector<uint8_t>& buffer);
     void SendMulticast(flatbuffers::FlatBufferBuilder& builder);
 
-    inline bool PlayerExists(PlayerUID);
-    inline std::vector<PlayerConnection>::iterator FindPlayerByUID(PlayerUID);
+    inline bool PlayerExists(const std::string&);
+    inline std::vector<PlayerConnection>::iterator FindPlayerByUID(const std::string&);
 
 private:
     GameServer::State               _state;

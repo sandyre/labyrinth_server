@@ -2527,8 +2527,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PAYLOAD_TYPE = 6,
     VT_PAYLOAD = 8
   };
-  uint32_t sender_uid() const {
-    return GetField<uint32_t>(VT_SENDER_UID, 0);
+  const flatbuffers::String *sender_uid() const {
+    return GetPointer<const flatbuffers::String *>(VT_SENDER_UID);
   }
   Messages payload_type() const {
     return static_cast<Messages>(GetField<uint8_t>(VT_PAYLOAD_TYPE, 0));
@@ -2538,7 +2538,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_SENDER_UID) &&
+           VerifyField<flatbuffers::uoffset_t>(verifier, VT_SENDER_UID) &&
+           verifier.Verify(sender_uid()) &&
            VerifyField<uint8_t>(verifier, VT_PAYLOAD_TYPE) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_PAYLOAD) &&
            VerifyMessages(verifier, payload(), payload_type()) &&
@@ -2549,8 +2550,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct MessageBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_sender_uid(uint32_t sender_uid) {
-    fbb_.AddElement<uint32_t>(Message::VT_SENDER_UID, sender_uid, 0);
+  void add_sender_uid(flatbuffers::Offset<flatbuffers::String> sender_uid) {
+    fbb_.AddOffset(Message::VT_SENDER_UID, sender_uid);
   }
   void add_payload_type(Messages payload_type) {
     fbb_.AddElement<uint8_t>(Message::VT_PAYLOAD_TYPE, static_cast<uint8_t>(payload_type), 0);
@@ -2572,7 +2573,7 @@ struct MessageBuilder {
 
 inline flatbuffers::Offset<Message> CreateMessage(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t sender_uid = 0,
+    flatbuffers::Offset<flatbuffers::String> sender_uid = 0,
     Messages payload_type = Messages_NONE,
     flatbuffers::Offset<void> payload = 0) {
   MessageBuilder builder_(_fbb);
@@ -2580,6 +2581,18 @@ inline flatbuffers::Offset<Message> CreateMessage(
   builder_.add_sender_uid(sender_uid);
   builder_.add_payload_type(payload_type);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Message> CreateMessageDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *sender_uid = nullptr,
+    Messages payload_type = Messages_NONE,
+    flatbuffers::Offset<void> payload = 0) {
+  return CreateMessage(
+      _fbb,
+      sender_uid ? _fbb.CreateString(sender_uid) : 0,
+      payload_type,
+      payload);
 }
 
 inline bool VerifySpells(flatbuffers::Verifier &verifier, const void *obj, Spells type) {

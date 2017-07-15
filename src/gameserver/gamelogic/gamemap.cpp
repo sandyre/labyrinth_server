@@ -9,14 +9,14 @@
 #include "gamemap.hpp"
 
 #include "../../toolkit/Point.hpp"
+#include "../../toolkit/Random.hpp"
 
 #include <random>
 
 std::vector<std::vector<GameMapGenerator::MapBlockType>>
 GameMapGenerator::GenerateMap(const Configuration& settings)
 {
-    auto m_oRandGen = std::mt19937(settings.Seed);
-    auto m_oRandDistr = std::uniform_real_distribution<float>(0, 1000);
+    RandomGenerator<std::mt19937, std::uniform_real_distribution<float>> randGen(0, 1000, settings.Seed);
     
     std::vector<std::vector<MapBlockType>> tmp_map(settings.MapSize * settings.RoomSize + 2,
                                                    std::vector<MapBlockType>(settings.MapSize * settings.RoomSize + 2,
@@ -58,8 +58,8 @@ GameMapGenerator::GenerateMap(const Configuration& settings)
             std::vector<Cell> list;
             uint16_t x, y;
             
-            x = (int)m_oRandDistr(m_oRandGen) % n;
-            y = (int)m_oRandDistr(m_oRandGen) % n;
+            x = randGen.NextInt() % n;
+            y = randGen.NextInt() % n;
             
             rooms[i][j].cells[x][y] = MapBlockType::NOBLOCK;
             if (x > 0)
@@ -85,7 +85,7 @@ GameMapGenerator::GenerateMap(const Configuration& settings)
             
             while (list.size())
             {
-                int rand = (int)m_oRandDistr(m_oRandGen) % list.size();
+                int rand = randGen.NextInt() % list.size();
                 Cell cell = list[rand];
                 std::vector<Cell> neighbours;
                 int count = 0;
@@ -157,7 +157,7 @@ GameMapGenerator::GenerateMap(const Configuration& settings)
                 {
                     if (rooms[i][j].cells[k][p] != MapBlockType::NOBLOCK)
                     {
-                        if (m_oRandDistr(m_oRandGen) > 900)
+                        if (randGen.NextInt() > 900)
                         {
                             rooms[i][j].cells[k][p] = MapBlockType::NOBLOCK;
                         }

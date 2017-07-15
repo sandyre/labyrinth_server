@@ -16,6 +16,7 @@
 
 #include <array>
 #include <iostream>
+#include <random>
 
 using namespace GameMessage;
 using namespace std::chrono;
@@ -36,7 +37,7 @@ public:
     };
 
 public:
-    PlayerConnection(uint32_t uuid,
+    PlayerConnection(const std::string& uuid,
                      uint32_t localUuid,
                      const std::string& name,
                      const IPAddress& ip)
@@ -55,7 +56,7 @@ public:
         return ConnectionStatus::ACTIVE;
     }
 
-    uint32_t GetUUID() const
+    const std::string& GetUUID() const
     { return _uuid; }
 
     uint32_t GetLocalUID() const
@@ -80,7 +81,7 @@ public:
     { return _timepoint; }
 
 private:
-    uint32_t            _uuid;
+    std::string         _uuid;
     uint32_t            _localUUID;
     std::string         _name;
     IPAddress           _ip;
@@ -196,6 +197,8 @@ void GameServer::SendMulticast(const std::vector<uint8_t>& buffer)
 
 void GameServer::lobby_forming_stage()
 {
+    RandomGenerator<std::mt19937, std::uniform_real_distribution<>> randGen(5000, 30000, 5); // FIXME: random seed?
+
     while(_state == State::LOBBY_FORMING)
     {
         std::this_thread::sleep_for(_msPerUpdate);
@@ -216,23 +219,24 @@ void GameServer::lobby_forming_stage()
             {
                 auto con_info = static_cast<const CLConnection *>(message->payload());
 
-                if(PlayerExists(con_info->player_uid()))
+                if(PlayerExists(message->sender_uid()->c_str()))
                 {
                     _logger.Warning() << "Player, which has already been added into lobby, tried to connect twice";
                     continue;
                 }
 
                     // FIXME: should make Builder for PlayerConnection to validate input
-                PlayerConnection playerConnection(con_info->player_uid(),
-                                                  con_info->player_uid(), // TODO: generate local UUID randomly
+                PlayerConnection playerConnection(message->sender_uid()->c_str(),
+                                                  randGen.NextInt(),
                                                   std::string(con_info->nickname()->c_str()),
                                                   senderIp);
-                _playersConnections.push_back(std::move(playerConnection));
+                _playersConnections.push_back(playerConnection);
 
                     // Notify player that he is accepted
                 {
                     flatbuffers::FlatBufferBuilder builder;
                     auto acceptance = CreateSVConnectionStatus(builder,
+                                                               playerConnection.GetLocalUID(),
                                                                ConnectionStatus_ACCEPTED);
                     auto message = CreateMessage(builder,
                                                  0,
@@ -249,7 +253,7 @@ void GameServer::lobby_forming_stage()
                                   {
                                       auto nickname = builder.CreateString(playerConnection.GetName());
                                       auto connectionInfo = CreateSVPlayerConnected(builder,
-                                                                                    playerConnection.GetUUID(),
+                                                                                    playerConnection.GetLocalUID(),
                                                                                     nickname);
                                       auto message = CreateMessage(builder,
                                                                    0,
@@ -262,12 +266,12 @@ void GameServer::lobby_forming_stage()
                 }
 
                     // Notify everyone about new player
-                _logger.Info() << "Player" << playerConnection.GetUUID() << " (" << playerConnection.GetName() << ") connected";
+                _logger.Info() << "Player [UUID:" << playerConnection.GetUUID() << "] LocalUID: [" << playerConnection.GetLocalUID() << "] Nickname: [" << playerConnection.GetName() <<  "] connected";
                 {
                     flatbuffers::FlatBufferBuilder builder;
                     auto nickname = builder.CreateString(playerConnection.GetName());
                     auto connectionInfo = CreateSVPlayerConnected(builder,
-                                                                  playerConnection.GetUUID(),
+                                                                  playerConnection.GetLocalUID(),
                                                                   nickname);
                     auto message = CreateMessage(builder,
                                                  0,
@@ -283,8 +287,7 @@ void GameServer::lobby_forming_stage()
 
             case GameMessage::Messages_CLPing:
             {
-                auto ping = static_cast<const CLPing*>(message->payload());
-                auto playerConnection = FindPlayerByUID(ping->player_uid());
+                auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
 
                 if(playerConnection != _playersConnections.end())
                     playerConnection->SetLastPacketTimepoint(Clock::now());
@@ -373,7 +376,7 @@ void GameServer::hero_picking_stage()
                 continue;
 
             auto message = GetMessage(packet->Data.data());
-            auto playerConnection = FindPlayerByUID(message->sender_uid());
+            auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
 
             if(playerConnection == _playersConnections.end())
             {
@@ -542,7 +545,7 @@ void GameServer::world_generation_stage()
                 continue;
 
             auto message = GetMessage(packet->Data.data());
-            auto playerConnection = FindPlayerByUID(message->sender_uid());
+            auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
 
             if(playerConnection == _playersConnections.end())
             {
@@ -657,7 +660,7 @@ void GameServer::running_game_stage()
 
             auto message = GetMessage(packet->Data.data());
 
-            auto player = FindPlayerByUID(message->sender_uid());
+            auto player = FindPlayerByUID(message->sender_uid()->c_str());
             if(player == _playersConnections.end())
             {
                 _logger.Warning() << "Received packet from unexisting player";
@@ -686,7 +689,7 @@ void GameServer::running_game_stage()
     }
 }
 
-bool GameServer::PlayerExists(PlayerUID uid)
+bool GameServer::PlayerExists(const std::string& uid)
 {
     return std::find_if(_playersConnections.cbegin(),
                         _playersConnections.cend(),
@@ -696,7 +699,7 @@ bool GameServer::PlayerExists(PlayerUID uid)
                         }) != _playersConnections.end();
 }
 
-std::vector<GameServer::PlayerConnection>::iterator GameServer::FindPlayerByUID(PlayerUID uid)
+std::vector<GameServer::PlayerConnection>::iterator GameServer::FindPlayerByUID(const std::string& uid)
 {
     std::lock_guard<std::recursive_mutex> lock(_playersMutex);
     return std::find_if(_playersConnections.begin(),
