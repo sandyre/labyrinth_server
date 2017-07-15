@@ -88,12 +88,13 @@ private:
     Clock::time_point   _timepoint;
 };
 
+const std::chrono::microseconds GameServer::PING_INTERVAL = 3s;
+
 GameServer::GameServer(const Configuration& config)
 : Task(("GameServer" + std::to_string(config.Port))),
   _state(GameServer::State::LOBBY_FORMING),
   _config(config),
   _msPerUpdate(10),
-  _pingerTimer(std::make_unique<Poco::Timer>(0, 2000)),
   _logger("Server", NamedLogger::Mode::STDIO)
 {
     _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed
@@ -111,20 +112,13 @@ GameServer::GameServer(const Configuration& config)
         shutdown();
     }
 
-    Poco::TimerCallback<GameServer> free_callback(*this,
-                                                  &GameServer::Ping);
-    _pingerTimer->start(free_callback);
-
     Task::setState(Poco::Task::TaskState::TASK_IDLE);
 }
 
-void GameServer::shutdown()
-{
-    if(_pingerTimer)
-        _pingerTimer->stop();
 
-    Task::setState(Poco::Task::TaskState::TASK_FINISHED);
-}
+void GameServer::shutdown()
+{ Task::setState(Poco::Task::TaskState::TASK_FINISHED); }
+
 
 void GameServer::runTask()
 {
@@ -146,7 +140,7 @@ void GameServer::runTask()
     }
 }
 
-void GameServer::Ping(Poco::Timer& timer)
+void GameServer::Ping()
 {
     static flatbuffers::FlatBufferBuilder builder;
     auto ping = CreateSVPing(builder);
@@ -159,6 +153,7 @@ void GameServer::Ping(Poco::Timer& timer)
     SendMulticast(builder);
 }
 
+
 void GameServer::SendSingle(flatbuffers::FlatBufferBuilder& builder,
                             Poco::Net::SocketAddress& address)
 {
@@ -168,9 +163,9 @@ void GameServer::SendSingle(flatbuffers::FlatBufferBuilder& builder,
     builder.Clear();
 }
 
+
 void GameServer::SendMulticast(flatbuffers::FlatBufferBuilder& builder)
 {
-    std::lock_guard<std::recursive_mutex> lock(_playersMutex);
     std::for_each(_playersConnections.cbegin(),
                   _playersConnections.cend(),
                   [&builder, this](const PlayerConnection& player)
@@ -182,9 +177,9 @@ void GameServer::SendMulticast(flatbuffers::FlatBufferBuilder& builder)
     builder.Clear();
 }
 
+
 void GameServer::SendMulticast(const std::vector<uint8_t>& buffer)
 {
-    std::lock_guard<std::recursive_mutex> lock(_playersMutex);
     std::for_each(_playersConnections.cbegin(),
                   _playersConnections.cend(),
                   [&buffer, this](const PlayerConnection& player)
@@ -195,13 +190,21 @@ void GameServer::SendMulticast(const std::vector<uint8_t>& buffer)
                   });
 }
 
+
 void GameServer::lobby_forming_stage()
 {
     RandomGenerator<std::mt19937, std::uniform_real_distribution<>> randGen(5000, 30000, 5); // FIXME: random seed?
+    ElapsedTime pingTime;
 
     while(_state == State::LOBBY_FORMING)
     {
         std::this_thread::sleep_for(_msPerUpdate);
+
+        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        {
+            pingTime.Reset();
+            Ping();
+        }
 
         while(_socket.available())
         {
@@ -301,33 +304,30 @@ void GameServer::lobby_forming_stage()
         }
 
             // remove players with timeout and send notifications
-        {
-            std::lock_guard<std::recursive_mutex> lock(_playersMutex);
-            _playersConnections.erase(
-                                      std::remove_if(_playersConnections.begin(),
-                                                     _playersConnections.end(),
-                                                     [this](auto& playerConnection)
+        _playersConnections.erase(
+                                  std::remove_if(_playersConnections.begin(),
+                                                 _playersConnections.end(),
+                                                 [this](auto& playerConnection)
+                                                 {
+                                                     if(playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT)
                                                      {
-                                                         if(playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT)
-                                                         {
-                                                             _logger.Info() << "Player" << playerConnection.GetUUID() << " has been removed from server (connection timeout).";
+                                                         _logger.Info() << "Player" << playerConnection.GetUUID() << " has been removed from server (connection timeout).";
 
-                                                             flatbuffers::FlatBufferBuilder builder;
-                                                             auto disconnect = CreateSVPlayerDisconnected(builder,
-                                                                                                          playerConnection.GetLocalUID());
-                                                             auto message = CreateMessage(builder,
-                                                                                          0,
-                                                                                          Messages_SVPlayerDisconnected,
-                                                                                          disconnect.Union());
-                                                             builder.Finish(message);
-                                                             SendMulticast(builder);
+                                                         flatbuffers::FlatBufferBuilder builder;
+                                                         auto disconnect = CreateSVPlayerDisconnected(builder,
+                                                                                                      playerConnection.GetLocalUID());
+                                                         auto message = CreateMessage(builder,
+                                                                                      0,
+                                                                                      Messages_SVPlayerDisconnected,
+                                                                                      disconnect.Union());
+                                                         builder.Finish(message);
+                                                         SendMulticast(builder);
 
-                                                             return true;
-                                                         }
-                                                         return false;
-                                                     }),
-                                      _playersConnections.end());
-        }
+                                                         return true;
+                                                     }
+                                                     return false;
+                                                 }),
+                                  _playersConnections.end());
 
         if(_playersConnections.size() == _config.Players)
         {
@@ -348,6 +348,7 @@ void GameServer::lobby_forming_stage()
     }
 }
 
+
 void GameServer::hero_picking_stage()
 {
     using Player = std::pair<GameWorld::PlayerInfo, bool>;
@@ -364,9 +365,17 @@ void GameServer::hero_picking_stage()
                       players.push_back(std::make_pair(info, false));
                   });
 
+    ElapsedTime pingTime;
+
     while(_state == State::HERO_PICK)
     {
         std::this_thread::sleep_for(_msPerUpdate);
+
+        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        {
+            pingTime.Reset();
+            Ping();
+        }
 
         while(_socket.available())
         {
@@ -457,18 +466,15 @@ void GameServer::hero_picking_stage()
             }
         }
 
-        {
-            std::lock_guard<std::recursive_mutex> lock(_playersMutex);
-            bool playerDisconnected = std::any_of(_playersConnections.cbegin(),
-                                                  _playersConnections.cend(),
-                                                  [](const PlayerConnection& playerConnection)
-                                                  {
-                                                      return playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT;
-                                                  });
+        bool playerDisconnected = std::any_of(_playersConnections.cbegin(),
+                                              _playersConnections.cend(),
+                                              [](const PlayerConnection& playerConnection)
+                                              {
+                                                  return playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT;
+                                              });
 
-            if(playerDisconnected)
-                throw std::runtime_error("Someone has disconnected during HERO-PICKING stage, feature with returning into LOBBY-FORMING is not yet implemented");
-        }
+        if(playerDisconnected)
+            throw std::runtime_error("Someone has disconnected during HERO-PICKING stage, feature with returning into LOBBY-FORMING is not yet implemented");
 
             // check that players are ready to play
         bool everyoneReady = std::all_of(players.cbegin(),
@@ -533,9 +539,17 @@ void GameServer::world_generation_stage()
                       players.push_back(std::make_pair(info, false));
                   });
 
+    ElapsedTime pingTime;
+
     while(_state == State::GENERATING_WORLD)
     {
         std::this_thread::sleep_for(_msPerUpdate);
+
+        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        {
+            pingTime.Reset();
+            Ping();
+        }
 
         while(_socket.available())
         {
@@ -588,18 +602,15 @@ void GameServer::world_generation_stage()
             }
         }
 
-        {
-            std::lock_guard<std::recursive_mutex> lock(_playersMutex);
-            bool playerDisconnected = std::any_of(_playersConnections.cbegin(),
-                                                  _playersConnections.cend(),
-                                                  [](const PlayerConnection& playerConnection)
-                                                  {
-                                                      return playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT;
-                                                  });
+        bool playerDisconnected = std::any_of(_playersConnections.cbegin(),
+                                              _playersConnections.cend(),
+                                              [](const PlayerConnection& playerConnection)
+                                              {
+                                                  return playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::TIMEOUT;
+                                              });
 
-            if(playerDisconnected)
-                throw std::runtime_error("Someone has disconnected during WORLD-GENERATION stage, situation that can't be handled well");
-        }
+        if(playerDisconnected)
+            throw std::runtime_error("Someone has disconnected during WORLD-GENERATION stage, situation that can't be handled well");
         
             // check that players are ready to play
         bool everyoneReady = std::all_of(players.cbegin(),
@@ -629,7 +640,7 @@ void GameServer::world_generation_stage()
 
 void GameServer::running_game_stage()
 {
-    ElapsedTime frameTime;
+    ElapsedTime frameTime, pingTime;
 
     while(_state == State::RUNNING_GAME)
     {
@@ -637,6 +648,12 @@ void GameServer::running_game_stage()
 
         // sleep for some time, then get all packets and pass it to the gameworld, update
         std::this_thread::sleep_for(_msPerUpdate);
+
+        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        {
+            pingTime.Reset();
+            Ping();
+        }
 
         if(!_socket.available())
         {
@@ -701,7 +718,6 @@ bool GameServer::PlayerExists(const std::string& uid)
 
 std::vector<GameServer::PlayerConnection>::iterator GameServer::FindPlayerByUID(const std::string& uid)
 {
-    std::lock_guard<std::recursive_mutex> lock(_playersMutex);
     return std::find_if(_playersConnections.begin(),
                         _playersConnections.end(),
                         [uid](const auto& player)

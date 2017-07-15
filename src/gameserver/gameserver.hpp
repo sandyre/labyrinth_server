@@ -31,6 +31,8 @@ private:
     class PlayerConnection;
 
 public:
+    static const std::chrono::microseconds PING_INTERVAL;
+
     enum class State
     {
         LOBBY_FORMING,
@@ -54,6 +56,7 @@ public:
 
     GameServer::State GetState() const
     { return _state; }
+
     GameServer::Configuration GetConfig() const
     { return _config; }
 
@@ -65,7 +68,7 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
-    void Ping(Poco::Timer&);
+    void Ping();
 
     void SendSingle(flatbuffers::FlatBufferBuilder& builder,
                     Poco::Net::SocketAddress& address);
@@ -82,10 +85,7 @@ private:
     Poco::Net::DatagramSocket       _socket;
     std::chrono::milliseconds       _msPerUpdate;
 
-    std::unique_ptr<Poco::Timer>    _pingerTimer;
-
     std::unique_ptr<GameWorld>      _world;
-    std::recursive_mutex            _playersMutex;
     std::vector<PlayerConnection>   _playersConnections;
 
     NamedLogger                     _logger;
