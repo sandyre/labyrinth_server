@@ -155,14 +155,11 @@ DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
 
     auto promise = std::make_unique<std::promise<DBQuery::RegisterResult>>();
     auto future = promise->get_future();
-    try
-    {
+
+    if(_workers.available())
         _taskManager.start(new RegisterTask(_dbSessions.get(), std::move(promise), reg));
-    }
-    catch(const std::exception& e)
-    {
-        promise->set_exception(std::current_exception());
-    }
+    else
+        _logger.Warning() << "No workers, task skipped";
 
     return future;
 }
@@ -174,14 +171,11 @@ DatabaseAccessor::Query(const DBQuery::LoginQuery& login)
 
     auto promise = std::make_unique<std::promise<DBQuery::LoginResult>>();
     auto future = promise->get_future();
-    try
-    {
+
+    if(_workers.available())
         _taskManager.start(new LoginTask(_dbSessions.get(), std::move(promise), login));
-    }
-    catch(const std::exception& e)
-    {
-        promise->set_exception(std::current_exception());
-    }
+    else
+        _logger.Warning() << "No workers, task skipped";
 
     return future;
 }
