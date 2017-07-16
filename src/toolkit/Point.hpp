@@ -10,7 +10,6 @@
 #define Point_h
 
 #include <cmath>
-#include <type_traits>
 
 template<typename T = float>
 struct Point

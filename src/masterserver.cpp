@@ -243,18 +243,14 @@ private:
 
 
 MasterServer::MasterServer()
-: _systemStatus(0),
-  _randGenerator(228),
-  _randDistr(std::uniform_int_distribution<>(std::numeric_limits<int32_t>::min(),
-                                             std::numeric_limits<int32_t>::max())),
-  _logger("MasterServer", NamedLogger::Mode::STDIO),
+: _logger("MasterServer", NamedLogger::Mode::STDIO),
   _taskWorkers("MasterServerQueryWorkers", 8, 16, 60),
   _taskManager(_taskWorkers)
 {
     uint16_t Port = 1930;
     _logger.Info() << "Booting starts";
 
-    _logger.Info() << "Labyrinth core version: " << GAMEVERSION_MAJOR << "." << GAMEVERSION_MINOR << "." << GAMEVERSION_BUILD;
+    _logger.Info() << "Labyrinth core version: " << GAMECORE_MAJOR_VERSION << "." << GAMECORE_MINOR_VERSION << "." << GAMECORE_BUILD_VERSION;
     _logger.Info() << "[----------------------PLATFORM INFO---------------------]";
     {
         _logger.Info() << "Operating System: " << Poco::Environment::osDisplayName() << " "
@@ -296,32 +292,14 @@ MasterServer::MasterServer()
             Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(),
                                                Port);
             _socket.bind(sock_addr);
-
-            _systemStatus |= SystemStatus::NETWORK_SYSTEM_ACTIVE;
         }
     }
     catch(const std::exception& e)
     {
         _logger.Error() << "Failed. Exception thrown: " << e.what();
-    }
+        _logger.Error() << "[--------------SYBSYSTEMS BOOTSTRAP FAILED---------------]";
 
-        // Fill ports pool
-    for(uint32_t i = 1931; i < (1931 + 150); ++i)
-    {
-        Poco::Net::DatagramSocket socket;
-        Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
-                                      i);
-
-        try
-        {
-            socket.bind(addr);
-            _availablePorts.push(i);
-            socket.close();
-        }
-        catch(std::exception e)
-        {
-            _logger.Info() << "Port " << i << " is already in use";
-        }
+        exit(1);
     }
 
         // Init gameservers threadpool
@@ -341,22 +319,13 @@ MasterServer::MasterServer()
     try
     {
         DatabaseAccessor::Instance();
-        _systemStatus |= SystemStatus::DATABASE_SYSTEM_ACTIVE;
     }
     catch(const std::exception& e)
     {
         _logger.Error() << "Failed. Exception thrown: " << e.what();
-    }
-
-    if(!(SystemStatus::NETWORK_SYSTEM_ACTIVE & _systemStatus) ||
-       !(SystemStatus::DATABASE_SYSTEM_ACTIVE & _systemStatus))
-    {
         _logger.Error() << "[--------------SYBSYSTEMS BOOTSTRAP FAILED---------------]";
-        if(!(_systemStatus & SystemStatus::NETWORK_SYSTEM_ACTIVE))
-            _logger.Error() << "REASON: NETWORK SYSTEM FAILED TO START";
-        if(!(_systemStatus & SystemStatus::DATABASE_SYSTEM_ACTIVE))
-            _logger.Error() << "REASON: DATABASE ACCESSOR SERVICE FAILED TO START";
-        exit(1);
+
+        exit(2);
     }
 
     _logger.Info() << "[---------------------SYSTEM MONITOR---------------------]";
@@ -395,71 +364,71 @@ void MasterServer::run()
 
         switch(msg->payload_type())
         {
-            case Messages_CLPing:
+        case Messages_CLPing:
+        {
+            flatbuffers::FlatBufferBuilder builder;
+            auto pong = CreateSVPing(builder);
+            auto smsg = CreateMessage(builder,
+                                      0,
+                                      Messages_CLPing,
+                                      pong.Union());
+            builder.Finish(smsg);
+
+            _socket.sendTo(builder.GetBufferPointer(),
+                           builder.GetSize(),
+                           packet->Sender);
+            break;
+        }
+
+        case Messages_CLRegister:
+        {
+            if(_taskWorkers.available())
             {
-                auto pong = CreateSVPing(_flatBuilder);
-                auto smsg = CreateMessage(_flatBuilder,
-                                          0,
-                                          Messages_CLPing,
-                                          pong.Union());
-                _flatBuilder.Finish(smsg);
-
-                _socket.sendTo(_flatBuilder.GetBufferPointer(),
-                               _flatBuilder.GetSize(),
-                               packet->Sender);
-                _flatBuilder.Clear();
-                break;
+                auto registr = static_cast<const CLRegister*>(msg->payload());
+                _taskManager.start(new RegistrationTask(*this,
+                                                        packet->Sender,
+                                                        std::string(registr->email()->c_str()),
+                                                        std::string(registr->password()->c_str())));
             }
+            else
+                _logger.Warning() << "No workers available, task skipped";
 
-            case Messages_CLRegister:
+            break;
+        }
+
+        case Messages_CLLogin:
+        {
+            if(_taskWorkers.available())
             {
-                if(_taskWorkers.available())
-                {
-                    auto registr = static_cast<const CLRegister*>(msg->payload());
-                    _taskManager.start(new RegistrationTask(*this,
-                                                            packet->Sender,
-                                                            std::string(registr->email()->c_str()),
-                                                            std::string(registr->password()->c_str())));
-                }
-                else
-                    _logger.Warning() << "No workers available, task skipped";
-
-                break;
+                auto login = static_cast<const CLLogin*>(msg->payload());
+                _taskManager.start(new LoginTask(*this,
+                                                 packet->Sender,
+                                                 std::string(login->email()->c_str()),
+                                                 std::string(login->password()->c_str())));
             }
+            else
+                _logger.Warning() << "No workers available, task skipped";
 
-            case Messages_CLLogin:
+            break;
+        }
+
+        case Messages_CLFindGame:
+        {
+            if(_taskWorkers.available())
             {
-                if(_taskWorkers.available())
-                {
-                    auto login = static_cast<const CLLogin*>(msg->payload());
-                    _taskManager.start(new LoginTask(*this,
-                                                     packet->Sender,
-                                                     std::string(login->email()->c_str()),
-                                                     std::string(login->password()->c_str())));
-                }
-                else
-                    _logger.Warning() << "No workers available, task skipped";
-
-                break;
+                auto finder = static_cast<const CLFindGame*>(msg->payload());
+                _taskManager.start(new FindGameTask(*this,
+                                                    packet->Sender));
             }
+            else
+                _logger.Warning() << "No workers available, task skipped";
 
-            case Messages_CLFindGame:
-            {
-                if(_taskWorkers.available())
-                {
-                    auto finder = static_cast<const CLFindGame*>(msg->payload());
-                    _taskManager.start(new FindGameTask(*this,
-                                                        packet->Sender));
-                }
-                else
-                    _logger.Warning() << "No workers available, task skipped";
+            break;
+        }
 
-                break;
-            }
-
-            default:
-                _logger.Warning() << "Undefined packet received";
-                break;
+        default:
+            _logger.Warning() << "Undefined packet received";
+            break;
         }
     }
 }

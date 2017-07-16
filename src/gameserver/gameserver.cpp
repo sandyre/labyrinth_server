@@ -27,6 +27,7 @@ using Clock = std::chrono::steady_clock;
 template<typename T>
 using optional = std::experimental::optional<T>;
 
+
 class GameServer::PlayerConnection
 {
 public:
@@ -88,7 +89,9 @@ private:
     Clock::time_point   _timepoint;
 };
 
+
 const std::chrono::microseconds GameServer::PING_INTERVAL = 3s;
+
 
 GameServer::GameServer(const Configuration& config)
 : Task(("GameServer" + std::to_string(config.Port))),
@@ -523,6 +526,7 @@ void GameServer::hero_picking_stage()
     }
 }
 
+
 void GameServer::world_generation_stage()
 {
     using Player = std::pair<GameWorld::PlayerInfo, bool>;
@@ -638,6 +642,7 @@ void GameServer::world_generation_stage()
     }
 }
 
+
 void GameServer::running_game_stage()
 {
     ElapsedTime frameTime, pingTime;
@@ -706,6 +711,7 @@ void GameServer::running_game_stage()
     }
 }
 
+
 bool GameServer::PlayerExists(const std::string& uid)
 {
     return std::find_if(_playersConnections.cbegin(),
@@ -715,6 +721,7 @@ bool GameServer::PlayerExists(const std::string& uid)
                             return playerConnection.GetUUID() == uid;
                         }) != _playersConnections.end();
 }
+
 
 std::vector<GameServer::PlayerConnection>::iterator GameServer::FindPlayerByUID(const std::string& uid)
 {

@@ -38,49 +38,27 @@ private:
     class LoginTask;
     class FindGameTask;
 
-    using GameServers = std::vector<std::unique_ptr<GameServer>>;
-
-public:
-    struct SystemStatus
-    {
-        static const int NETWORK_SYSTEM_ACTIVE  = 0x02;
-        static const int DATABASE_SYSTEM_ACTIVE = 0x08;
-    };
-
 public:
     MasterServer();
     ~MasterServer();
 
-    void init(uint32_t Port);
-
-    virtual void run();
+    virtual void run() override;
 
 protected:
-    void service_loop();
-
-protected:
-    std::mt19937                    _randGenerator;
-    std::uniform_int_distribution<> _randDistr;
-
-    std::queue<uint32_t>            _availablePorts;
-
-    uint32_t                        _systemStatus;
-
-    // Gameservers
-    std::unique_ptr<GameServersController>  _gameserversController;
-
-    // Network
-    Poco::Net::DatagramSocket      _socket;
-    flatbuffers::FlatBufferBuilder _flatBuilder;
-    std::array<uint8_t, 512>       _dataBuffer;
-
-    // Logging
+        // Logging
     NamedLogger                          _logger;
 
+        // Gameservers
+    std::unique_ptr<GameServersController>  _gameserversController;
+
+        // Network
+    Poco::Net::DatagramSocket           _socket;
+
+        // Processing
     Poco::ThreadPool                     _taskWorkers;
     Poco::TaskManager                    _taskManager;
 
-    // Services
+        // Services
     std::unique_ptr<SystemMonitor>       _systemMonitor;
 
     friend RegistrationTask;
