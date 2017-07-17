@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+
 class Mage : public Hero
 {
 public:

@@ -13,6 +13,7 @@
 
 #include <string>
 
+
 class Construction : public GameObject
 {
 public:
@@ -35,17 +36,20 @@ protected:
     Construction::Type  _constrType;
 };
 
+
 class Door : public Construction
 {
 public:
     Door(GameWorld& world);
 };
 
+
 class Graveyard : public Construction
 {
 public:
     Graveyard(GameWorld& world);
 };
+
 
 class Swamp : public Construction
 {

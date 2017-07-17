@@ -13,6 +13,7 @@
 
 #include <queue>
 
+
 struct InputSequence
 {
     InputSequence(int size)
@@ -27,7 +28,7 @@ struct InputSequence
         }
     }
     
-    void    Refresh()
+    void Refresh()
     {
         sequence.clear();
         for(auto i = 0;
@@ -41,6 +42,7 @@ struct InputSequence
     int len;
     std::deque<char> sequence;
 };
+
 
 class Monster : public Unit
 {

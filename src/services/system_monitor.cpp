@@ -128,6 +128,7 @@ size_t getCurrentRSS( )
 }
 }
 
+
 SystemMonitor::SystemMonitor()
 : _logger("SystemMonitor", NamedLogger::Mode::STDIO),
   _timer(std::make_unique<Poco::Timer>(180000, 180000)),
@@ -139,6 +140,7 @@ SystemMonitor::SystemMonitor()
                                                      &SystemMonitor::PrintStats);
     _timer->start(free_callback);
 }
+
 
 void
 SystemMonitor::PrintStats(Poco::Timer& timer)

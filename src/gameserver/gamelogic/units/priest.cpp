@@ -13,6 +13,7 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
+
 Priest::Priest(GameWorld& world)
 : Hero(world)
 {
@@ -33,11 +34,13 @@ Priest::Priest(GameWorld& world)
     _regenAmount = 1;
 }
 
+
 void
 Priest::SpellCast(const GameMessage::CLActionSpell*)
 {
         // does nothing
 }
+
 
 void
 Priest::update(std::chrono::microseconds delta)

@@ -18,6 +18,7 @@
 
 #include <future>
 
+
 namespace DBQuery
 {
     struct RegisterQuery
@@ -40,6 +41,7 @@ namespace DBQuery
         bool Success;
     };
 }
+
 
 class DatabaseAccessor
 {
@@ -93,6 +95,5 @@ private:
 
     Poco::Data::SessionPool                 _dbSessions;
 };
-
 
 #endif /* DatabaseAccessor_hpp */

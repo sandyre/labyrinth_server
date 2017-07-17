@@ -15,6 +15,7 @@
 
 #include <vector>
 
+
 class Hero : public Unit
 {
 public:
@@ -28,6 +29,7 @@ public:
         LAST_HERO = 0x03,
         UNDEFINED
     };
+    
 public:
     Hero::Type      GetHero() const;
     

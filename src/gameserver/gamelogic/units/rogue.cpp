@@ -8,13 +8,15 @@
 
 #include "rogue.hpp"
 
+#include "../effect.hpp"
 #include "../gameworld.hpp"
 #include "../../GameMessage.h"
-#include "../effect.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
+
 using Attributes = GameObject::Attributes;
+
 
 Rogue::Rogue(GameWorld& world)
 : Hero(world)
@@ -31,6 +33,7 @@ Rogue::Rogue(GameWorld& world)
         // spell 2 cd
     _spellsCDs.push_back(std::make_tuple(true, 0s, 15s));
 }
+
 
 void
 Rogue::SpellCast(const GameMessage::CLActionSpell* spell)
@@ -67,11 +70,13 @@ Rogue::SpellCast(const GameMessage::CLActionSpell* spell)
     }
 }
 
+
 void
 Rogue::TakeItem(std::shared_ptr<Item> item)
 {
     Unit::TakeItem(item);
 }
+
 
 void
 Rogue::update(std::chrono::microseconds delta)

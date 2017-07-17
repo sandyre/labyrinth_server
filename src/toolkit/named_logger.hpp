@@ -14,6 +14,7 @@
 
 #include <string>
 
+
 namespace Color
 {
     static const std::string RED        = "\033[1;31m";

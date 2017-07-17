@@ -9,8 +9,8 @@
 #include "masterserver.hpp"
 
 #include "MasterMessage.h"
-#include "toolkit/SafePacketGetter.hpp"
 #include "services/DatabaseAccessor.hpp"
+#include "toolkit/SafePacketGetter.hpp"
 
 #include <Poco/Environment.h>
 #include <Poco/Net/HTTPClientSession.h>
@@ -27,6 +27,7 @@ using namespace MasterMessage;
 using namespace Poco::Data::Keywords;
 using namespace std::chrono_literals;
 using Poco::Data::Statement;
+
 
 class MasterServer::RegistrationTask : public Poco::Task
 {
@@ -104,12 +105,13 @@ public:
     }
 
 private:
-    MasterServer&                                           _master;
-    NamedLogger                                             _logger;
-    Poco::Net::SocketAddress                                _recipient;
-    const std::string                                       _email;
-    const std::string                                       _password;
+    MasterServer&                            _master;
+    NamedLogger                              _logger;
+    Poco::Net::SocketAddress                 _recipient;
+    const std::string                        _email;
+    const std::string                        _password;
 };
+
 
 class MasterServer::LoginTask : public Poco::Task
 {
@@ -187,12 +189,13 @@ public:
     }
 
 private:
-    MasterServer&                                           _master;
-    NamedLogger                                             _logger;
-    Poco::Net::SocketAddress                                _recipient;
-    const std::string                                       _email;
-    const std::string                                       _password;
+    MasterServer&                         _master;
+    NamedLogger                           _logger;
+    Poco::Net::SocketAddress              _recipient;
+    const std::string                     _email;
+    const std::string                     _password;
 };
+
 
 class MasterServer::FindGameTask : public Poco::Task
 {
@@ -236,9 +239,9 @@ public:
     }
 
 private:
-    MasterServer&                                           _master;
-    NamedLogger                                             _logger;
-    Poco::Net::SocketAddress                                _recipient;
+    MasterServer&                               _master;
+    NamedLogger                                 _logger;
+    Poco::Net::SocketAddress                    _recipient;
 };
 
 
@@ -342,6 +345,7 @@ MasterServer::MasterServer()
         // Everything done
     _logger.Info() << "[-------------SYBSYSTEMS BOOTSTRAP COMPLETED-------------]\n\n";
 }
+
 
 MasterServer::~MasterServer()
 {

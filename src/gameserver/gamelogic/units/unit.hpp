@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+
 class Mage;
 class Warrior;
 class Effect;
@@ -25,6 +26,7 @@ class RogueInvisibility;
 class MageFreeze;
 class DuelInvulnerability;
 class RespawnInvulnerability;
+
 
 class Unit : public GameObject
 {

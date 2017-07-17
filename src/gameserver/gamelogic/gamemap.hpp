@@ -13,6 +13,7 @@
 #include <vector>
 #include <cstdint>
 
+
 class GameMapGenerator
 {
 public:
@@ -23,7 +24,6 @@ public:
         BORDER  = 0x02
     };
     
-public:
     struct Configuration
     {
         uint16_t MapSize;

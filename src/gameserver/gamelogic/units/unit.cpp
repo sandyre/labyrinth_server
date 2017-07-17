@@ -17,6 +17,7 @@ using namespace std::chrono_literals;
 
 using Attributes = GameObject::Attributes;
 
+
 Unit::Unit(GameWorld& world)
 : GameObject(world),
   _unitType(Unit::Type::UNDEFINED),
@@ -40,6 +41,7 @@ Unit::Unit(GameWorld& world)
     Unit::Attributes::DUELABLE;
 }
 
+
 void
 Unit::ApplyEffect(std::shared_ptr<Effect> effect)
 {
@@ -47,6 +49,7 @@ Unit::ApplyEffect(std::shared_ptr<Effect> effect)
     _world._logger.Info() << effect->GetName() << " effect is applied to " << this->GetName();
     _appliedEffects.push_back(effect);
 }
+
 
 void
 Unit::update(std::chrono::microseconds delta)
@@ -72,6 +75,7 @@ Unit::update(std::chrono::microseconds delta)
                           _appliedEffects.end());
 }
 
+
 void
 Unit::UpdateCDs(std::chrono::microseconds delta)
 {
@@ -90,6 +94,7 @@ Unit::UpdateCDs(std::chrono::microseconds delta)
     }
 }
 
+
 void
 Unit::UpdateStats()
 {
@@ -101,6 +106,7 @@ Unit::UpdateStats()
     }
     _actualDamage = new_dmg;
 }
+
 
 void
 Unit::TakeItem(std::shared_ptr<Item> item)
@@ -122,6 +128,7 @@ Unit::TakeItem(std::shared_ptr<Item> item)
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
 }
+
 
 void
 Unit::Spawn(Point<> log_pos)
@@ -153,6 +160,7 @@ Unit::Spawn(Point<> log_pos)
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
 }
+
 
 void
 Unit::Respawn(Point<> log_pos)
@@ -189,6 +197,7 @@ Unit::Respawn(Point<> log_pos)
                                  builder.GetBufferPointer() + builder.GetSize());
 }
 
+
 std::shared_ptr<Item>
 Unit::DropItem(int32_t uid)
 {
@@ -213,6 +222,7 @@ Unit::DropItem(int32_t uid)
     _inventory.erase(item);
     return item_ptr;
 }
+
 
 void
 Unit::Die(const std::string& killerName)
@@ -247,6 +257,7 @@ Unit::Die(const std::string& killerName)
     _health = 0;
     _world._respawnQueue.push_back(std::make_pair(3s, this));
 }
+
 
 void
 Unit::Move(MoveDirection dir)
@@ -291,6 +302,7 @@ Unit::Move(MoveDirection dir)
                                  builder.GetBufferPointer() + builder.GetSize());
 }
 
+
 void
 Unit::TakeDamage(const DamageDescriptor& dmg)
 {
@@ -311,6 +323,7 @@ Unit::TakeDamage(const DamageDescriptor& dmg)
         Die(dmg.DealerName);
     }
 }
+
 
 void
 Unit::StartDuel(std::shared_ptr<Unit> enemy)
@@ -340,6 +353,7 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
 }
+
 
 void
 Unit::EndDuel()

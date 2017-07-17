@@ -16,6 +16,7 @@
 #include <vector>
 #include <random>
 
+
 class Rogue : public Hero
 {
 public:

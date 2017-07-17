@@ -11,6 +11,7 @@
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Observer.h>
 
+
 class DatabaseAccessor::RegisterTask : public Poco::Task
 {
 public:
@@ -70,6 +71,7 @@ private:
     std::unique_ptr<std::promise<DBQuery::RegisterResult>>   _promise;
     DBQuery::RegisterQuery                                   _taskInfo;
 };
+
 
 class DatabaseAccessor::LoginTask : public Poco::Task
 {
@@ -148,6 +150,7 @@ DatabaseAccessor::DatabaseAccessor()
                                                                                              &ProgressHandler::onFinished));
 }
 
+
 std::future<DBQuery::RegisterResult>
 DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
 {
@@ -163,6 +166,7 @@ DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
 
     return future;
 }
+
 
 std::future<DBQuery::LoginResult>
 DatabaseAccessor::Query(const DBQuery::LoginQuery& login)

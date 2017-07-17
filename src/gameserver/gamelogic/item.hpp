@@ -11,6 +11,7 @@
 
 #include "gameobject.hpp"
 
+
 class Item : public GameObject
 {
 public:
@@ -32,11 +33,13 @@ protected:
     uint32_t    _carrierUID;
 };
 
+
 class Key : public Item
 {
 public:
     Key(GameWorld& world);
 };
+
 
 class Sword : public Item
 {

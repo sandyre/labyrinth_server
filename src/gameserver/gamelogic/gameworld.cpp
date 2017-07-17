@@ -15,8 +15,8 @@
 
 #include <chrono>
 using namespace std::chrono_literals;
-
 using namespace GameMessage;
+
 
 GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
                      std::vector<PlayerInfo>& players)

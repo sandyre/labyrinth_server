@@ -8,13 +8,13 @@
 
 #include "mage.hpp"
 
+#include "../effect.hpp"
 #include "../gameworld.hpp"
 #include "../../GameMessage.h"
 
-#include "../effect.hpp"
-
 #include <chrono>
 using namespace std::chrono_literals;
+
 
 Mage::Mage(GameWorld& world)
 : Hero(world)
@@ -35,6 +35,7 @@ Mage::Mage(GameWorld& world)
         // spell 3 cd
     _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
 }
+
 
 void
 Mage::SpellCast(const GameMessage::CLActionSpell* spell)
@@ -152,6 +153,7 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
         _duelTarget->ApplyEffect(mageFreeze);
     }
 }
+
 
 void
 Mage::update(std::chrono::microseconds delta)

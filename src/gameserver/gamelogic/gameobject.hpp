@@ -14,6 +14,7 @@
 #include <chrono>
 #include <memory>
 
+
 class GameWorld;
 
 class GameObject : public std::enable_shared_from_this<GameObject>
@@ -72,7 +73,7 @@ protected:
     GameObject::Type    _objType;
     uint32_t            _objAttributes;
     uint32_t            _uid;
-    Point<>               _pos;
+    Point<>             _pos;
 };
 
 #endif /* gameobject_hpp */

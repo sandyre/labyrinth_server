@@ -31,6 +31,7 @@
 #include <thread>
 #include <vector>
 
+
 class MasterServer : public Poco::Runnable
 {
 private:
@@ -45,21 +46,18 @@ public:
     virtual void run() override;
 
 protected:
-        // Logging
-    NamedLogger                          _logger;
-
-        // Gameservers
-    std::unique_ptr<GameServersController>  _gameserversController;
+    NamedLogger                             _logger;
 
         // Network
-    Poco::Net::DatagramSocket           _socket;
+    Poco::Net::DatagramSocket               _socket;
 
         // Processing
-    Poco::ThreadPool                     _taskWorkers;
-    Poco::TaskManager                    _taskManager;
+    Poco::ThreadPool                        _taskWorkers;
+    Poco::TaskManager                       _taskManager;
 
-        // Services
-    std::unique_ptr<SystemMonitor>       _systemMonitor;
+        // Subsystems
+    std::unique_ptr<SystemMonitor>          _systemMonitor;
+    std::unique_ptr<GameServersController>  _gameserversController;
 
     friend RegistrationTask;
     friend LoginTask;

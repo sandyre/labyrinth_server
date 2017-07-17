@@ -11,24 +11,20 @@
 
 #include "gameserver/gameserver.hpp"
 #include "toolkit/named_logger.hpp"
+#include "toolkit/optional.hpp"
 
 #include <Poco/TaskManager.h>
 #include <Poco/TaskNotification.h>
 #include <Poco/ThreadPool.h>
 
-#include "toolkit/optional.hpp"
 #include <deque>
+
 
 class GameServersController
 {
 public:
     GameServersController();
-    ~GameServersController()
-    {
-        _logger.Info() << "Waiting for all workers to end";
-        _workers.collect();
-        _logger.Info() << "Shutdown";
-    }
+    ~GameServersController();
 
     std::experimental::optional<uint16_t> GetServerAddress();
 

@@ -8,11 +8,13 @@
 
 #include "construction.hpp"
 
+
 Construction::Construction(GameWorld& world)
 : GameObject(world)
 {
     _objType = GameObject::Type::CONSTRUCTION;
 }
+
 
 Door::Door(GameWorld& world)
 : Construction(world)
@@ -21,12 +23,14 @@ Door::Door(GameWorld& world)
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
+
 Graveyard::Graveyard(GameWorld& world)
 : Construction(world)
 {
     _constrType = Construction::Type::GRAVEYARD;
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
+
 
 Swamp::Swamp(GameWorld& world)
 : Construction(world)

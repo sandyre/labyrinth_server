@@ -8,6 +8,7 @@
 
 #include "hero.hpp"
 
+
 Hero::Hero(GameWorld& world)
 : Unit(world),
   _heroType(Hero::Type::FIRST_HERO)
@@ -15,11 +16,13 @@ Hero::Hero(GameWorld& world)
     _unitType = Unit::Type::HERO;
 }
 
+
 Hero::Type
 Hero::GetHero() const
 {
     return _heroType;
 }
+
 
 void
 Hero::update(std::chrono::microseconds delta)

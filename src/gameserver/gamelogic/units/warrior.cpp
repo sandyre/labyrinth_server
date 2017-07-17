@@ -8,12 +8,13 @@
 
 #include "warrior.hpp"
 
+#include "../effect.hpp"
 #include "../gameworld.hpp"
 #include "../../GameMessage.h"
-#include "../effect.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
+
 
 Warrior::Warrior(GameWorld& world)
 : Hero(world)
@@ -34,6 +35,7 @@ Warrior::Warrior(GameWorld& world)
         // spell 3 cd
     _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
 }
+
 
 void
 Warrior::SpellCast(const GameMessage::CLActionSpell* spell)

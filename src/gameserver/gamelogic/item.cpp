@@ -8,6 +8,7 @@
 
 #include "item.hpp"
 
+
 Item::Item(GameWorld& world)
 : GameObject(world),
   _carrierUID(0)
@@ -16,17 +17,20 @@ Item::Item(GameWorld& world)
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
+
 Item::Type
 Item::GetType() const
 {
     return _itemType;
 }
 
+
 Key::Key(GameWorld& world)
 : Item(world)
 {
     _itemType = Item::Type::KEY;
 }
+
 
 Sword::Sword(GameWorld& world)
 : Item(world)

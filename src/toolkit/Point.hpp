@@ -11,6 +11,7 @@
 
 #include <cmath>
 
+
 template<typename T = float>
 struct Point
 {

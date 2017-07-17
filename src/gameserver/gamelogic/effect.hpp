@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 
+
 class Unit;
 
 class Effect
@@ -24,6 +25,7 @@ public:
         OVER = 0x01,
         PAUSED = 0x02
     };
+    
 public:
     Effect();
     virtual ~Effect() { }
@@ -47,6 +49,7 @@ protected:
     std::string                 _name;
 };
 
+
 class WarriorDash : public Effect
 {
 public:
@@ -56,8 +59,9 @@ public:
     virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 protected:
-    float m_nBonusMovespeed;
+    float _bonusSpeed;
 };
+
 
 class WarriorArmorUp : public Effect
 {
@@ -68,8 +72,9 @@ public:
     virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 protected:
-    int16_t m_nBonusArmor;
+    int16_t _bonusArmor;
 };
+
 
 class RogueInvisibility : public Effect
 {
@@ -81,6 +86,7 @@ public:
     virtual void stop() override;
 };
 
+
 class MageFreeze : public Effect
 {
 public:
@@ -91,6 +97,7 @@ public:
     virtual void stop() override;
 };
 
+
 class DuelInvulnerability : public Effect
 {
 public:
@@ -100,6 +107,7 @@ public:
     virtual void update(std::chrono::microseconds) override;
     virtual void stop() override;
 };
+
 
 class RespawnInvulnerability : public Effect
 {

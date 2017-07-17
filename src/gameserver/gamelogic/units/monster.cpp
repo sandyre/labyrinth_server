@@ -8,11 +8,12 @@
 
 #include "monster.hpp"
 
-#include "../../GameMessage.h"
 #include "../gameworld.hpp"
+#include "../../GameMessage.h"
 
 #include <chrono>
 using namespace std::chrono_literals;
+
 
 Monster::Monster(GameWorld& world)
 : Unit(world),
@@ -39,6 +40,7 @@ Monster::Monster(GameWorld& world)
     _moveCD = 2s;
     _moveACD = 0s;
 }
+
 
 void
 Monster::update(std::chrono::microseconds delta)
@@ -127,6 +129,7 @@ Monster::update(std::chrono::microseconds delta)
     }
 }
 
+
 void
 Monster::Spawn(Point<> log_pos)
 {
@@ -154,6 +157,7 @@ Monster::Spawn(Point<> log_pos)
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
 }
+
 
 void
 Monster::Die(const std::string& killerName)

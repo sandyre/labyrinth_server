@@ -13,6 +13,7 @@
 
 #include <string>
 
+
 class MapBlock : public GameObject
 {
 public:
@@ -34,17 +35,20 @@ protected:
     MapBlock::Type  _blockType;
 };
 
+
 class NoBlock : public MapBlock
 {
 public:
     NoBlock(GameWorld& world);
 };
 
+
 class WallBlock : public MapBlock
 {
 public:
     WallBlock(GameWorld& world);
 };
+
 
 class BorderBlock : public MapBlock
 {

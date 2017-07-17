@@ -12,27 +12,31 @@
 
 using namespace std::chrono_literals;
 
-Effect::Effect() :
-_timer(0),
-_state(Effect::State::ACTIVE),
-_name("Default effect")
+
+Effect::Effect()
+: _timer(),
+  _state(Effect::State::ACTIVE),
+  _name("Default effect")
 {
     
 }
 
+
 WarriorDash::WarriorDash(std::chrono::microseconds duration,
-                         float bonus_movespeed) :
-m_nBonusMovespeed(bonus_movespeed)
+                         float bonus_movespeed)
+: _bonusSpeed(bonus_movespeed)
 {
     _timer = duration;
     _name = "WarriorDash";
 }
 
+
 void
 WarriorDash::start()
 {
-    _targetUnit->_moveSpeed -= m_nBonusMovespeed;
+    _targetUnit->_moveSpeed -= _bonusSpeed;
 }
+
 
 void
 WarriorDash::update(std::chrono::microseconds delta)
@@ -47,25 +51,28 @@ WarriorDash::update(std::chrono::microseconds delta)
     }
 }
 
+
 void
 WarriorDash::stop()
 {
-    _targetUnit->_moveSpeed += m_nBonusMovespeed;
+    _targetUnit->_moveSpeed += _bonusSpeed;
+}
+
+
+WarriorArmorUp::WarriorArmorUp(std::chrono::microseconds duration,
+                               int16_t bonus_armor)
+: _bonusArmor(bonus_armor)
+{
+    _timer = duration;
+    _name = "WarriorArmorUp";
 }
 
 void
 WarriorArmorUp::start()
 {
-    _targetUnit->_armor += m_nBonusArmor;
+    _targetUnit->_armor += _bonusArmor;
 }
 
-WarriorArmorUp::WarriorArmorUp(std::chrono::microseconds duration,
-                               int16_t bonus_armor) :
-m_nBonusArmor(bonus_armor)
-{
-    _timer = duration;
-    _name = "WarriorArmorUp";
-}
 
 void
 WarriorArmorUp::update(std::chrono::microseconds delta)
@@ -83,19 +90,23 @@ WarriorArmorUp::update(std::chrono::microseconds delta)
 void
 WarriorArmorUp::stop()
 {
-    _targetUnit->_armor -= m_nBonusArmor;
+    _targetUnit->_armor -= _bonusArmor;
 }
+
 
 RogueInvisibility::RogueInvisibility(std::chrono::microseconds duration)
 {
     _timer = duration;
 }
 
+
 void
 RogueInvisibility::start()
 {
     _targetUnit->_objAttributes &= ~(GameObject::Attributes::VISIBLE);
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);}
+    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
+}
+
 
 void
 RogueInvisibility::update(std::chrono::microseconds delta)
@@ -110,6 +121,7 @@ RogueInvisibility::update(std::chrono::microseconds delta)
     }
 }
 
+
 void
 RogueInvisibility::stop()
 {
@@ -117,17 +129,20 @@ RogueInvisibility::stop()
     _targetUnit->_unitAttributes |= (Unit::Attributes::DUELABLE);
 }
 
+
 MageFreeze::MageFreeze(std::chrono::microseconds duration)
 {
     _timer = duration;
     _name = "MageFreeze";
 }
 
+
 void
 MageFreeze::start()
 {
     _targetUnit->_unitAttributes &= ~(Unit::Attributes::INPUT);
 }
+
 
 void
 MageFreeze::update(std::chrono::microseconds delta)
@@ -142,11 +157,13 @@ MageFreeze::update(std::chrono::microseconds delta)
     }
 }
 
+
 void
 MageFreeze::stop()
 {
     _targetUnit->_unitAttributes |= Unit::Attributes::INPUT;
 }
+
 
 DuelInvulnerability::DuelInvulnerability(std::chrono::microseconds duration)
 {
@@ -154,10 +171,13 @@ DuelInvulnerability::DuelInvulnerability(std::chrono::microseconds duration)
     _name = "DuelInvulnerability";
 }
 
+
 void
 DuelInvulnerability::start()
 {
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);}
+    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
+}
+
 
 void
 DuelInvulnerability::update(std::chrono::microseconds delta)
@@ -172,11 +192,13 @@ DuelInvulnerability::update(std::chrono::microseconds delta)
     }
 }
 
+
 void
 DuelInvulnerability::stop()
 {
     _targetUnit->_unitAttributes |= Unit::Attributes::DUELABLE;
 }
+
 
 RespawnInvulnerability::RespawnInvulnerability(std::chrono::microseconds duration)
 {
@@ -184,12 +206,14 @@ RespawnInvulnerability::RespawnInvulnerability(std::chrono::microseconds duratio
     _name = "RespawnInvulnerability";
 }
 
+
 void
 RespawnInvulnerability::start()
 {
     _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
     _targetUnit->_objAttributes &= ~(GameObject::Attributes::PASSABLE);
 }
+
 
 void
 RespawnInvulnerability::update(std::chrono::microseconds delta)
@@ -203,6 +227,7 @@ RespawnInvulnerability::update(std::chrono::microseconds delta)
         }
     }
 }
+
 
 void
 RespawnInvulnerability::stop()
