@@ -179,9 +179,9 @@ Monster::Die(const std::string& killerName)
                                                this->GetUID(),
                                                0);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVActionDeath,
-                                        move.Union());
+                                          0,
+                                          GameMessage::Messages_SVActionDeath,
+                                          move.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());

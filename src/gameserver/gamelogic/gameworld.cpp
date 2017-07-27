@@ -98,17 +98,6 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
     InitialSpawn();
 }
 
-std::queue<std::vector<uint8_t>>&
-GameWorld::GetIncomingEvents()
-{
-    return _inputEvents;
-}
-
-std::queue<std::vector<uint8_t>>&
-GameWorld::GetOutgoingEvents()
-{
-    return _outputEvents;
-}
 
 void
 GameWorld::InitialSpawn()
@@ -433,6 +422,7 @@ GameWorld::ApplyInputEvents()
     }
 }
 
+
 void
 GameWorld::update(std::chrono::microseconds delta)
 {
@@ -485,6 +475,7 @@ GameWorld::update(std::chrono::microseconds delta)
         _monsterSpawnTimer = _monsterSpawnInterval;
     }
 }
+
 
 Point<>
 GameWorld::GetRandomPosition()

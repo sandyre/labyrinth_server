@@ -274,28 +274,28 @@ MasterServer::MasterServer()
         // Check inet connection
     try
     {
-        _logger.Debug() << "Sending HTTP request to api.ipify.org";
-
-        Poco::Net::HTTPClientSession session("api.ipify.org");
-        session.setTimeout(Poco::Timespan(1,
-                                          0));
-        Poco::Net::HTTPRequest  request(Poco::Net::HTTPRequest::HTTP_GET,
-                                        "/");
-        Poco::Net::HTTPResponse response;
-        session.sendRequest(request);
-
-        std::istream& rs = session.receiveResponse(response);
-        if(response.getStatus() == Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK)
-        {
-
-            _logger.Debug() << "HTTP response received";
-            _logger.Debug() << "Public IP: " << rs.rdbuf();
-            _logger.Debug() << "Binding to port " << Port;
+//        _logger.Debug() << "Sending HTTP request to api.ipify.org";
+//
+//        Poco::Net::HTTPClientSession session("api.ipify.org");
+//        session.setTimeout(Poco::Timespan(1,
+//                                          0));
+//        Poco::Net::HTTPRequest  request(Poco::Net::HTTPRequest::HTTP_GET,
+//                                        "/");
+//        Poco::Net::HTTPResponse response;
+//        session.sendRequest(request);
+//
+//        std::istream& rs = session.receiveResponse(response);
+//        if(response.getStatus() == Poco::Net::HTTPResponse::HTTPStatus::HTTP_OK)
+//        {
+//
+//            _logger.Debug() << "HTTP response received";
+//            _logger.Debug() << "Public IP: " << rs.rdbuf();
+//            _logger.Debug() << "Binding to port " << Port;
 
             Poco::Net::SocketAddress sock_addr(Poco::Net::IPAddress(),
                                                Port);
             _socket.bind(sock_addr);
-        }
+//        }
     }
     catch(const std::exception& e)
     {

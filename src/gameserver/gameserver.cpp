@@ -23,10 +23,7 @@ using namespace std::chrono;
 
 using IPAddress = Poco::Net::SocketAddress;
 using Clock = std::chrono::steady_clock;
-
-template<typename T>
-using optional = std::experimental::optional<T>;
-
+using std::experimental::optional;
 
 class GameServer::PlayerConnection
 {
@@ -696,8 +693,7 @@ void GameServer::running_game_stage()
             if(message->payload_type() == Messages_CLPing)
                 continue;
 
-            _world->GetIncomingEvents().emplace(packet->Data.begin(),
-                                                packet->Data.end());
+            _world->PushEvent({packet->Data.begin(), packet->Data.end()});
         }
 
         auto& out_events = _world->GetOutgoingEvents();

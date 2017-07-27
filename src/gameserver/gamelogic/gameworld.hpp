@@ -80,8 +80,11 @@ public:
 
     virtual void update(std::chrono::microseconds);
 
-    std::queue<std::vector<uint8_t>>& GetOutgoingEvents();
-    std::queue<std::vector<uint8_t>>& GetIncomingEvents();
+    std::queue<std::vector<uint8_t>>& GetOutgoingEvents()
+    { return _outputEvents; }
+    
+    void PushEvent(const std::vector<uint8_t>& event)
+    { _inputEvents.push(event); }
 
 protected:
     void        ApplyInputEvents();
