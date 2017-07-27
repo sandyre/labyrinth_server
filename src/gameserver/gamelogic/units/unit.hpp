@@ -162,5 +162,6 @@ protected:
     friend Mage;
     friend Warrior;
 };
+using UnitPtr = std::shared_ptr<Unit>;
 
 #endif /* unit_hpp */

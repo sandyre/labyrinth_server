@@ -60,8 +60,8 @@ Rogue::SpellCast(const GameMessage::CLActionSpell* spell)
                                               spell1.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+//        _world._outputEvents.emplace(builder.GetBufferPointer(),
+//                                     builder.GetBufferPointer() + builder.GetSize());
     }
         // missing knife cast (1 spell)
     else if(spell->spell_id() == 1)

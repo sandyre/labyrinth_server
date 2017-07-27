@@ -273,14 +273,13 @@ Unit::Move(MoveDirection dir)
         --new_coord.y;
     
         // firstly - check if it can go there (no unpassable objects)
-    for(auto object : _world._objects)
+    for(auto iter = _world._objectsStorage.Begin(); iter != _world._objectsStorage.End(); ++iter)
     {
-        if(object->GetPosition() == new_coord &&
-           !(object->GetAttributes() & GameObject::Attributes::PASSABLE))
-        {
+        if((*iter)->GetPosition() == new_coord &&
+           !((*iter)->GetAttributes() & GameObject::Attributes::PASSABLE))
             return; // there is an unpassable object
-        }
     }
+
         // Log move event
     _world._logger.Info() << this->GetName() << " MOVE (" << _pos.x
     << ";" << _pos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";

@@ -76,5 +76,6 @@ protected:
     uint32_t            _uid;
     Point<>             _pos;
 };
+using GameObjectPtr = std::shared_ptr<GameObject>;
 
 #endif /* gameobject_hpp */

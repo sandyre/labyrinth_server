@@ -69,7 +69,7 @@ private:
         }
 
     private:
-        NamedLogger             _logger;
+        NamedLogger     _logger;
     };
 
 public:
