@@ -102,9 +102,9 @@ Monster::update(std::chrono::microseconds delta)
                                                                  0,
                                                                  spell);
                     auto event = GameMessage::CreateMessage(builder,
-                                                          0,
-                                                          GameMessage::Messages_SVActionSpell,
-                                                          spell1.Union());
+                                                            0,
+                                                            GameMessage::Messages_SVActionSpell,
+                                                            spell1.Union());
                     builder.Finish(event);
                     
                     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -134,25 +134,21 @@ void
 Monster::Spawn(Point<> log_pos)
 {
     _state = Unit::State::WALKING;
-    _objAttributes = GameObject::Attributes::MOVABLE |
-    GameObject::Attributes::VISIBLE |
-    GameObject::Attributes::DAMAGABLE;
-    _unitAttributes = Unit::Attributes::INPUT |
-    Unit::Attributes::ATTACK |
-    Unit::Attributes::DUELABLE;
+    _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
+    _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
     _pos = log_pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameMessage::CreateSVSpawnMonster(builder,
-                                                 this->GetUID(),
-                                                 log_pos.x,
-                                                 log_pos.y);
+                                                   this->GetUID(),
+                                                   log_pos.x,
+                                                   log_pos.y);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVSpawnMonster,
-                                        spawn.Union());
+                                          0,
+                                          GameMessage::Messages_SVSpawnMonster,
+                                          spawn.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
@@ -165,14 +161,16 @@ Monster::Die(const std::string& killerName)
         // Log death event
     _world._logger.Info() << this->GetName() << " KILLED BY " << killerName << " DIED AT (" << _pos.x << ";" << _pos.y << ")";
     
-        // drop items
-    while(!_inventory.empty())
+    // drop items
+    auto items = _inventory;
+    for(auto item : items)
+        this->DropItem(item->GetUID());
+
+    if(_duelTarget)
     {
-        this->DropItem(0);
-    }
-    
-    if(_duelTarget != nullptr)
+        _duelTarget->EndDuel();
         EndDuel();
+    }
     
     flatbuffers::FlatBufferBuilder builder;
     auto move = GameMessage::CreateSVActionDeath(builder,

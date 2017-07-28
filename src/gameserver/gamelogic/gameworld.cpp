@@ -8,7 +8,6 @@
 
 #include "gameworld.hpp"
 
-#include "construction.hpp"
 #include "item.hpp"
 #include "mapblock.hpp"
 #include "units/monster.hpp"
@@ -25,6 +24,8 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
   _monsterSpawnTimer(30s),
   _mapConf(conf),
   _objectsStorage(*this),
+  _respawner(*this),
+  _randGen(0, 1000, 0),
   _logger("World", NamedLogger::Mode::STDIO)
 {
     auto map = GameMapGenerator::GenerateMap(conf);
@@ -58,24 +59,24 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
 
     for(auto& player : players)
     {
-    switch(player.Hero)
-    {
-    case Hero::Type::WARRIOR:
-    {
-        auto warrior = _objectsStorage.Create<Warrior>(player.LocalUid);
-        warrior->SetName(player.Name);
-        break;
-    }
-    case Hero::Type::MAGE:
-    {
-        auto mage = _objectsStorage.Create<Mage>(player.LocalUid);
-        mage->SetName(player.Name);
-        break;
-    }
-    default:
-        assert(false);
-        break;
-    }
+        switch(player.Hero)
+        {
+        case Hero::Type::WARRIOR:
+        {
+            auto warrior = _objectsStorage.Create<Warrior>(player.LocalUid);
+            warrior->SetName(player.Name);
+            break;
+        }
+        case Hero::Type::MAGE:
+        {
+            auto mage = _objectsStorage.Create<Mage>(player.LocalUid);
+            mage->SetName(player.Name);
+            break;
+        }
+        default:
+            assert(false);
+            break;
+        }
     }
 
     InitialSpawn();
@@ -92,24 +93,24 @@ GameWorld::InitialSpawn()
         // spawn key
     auto key = _objectsStorage.Create<Key>();
     {
-        key->SetPosition(GetRandomPosition());
+        key->SetPosition(Point<>(27, 11));
         
             // Log key spawn event
         _logger.Info() << "Key spawned at (" << key->GetPosition().x << "," << key->GetPosition().y << ")";
 
-        auto key_spawn = CreateSVSpawnItem(_flatBuilder,
+        flatbuffers::FlatBufferBuilder builder;
+        auto key_spawn = CreateSVSpawnItem(builder,
                                            key->GetUID(),
                                            ItemType_KEY,
                                            key->GetPosition().x,
                                            key->GetPosition().y);
-        auto msg = CreateMessage(_flatBuilder,
+        auto msg = CreateMessage(builder,
                                  0,
                                  Messages_SVSpawnItem,
                                  key_spawn.Union());
-        _flatBuilder.Finish(msg);
-        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
-                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
-        _flatBuilder.Clear();
+        builder.Finish(msg);
+        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                              builder.GetBufferPointer() + builder.GetSize());
     }
     
         // spawn door
@@ -119,20 +120,20 @@ GameWorld::InitialSpawn()
         
             // Log key spawn event
         _logger.Info() << "Door spawned at (" << door->GetPosition().x << "," << door->GetPosition().y << ")";
-        
-        auto door_spawn = CreateSVSpawnConstr(_flatBuilder,
+
+        flatbuffers::FlatBufferBuilder builder;
+        auto door_spawn = CreateSVSpawnConstr(builder,
                                               door->GetUID(),
                                               ConstrType_DOOR,
                                               door->GetPosition().x,
                                               door->GetPosition().y);
-        auto msg = CreateMessage(_flatBuilder,
+        auto msg = CreateMessage(builder,
                                  0,
                                  Messages_SVSpawnConstr,
                                  door_spawn.Union());
-        _flatBuilder.Finish(msg);
-        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
-                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
-        _flatBuilder.Clear();
+        builder.Finish(msg);
+        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                              builder.GetBufferPointer() + builder.GetSize());
     }
     
         // spawn graveyard
@@ -142,20 +143,20 @@ GameWorld::InitialSpawn()
 
             // Log key spawn event
         _logger.Info() << "Graveyard spawned at (" << grave->GetPosition().x << "," << grave->GetPosition().y << ")";
-        
-        auto grave_spawn = CreateSVSpawnConstr(_flatBuilder,
+
+        flatbuffers::FlatBufferBuilder builder;
+        auto grave_spawn = CreateSVSpawnConstr(builder,
                                                grave->GetUID(),
                                                ConstrType_GRAVEYARD,
                                                grave->GetPosition().x,
                                                grave->GetPosition().y);
-        auto msg = CreateMessage(_flatBuilder,
+        auto msg = CreateMessage(builder,
                                  0,
                                  Messages_SVSpawnConstr,
                                  grave_spawn.Union());
-        _flatBuilder.Finish(msg);
-        _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
-                             _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
-        _flatBuilder.Clear();
+        builder.Finish(msg);
+        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                              builder.GetBufferPointer() + builder.GetSize());
     }
     
     {
@@ -216,9 +217,7 @@ GameWorld::ApplyInputEvents()
 
             case ActionItemType_DROP:
             {
-                auto unit = _objectsStorage.FindObject<Unit>(cl_item->player_uid());
-
-                if(unit)
+                if(auto unit = _objectsStorage.FindObject<Unit>(cl_item->player_uid()))
                 {
                     auto item = unit->DropItem(cl_item->item_uid());
                     if(item)
@@ -299,19 +298,19 @@ GameWorld::ApplyInputEvents()
             auto doors = _objectsStorage.Subset<Door>(); // FIXME: there is only ONE door. But potentially there are many
             assert(!doors.empty());
 
-            if(has_key && unit->GetPosition() == doors[0]->GetPosition())
+            if(has_key && unit->GetPosition().Distance(doors[0]->GetPosition()) <= 1.0)
             {
                     // GAME ENDS
-                auto game_end = CreateSVGameEnd(_flatBuilder,
+                flatbuffers::FlatBufferBuilder builder;
+                auto game_end = CreateSVGameEnd(builder,
                                                 unit->GetUID());
-                auto msg = CreateMessage(_flatBuilder,
+                auto msg = CreateMessage(builder,
                                          0,
                                          Messages_SVGameEnd,
                                          game_end.Union());
-                _flatBuilder.Finish(msg);
-                _outputEvents.emplace(_flatBuilder.GetCurrentBufferPointer(),
-                                      _flatBuilder.GetBufferPointer() + _flatBuilder.GetSize());
-                _flatBuilder.Clear();
+                builder.Finish(msg);
+                _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                                      builder.GetBufferPointer() + builder.GetSize());
 
                 _logger.Info() << "Player with name '" << unit->GetName() << "' won! Escaped from LABYRINTH!";
             }
@@ -339,28 +338,7 @@ GameWorld::update(std::chrono::microseconds delta)
                   {
                       obj->update(delta);
                   });
-
-        // respawn deads
-    auto grave = _objectsStorage.Subset<Graveyard>(); // FIXME: one grave, but potentially many
-    
-    _respawnQueue.erase(
-                         std::remove_if(_respawnQueue.begin(),
-                                        _respawnQueue.end(),
-                                        [this, delta, grave](auto& unit)
-                                        {
-                                            if(unit.first <= 0s)
-                                            {
-                                                unit.second->Respawn(grave[0]->GetPosition());
-                                                return true;
-                                            }
-                                            else
-                                            {
-                                                unit.first -= delta;
-                                                return false;
-                                            }
-                                        }),
-                         _respawnQueue.end()
-                         );
+    _respawner.update(delta);
     
         // update monster spawning timer
     _monsterSpawnTimer -= delta;
@@ -383,8 +361,8 @@ GameWorld::GetRandomPosition()
     bool point_found = false;
     do
     {
-        point.x = _randDistr(_randGenerator) % (_mapConf.MapSize * _mapConf.RoomSize + 1);
-        point.y = _randDistr(_randGenerator) % (_mapConf.MapSize * _mapConf.RoomSize + 1);
+        point.x = _randGen.NextInt() % (_mapConf.MapSize * _mapConf.RoomSize + 1);
+        point.y = _randGen.NextInt() % (_mapConf.MapSize * _mapConf.RoomSize + 1);
         point_found = true;
 
         for(auto iter = _objectsStorage.Begin(); iter != _objectsStorage.End(); ++iter)

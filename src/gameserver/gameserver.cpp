@@ -48,7 +48,7 @@ public:
 
     ConnectionStatus GetConnectionStatus() const
     {
-        if(duration_cast<milliseconds>(Clock::now() - _timepoint) > 5s)
+        if(duration_cast<milliseconds>(Clock::now() - _timepoint) > 180s)
             return ConnectionStatus::TIMEOUT;
 
         return ConnectionStatus::ACTIVE;

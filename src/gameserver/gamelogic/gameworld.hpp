@@ -9,6 +9,7 @@
 #ifndef gameworld_hpp
 #define gameworld_hpp
 
+#include "construction.hpp"
 #include "gamemap.hpp"
 #include "gameobject.hpp"
 #include "units/hero.hpp"
@@ -17,14 +18,16 @@
 #include "units/warrior.hpp"
 #include "../../globals.h"
 #include "../../toolkit/named_logger.hpp"
+#include "../../toolkit/Random.hpp"
 
 #include <chrono>
 #include <list>
+#include <set>
 #include <queue>
 #include <random>
 #include <sstream>
 #include <vector>
-
+using namespace std::chrono_literals;
 
 class GameWorld
 {
@@ -122,6 +125,49 @@ private:
         std::list<GameObjectPtr>    _storage;
     };
 
+    class Respawner
+    {
+        using QueueElement = std::pair<std::chrono::microseconds, UnitPtr>;
+    public:
+        Respawner(GameWorld& world)
+        : _world(world)
+        { }
+
+        void update(std::chrono::microseconds delta)
+        {
+            std::for_each(_queue.begin(),
+                          _queue.end(),
+                          [delta](QueueElement& elem)
+                          {
+                              elem.first -= delta;
+                          });
+            _queue.erase(std::remove_if(_queue.begin(),
+                                        _queue.end(),
+                                        [this](QueueElement& elem)
+                                        {
+                                            if(elem.first <= 0s)
+                                            {
+                                                auto grave = _world._objectsStorage.Subset<Graveyard>();
+
+                                                _world._objectsStorage.PushObject(elem.second);
+                                                elem.second->Spawn(grave[0]->GetPosition());
+                                                return true;
+                                            }
+
+                                            return false;
+                                        }),
+                         _queue.end());
+
+        }
+
+        void Enqueue(const UnitPtr& unit, std::chrono::microseconds respawnTime = 5s)
+        { _queue.push_back(std::make_pair(respawnTime, unit)); }
+
+    private:
+        GameWorld&                  _world;
+        std::deque<QueueElement>    _queue;
+    };
+
 public:
     enum State
     {
@@ -162,23 +208,15 @@ protected:
     // contains outgoing events
     std::queue<std::vector<uint8_t>> _inputEvents;
     std::queue<std::vector<uint8_t>> _outputEvents;
-    flatbuffers::FlatBufferBuilder   _flatBuilder;
 
-    // basicly contains all objects on scene
     ObjectsStorage              _objectsStorage;
-
-    // contains objects that should be respawned
-    std::vector<std::pair<std::chrono::microseconds, Unit *>> _respawnQueue;
-
-    // just a random generator
-    std::mt19937                    _randGenerator;
-    std::uniform_int_distribution<> _randDistr;
+    Respawner                   _respawner;
 
     // monster spawning timer
     std::chrono::microseconds _monsterSpawnInterval;
     std::chrono::microseconds _monsterSpawnTimer;
 
-    // logsystem from gameserver
+    RandomGenerator<std::mt19937, std::uniform_int_distribution<>> _randGen;
     NamedLogger         _logger;
 
     friend Unit;
@@ -186,6 +224,8 @@ protected:
     friend Hero;
     friend Mage;
     friend Warrior;
+
+    friend Respawner;
 };
 
 #endif /* gameworld_hpp */

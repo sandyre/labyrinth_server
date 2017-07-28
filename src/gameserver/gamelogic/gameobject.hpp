@@ -13,6 +13,7 @@
 
 #include <chrono>
 #include <memory>
+#include <string>
 
 
 class GameWorld;
@@ -48,10 +49,14 @@ public:
         _objAttributes |= GameObject::Attributes::VISIBLE;
     }
     
-    virtual void update(std::chrono::microseconds) = 0;
-    
     GameObject::Type GetType() const
     { return _objType; }
+
+    std::string GetName() const
+    { return _name; }
+
+    void SetName(const std::string& name)
+    { _name = name; }
 
     uint32_t GetAttributes() const
     { return _objAttributes; }
@@ -67,13 +72,15 @@ public:
 
     void SetPosition(Point<> pos)
     { _pos = pos; }
+
+    virtual void update(std::chrono::microseconds) = 0;
     
 protected:
     GameWorld&          _world;
-    
     GameObject::Type    _objType;
-    uint32_t            _objAttributes;
     uint32_t            _uid;
+    std::string         _name;
+    uint32_t            _objAttributes;
     Point<>             _pos;
 };
 using GameObjectPtr = std::shared_ptr<GameObject>;

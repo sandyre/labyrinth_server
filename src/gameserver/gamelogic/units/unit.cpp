@@ -8,9 +8,9 @@
 
 #include "unit.hpp"
 
+#include "../effect.hpp"
 #include "../gameworld.hpp"
 #include "../../GameMessage.h"
-#include "../effect.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
@@ -112,7 +112,7 @@ void
 Unit::TakeItem(std::shared_ptr<Item> item)
 {
         // Log item drop event
-    _world._logger.Info() << this->GetName() << " TOOK ITEM " << (int)item->GetType();
+    _world._logger.Info() << this->GetName() << " TOOK ITEM " << item->GetName();
     _inventory.push_back(item);
     
     flatbuffers::FlatBufferBuilder builder;
@@ -137,12 +137,8 @@ Unit::Spawn(Point<> log_pos)
     _world._logger.Info() << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
     
     _state = Unit::State::WALKING;
-    _objAttributes = GameObject::Attributes::MOVABLE |
-                        GameObject::Attributes::VISIBLE |
-                        GameObject::Attributes::DAMAGABLE;
-    _unitAttributes = Unit::Attributes::INPUT |
-    Unit::Attributes::ATTACK |
-    Unit::Attributes::DUELABLE;
+    _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
+    _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
     _pos = log_pos;
@@ -215,8 +211,9 @@ Unit::DropItem(int32_t uid)
     }
     
         // Log item drop event
-    _world._logger.Info() << _name << " DROPPED ITEM " << (int)(*item)->GetType();
+    _world._logger.Info() << _name << " DROPPED ITEM " << (*item)->GetName();
     (*item)->SetPosition(_pos);
+    _world._objectsStorage.PushObject(*item);
 
     auto item_ptr = *item;
     _inventory.erase(item);
@@ -231,13 +228,15 @@ Unit::Die(const std::string& killerName)
     _world._logger.Info() << this->GetName() << " KILLED BY " << killerName << " DIED AT (" << _pos.x << ";" << _pos.y << ")";
     
         // drop items
-    while(!_inventory.empty())
+    auto items = _inventory;
+    for(auto item : items)
+        this->DropItem(item->GetUID());
+
+    if(_duelTarget)
     {
-        this->DropItem(0);
-    }
-    
-    if(_duelTarget != nullptr)
+        _duelTarget->EndDuel();
         EndDuel();
+    }
     
     flatbuffers::FlatBufferBuilder builder;
     auto move = GameMessage::CreateSVActionDeath(builder,
@@ -255,7 +254,8 @@ Unit::Die(const std::string& killerName)
     _objAttributes = GameObject::Attributes::PASSABLE;
     _unitAttributes = 0;
     _health = 0;
-    _world._respawnQueue.push_back(std::make_pair(3s, this));
+    _world._respawner.Enqueue(std::static_pointer_cast<Unit>(shared_from_this()), 3s);
+    _world._objectsStorage.DeleteObject(std::static_pointer_cast<Unit>(shared_from_this())); // FIXME: update wont be called when unit is dead. so CDs wont be updated. Discuss with Sergey
 }
 
 
@@ -361,10 +361,7 @@ Unit::EndDuel()
     _world._logger.Info() << this->GetName() << " DUEL END W " << _duelTarget->GetName();
     
     _state = Unit::State::WALKING;
-    _unitAttributes |=
-    Unit::Attributes::INPUT |
-    Unit::Attributes::ATTACK |
-    Unit::Attributes::DUELABLE;
+    _unitAttributes |= Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     
-    _duelTarget = nullptr;
+    _duelTarget.reset();
 }
