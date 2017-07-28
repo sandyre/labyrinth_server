@@ -29,19 +29,6 @@
 class GameWorld
 {
 private:
-    class ObjectFactory
-    {
-    public:
-        ObjectFactory()
-        : _uidSequence(1)
-        { }
-
-
-
-    private:
-        uint32_t    _uidSequence;
-    };
-
     class ObjectsStorage
     {
         using Storage = std::list<GameObjectPtr>;
@@ -64,6 +51,16 @@ private:
         template<typename T>
         std::shared_ptr<T> Create(uint32_t uid)
         {
+#ifdef _DEBUG
+            // Consistency check (uid should not have duplicates)
+            bool is_copy = std::any_of(_storage.begin(),
+                                       _storage.end(),
+                                       [uid](const GameObjectPtr& obj)
+                                       {
+                                           return uid == obj->GetUID();
+                                       });
+            assert(!is_copy);
+#endif
             auto object = std::make_shared<T>(_world);
             object->SetUID(uid);
             _storage.push_back(object);
@@ -115,6 +112,9 @@ private:
         
         Storage::iterator End()
         { return _storage.end(); }
+
+        size_t Size() const
+        { return _storage.size(); }
         
     private:
         GameWorld&                  _world;
@@ -150,15 +150,13 @@ public:
     { _inputEvents.push(event); }
 
 protected:
-    void        ApplyInputEvents();
+    void ApplyInputEvents();
 
-    Monster *   SpawnMonster();
-
-    Point<>     GetRandomPosition();
+    Point<> GetRandomPosition();
     
-protected:
     void InitialSpawn();
 
+protected:
     GameMapGenerator::Configuration  _mapConf;
 
     // contains outgoing events
@@ -166,7 +164,6 @@ protected:
     std::queue<std::vector<uint8_t>> _outputEvents;
     flatbuffers::FlatBufferBuilder   _flatBuilder;
 
-    ObjectFactory               _objectFactory;
     // basicly contains all objects on scene
     ObjectsStorage              _objectsStorage;
 

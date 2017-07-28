@@ -166,6 +166,8 @@ GameWorld::InitialSpawn()
             // Log monster spawn event
         _logger.Info() << "Monster spawned at (" << monster->GetPosition().x << "," << monster->GetPosition().y << ")";
     }
+
+    _logger.Info() << "Initial spawn done, total number of GameObjects: " << _objectsStorage.Size();
 }
 
 void
