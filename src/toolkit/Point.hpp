@@ -32,6 +32,12 @@ struct Point
     bool operator==(const Point<T>&& b)
     { return operator==(b); }
 
+    bool operator!=(const Point<T>& b)
+    { return !operator==(b); }
+
+    bool operator!=(const Point<T>&& b)
+    { return !operator==(b); }
+
     T x, y;
 };
 

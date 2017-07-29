@@ -28,27 +28,40 @@ class DuelInvulnerability;
 class RespawnInvulnerability;
 
 
-class Unit : public GameObject
+class Unit
+    : public GameObject
 {
 public:
     enum class Type
     {
-        UNDEFINED, MONSTER, HERO
+        UNDEFINED,
+        MONSTER,
+        HERO
     };
 
     enum class Orientation
     {
-        UP, DOWN, LEFT, RIGHT
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT
     };
 
     enum class MoveDirection
     {
-        UP = 0x00, DOWN = 0x01, LEFT = 0x02, RIGHT = 0x03
+        UP = 0x00,
+        DOWN = 0x01,
+        LEFT = 0x02,
+        RIGHT = 0x03
     };
 
     enum class State
     {
-        UNDEFINED, WALKING, SWAMP, DUEL, DEAD
+        UNDEFINED,
+        WALKING,
+        SWAMP,
+        DUEL,
+        DEAD
     };
 
     struct Attributes
@@ -62,7 +75,8 @@ public:
     {
         enum class DamageType
         {
-            PHYSICAL = 0x00, MAGICAL = 0x01
+            PHYSICAL = 0x00,
+            MAGICAL = 0x01
         };
 
         DamageType  Type;
@@ -108,8 +122,8 @@ public:
     { return _inventory; }
 
     virtual void TakeDamage(const DamageDescriptor& dmg);
-    virtual void Spawn(Point<>);
-    virtual void Respawn(Point<>);
+    virtual void Spawn(const Point<>& pos) override;
+    virtual void Respawn(const Point<>& pos);
     virtual void Move(MoveDirection);
     virtual void TakeItem(std::shared_ptr<Item> enemy);
     virtual std::shared_ptr<Item> DropItem(int32_t uid);

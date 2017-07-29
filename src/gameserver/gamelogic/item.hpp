@@ -25,7 +25,7 @@ public:
     Item::Type  GetType() const;
 
     virtual void update(std::chrono::microseconds) override { }
-    
+
 protected:
     Item(GameWorld& world);
     

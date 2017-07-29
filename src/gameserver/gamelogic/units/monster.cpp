@@ -131,20 +131,22 @@ Monster::update(std::chrono::microseconds delta)
 
 
 void
-Monster::Spawn(Point<> log_pos)
+Monster::Spawn(const Point<>& pos)
 {
+    _world._logger.Info() << this->GetName() << " SPWN AT (" << pos.x << ";" << pos.y << ")";
+
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
-    _pos = log_pos;
+    _pos = pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameMessage::CreateSVSpawnMonster(builder,
                                                    this->GetUID(),
-                                                   log_pos.x,
-                                                   log_pos.y);
+                                                   pos.x,
+                                                   pos.y);
     auto msg = GameMessage::CreateMessage(builder,
                                           0,
                                           GameMessage::Messages_SVSpawnMonster,

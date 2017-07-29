@@ -25,6 +25,7 @@ using IPAddress = Poco::Net::SocketAddress;
 using Clock = std::chrono::steady_clock;
 using std::experimental::optional;
 
+
 class GameServer::PlayerConnection
 {
 public:
@@ -644,7 +645,7 @@ void GameServer::running_game_stage()
 {
     ElapsedTime frameTime, pingTime;
 
-    while(_state == State::RUNNING_GAME)
+    while(_world->GetState() != GameWorld::State::FINISHED)
     {
         frameTime.Reset();
 
@@ -693,8 +694,10 @@ void GameServer::running_game_stage()
             if(message->payload_type() == Messages_CLPing)
                 continue;
 
-            _world->PushEvent({packet->Data.begin(), packet->Data.end()});
+            _world->PushMessage({packet->Data.begin(), packet->Data.end()});
         }
+
+        _world->update(frameTime.Elapsed<std::chrono::microseconds>());
 
         auto& out_events = _world->GetOutgoingEvents();
         while(out_events.size())
@@ -702,8 +705,6 @@ void GameServer::running_game_stage()
             SendMulticast(out_events.front());
             out_events.pop();
         }
-
-        _world->update(frameTime.Elapsed<std::chrono::microseconds>());
     }
 }
 

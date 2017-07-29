@@ -20,11 +20,11 @@ using namespace GameMessage;
 
 GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
                      std::vector<PlayerInfo>& players)
-: _monsterSpawnInterval(30s),
-  _monsterSpawnTimer(30s),
-  _mapConf(conf),
+: _mapConf(conf),
+  _state(State::RUNNING),
   _objectsStorage(*this),
   _respawner(*this),
+  _monsterSpawner(*this),
   _randGen(0, 1000, 0),
   _logger("World", NamedLogger::Mode::STDIO)
 {
@@ -36,7 +36,7 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
         for(int j = map.size()-1; j >= 0; --j)
         {
             auto block = _objectsStorage.Create<NoBlock>();
-            block->SetPosition(Point<>(i, j));
+            block->Spawn(Point<>(i, j));
         }
     }
 
@@ -47,12 +47,12 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
             if(map[i][j] == GameMapGenerator::MapBlockType::WALL)
             {
                 auto block = _objectsStorage.Create<WallBlock>();
-                block->SetPosition(Point<>(i, j));
+                block->Spawn(Point<>(i, j));
             }
             else if(map[i][j] == GameMapGenerator::MapBlockType::BORDER)
             {
                 auto block = _objectsStorage.Create<BorderBlock>();
-                block->SetPosition(Point<>(i, j));
+                block->Spawn(Point<>(i, j));
             }
         }
     }
@@ -93,7 +93,7 @@ GameWorld::InitialSpawn()
         // spawn key
     auto key = _objectsStorage.Create<Key>();
     {
-        key->SetPosition(Point<>(27, 11));
+        key->Spawn(GetRandomPosition());
         
             // Log key spawn event
         _logger.Info() << "Key spawned at (" << key->GetPosition().x << "," << key->GetPosition().y << ")";
@@ -116,7 +116,7 @@ GameWorld::InitialSpawn()
         // spawn door
     {
         auto door = _objectsStorage.Create<Door>();
-        door->SetPosition(GetRandomPosition());
+        door->Spawn(GetRandomPosition());
         
             // Log key spawn event
         _logger.Info() << "Door spawned at (" << door->GetPosition().x << "," << door->GetPosition().y << ")";
@@ -139,7 +139,7 @@ GameWorld::InitialSpawn()
         // spawn graveyard
     {
         auto grave = _objectsStorage.Create<Graveyard>();
-        grave->SetPosition(GetRandomPosition());
+        grave->Spawn(GetRandomPosition());
 
             // Log key spawn event
         _logger.Info() << "Graveyard spawned at (" << grave->GetPosition().x << "," << grave->GetPosition().y << ")";
@@ -158,15 +158,6 @@ GameWorld::InitialSpawn()
         _outputEvents.emplace(builder.GetCurrentBufferPointer(),
                               builder.GetBufferPointer() + builder.GetSize());
     }
-    
-    {
-            // spawn monster
-        auto monster = _objectsStorage.Create<Monster>();
-        monster->Spawn(GetRandomPosition());
-        
-            // Log monster spawn event
-        _logger.Info() << "Monster spawned at (" << monster->GetPosition().x << "," << monster->GetPosition().y << ")";
-    }
 
     _logger.Info() << "Initial spawn done, total number of GameObjects: " << _objectsStorage.Size();
 }
@@ -174,9 +165,9 @@ GameWorld::InitialSpawn()
 void
 GameWorld::ApplyInputEvents()
 {
-    while(!_inputEvents.empty())
+    while(!_inputMessages.empty())
     {
-        auto& event = _inputEvents.front();
+        auto& event = _inputMessages.front();
         auto gs_event = GameMessage::GetMessage(event.data());
 
         switch(gs_event->payload_type())
@@ -278,52 +269,13 @@ GameWorld::ApplyInputEvents()
 
             break;
         }
-            
-        case GameMessage::Messages_CLRequestWin:
-        {
-            auto cl_win = static_cast<const GameMessage::CLRequestWin*>(gs_event->payload());
-
-            auto unit = _objectsStorage.FindObject<Unit>(cl_win->player_uid());
-            if(!unit)
-                _logger.Warning() << "Received CLRequestWin event with unknown player_uid";
-
-            auto& inventory = unit->GetInventory();
-            bool has_key = std::any_of(inventory.begin(),
-                                       inventory.end(),
-                                       [](const std::shared_ptr<Item>& item)
-                                       {
-                                           return item->GetType() == Item::Type::KEY;
-                                       });
-
-            auto doors = _objectsStorage.Subset<Door>(); // FIXME: there is only ONE door. But potentially there are many
-            assert(!doors.empty());
-
-            if(has_key && unit->GetPosition().Distance(doors[0]->GetPosition()) <= 1.0)
-            {
-                    // GAME ENDS
-                flatbuffers::FlatBufferBuilder builder;
-                auto game_end = CreateSVGameEnd(builder,
-                                                unit->GetUID());
-                auto msg = CreateMessage(builder,
-                                         0,
-                                         Messages_SVGameEnd,
-                                         game_end.Union());
-                builder.Finish(msg);
-                _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                                      builder.GetBufferPointer() + builder.GetSize());
-
-                _logger.Info() << "Player with name '" << unit->GetName() << "' won! Escaped from LABYRINTH!";
-            }
-            
-            break;
-        }
-            
+                        
         default:
             _logger.Warning() << "Received undefined packet type";
             break;
         }
         
-        _inputEvents.pop();
+        _inputMessages.pop();
     }
 }
 
@@ -339,16 +291,39 @@ GameWorld::update(std::chrono::microseconds delta)
                       obj->update(delta);
                   });
     _respawner.update(delta);
-    
-        // update monster spawning timer
-    _monsterSpawnTimer -= delta;
-    if(_monsterSpawnTimer <= 0s)
-    {
-            // spawn monster
-        auto monster = _objectsStorage.Create<Monster>();
-        monster->Spawn(GetRandomPosition());
+    _monsterSpawner.update(delta);
 
-        _monsterSpawnTimer = _monsterSpawnInterval;
+    // Win condition check
+    // TODO: rewrite to work with multiple doors?
+    auto doors = _objectsStorage.Subset<Door>();
+    auto units = _objectsStorage.Subset<Unit>();
+    for(auto unit : units)
+    {
+        auto& inventory = unit->GetInventory();
+        bool has_key = std::any_of(inventory.begin(),
+                                   inventory.end(),
+                                   [](const std::shared_ptr<Item>& item)
+                                   {
+                                       return item->GetType() == Item::Type::KEY;
+                                   });
+        if(has_key && doors[0]->GetPosition() == unit->GetPosition())
+        {
+            // GAME ENDS
+            flatbuffers::FlatBufferBuilder builder;
+            auto game_end = CreateSVGameEnd(builder,
+                                            unit->GetUID());
+            auto msg = CreateMessage(builder,
+                                     0,
+                                     Messages_SVGameEnd,
+                                     game_end.Union());
+            builder.Finish(msg);
+            _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                                  builder.GetBufferPointer() + builder.GetSize());
+
+            _logger.Info() << "Player with name '" << unit->GetName() << "' won! Escaped from LABYRINTH!";
+
+            _state = State::FINISHED;
+        }
     }
 }
 

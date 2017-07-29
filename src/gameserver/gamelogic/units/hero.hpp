@@ -16,7 +16,8 @@
 #include <vector>
 
 
-class Hero : public Unit
+class Hero
+    : public Unit
 {
 public:
     enum Type : int
@@ -31,9 +32,10 @@ public:
     };
     
 public:
-    Hero::Type      GetHero() const;
+    Hero::Type GetHero() const
+    { return _heroType; }
     
-    virtual void    update(std::chrono::microseconds) override;
+    virtual void update(std::chrono::microseconds) override;
 
 protected:
     Hero(GameWorld& world);

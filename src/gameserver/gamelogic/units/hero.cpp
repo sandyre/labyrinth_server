@@ -17,13 +17,6 @@ Hero::Hero(GameWorld& world)
 }
 
 
-Hero::Type
-Hero::GetHero() const
-{
-    return _heroType;
-}
-
-
 void
 Hero::update(std::chrono::microseconds delta)
 {

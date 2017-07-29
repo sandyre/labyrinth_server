@@ -19,15 +19,17 @@
 #include "../../globals.h"
 #include "../../toolkit/named_logger.hpp"
 #include "../../toolkit/Random.hpp"
+#include "../../toolkit/elapsed_time.hpp"
 
 #include <chrono>
 #include <list>
-#include <set>
 #include <queue>
 #include <random>
+#include <set>
 #include <sstream>
 #include <vector>
 using namespace std::chrono_literals;
+
 
 class GameWorld
 {
@@ -168,6 +170,30 @@ private:
         std::deque<QueueElement>    _queue;
     };
 
+    class MonsterSpawner
+    {
+    public:
+        MonsterSpawner(GameWorld& world, std::chrono::microseconds interval = 3s)
+        : _world(world),
+          _interval(interval)
+        { }
+
+        void update(std::chrono::microseconds delta)
+        {
+            if(_time.Elapsed<std::chrono::microseconds>() >= _interval)
+            {
+                auto monster = _world._objectsStorage.Create<Monster>();
+                monster->Spawn(_world.GetRandomPosition());
+                _time.Reset();
+            }
+        }
+
+    private:
+        GameWorld&                  _world;
+        ElapsedTime                 _time;
+        std::chrono::microseconds   _interval;
+    };
+
 public:
     enum State
     {
@@ -187,13 +213,16 @@ public:
     GameWorld(const GameMapGenerator::Configuration& conf,
               std::vector<PlayerInfo>& players);
 
+    GameWorld::State GetState() const
+    { return _state; }
+
     virtual void update(std::chrono::microseconds);
 
     std::queue<std::vector<uint8_t>>& GetOutgoingEvents()
     { return _outputEvents; }
     
-    void PushEvent(const std::vector<uint8_t>& event)
-    { _inputEvents.push(event); }
+    void PushMessage(const std::vector<uint8_t>& message)
+    { _inputMessages.push(message); }
 
 protected:
     void ApplyInputEvents();
@@ -203,21 +232,18 @@ protected:
     void InitialSpawn();
 
 protected:
-    GameMapGenerator::Configuration  _mapConf;
+    NamedLogger                         _logger;
+    GameWorld::State                    _state;
+    GameMapGenerator::Configuration     _mapConf;
+    ObjectsStorage                      _objectsStorage;
+    Respawner                           _respawner;
+    MonsterSpawner                      _monsterSpawner;
 
     // contains outgoing events
-    std::queue<std::vector<uint8_t>> _inputEvents;
+    std::queue<std::vector<uint8_t>> _inputMessages;
     std::queue<std::vector<uint8_t>> _outputEvents;
 
-    ObjectsStorage              _objectsStorage;
-    Respawner                   _respawner;
-
-    // monster spawning timer
-    std::chrono::microseconds _monsterSpawnInterval;
-    std::chrono::microseconds _monsterSpawnTimer;
-
     RandomGenerator<std::mt19937, std::uniform_int_distribution<>> _randGen;
-    NamedLogger         _logger;
 
     friend Unit;
     friend Monster;
@@ -226,6 +252,7 @@ protected:
     friend Warrior;
 
     friend Respawner;
+    friend MonsterSpawner;
 };
 
 #endif /* gameworld_hpp */

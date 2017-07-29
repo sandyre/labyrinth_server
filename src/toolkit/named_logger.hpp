@@ -49,9 +49,7 @@ private:
         LoggerStream(const LoggerStream& other)
         : _logger(other._logger),
           _prefix(other._prefix)
-        {
-
-        }
+        { }
 
     public:
         template<typename T>

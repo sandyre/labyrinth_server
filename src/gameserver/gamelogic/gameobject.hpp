@@ -42,8 +42,8 @@ public:
 public:
     GameObject(GameWorld& world)
     : _objType(GameObject::Type::UNDEFINED),
-      _uid(0),
-      _objAttributes(0),
+      _uid(),
+      _objAttributes(),
       _world(world)
     {
         _objAttributes |= GameObject::Attributes::VISIBLE;
@@ -74,6 +74,12 @@ public:
     { _pos = pos; }
 
     virtual void update(std::chrono::microseconds) = 0;
+
+    virtual void Spawn(const Point<>& pos)
+    { _pos = pos; }
+    
+    virtual void Destroy()
+    { } // server side has nothing to do with destroy. for consistency with client API
     
 protected:
     GameWorld&          _world;

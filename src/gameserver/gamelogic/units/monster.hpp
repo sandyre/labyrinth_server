@@ -49,12 +49,12 @@ class Monster : public Unit
 public:
     Monster(GameWorld& world);
     
-    virtual void    update(std::chrono::microseconds) override;
+    virtual void update(std::chrono::microseconds) override;
 
-    virtual void    SpellCast(const GameMessage::CLActionSpell*) override { }
+    virtual void SpellCast(const GameMessage::CLActionSpell*) override { }
 
-    virtual void    Spawn(Point<>) override;
-    virtual void    Die(const std::string& killerName) override;
+    virtual void Spawn(const Point<>& pos) override;
+    virtual void Die(const std::string& killerName) override;
     
 protected:
     std::chrono::microseconds   _moveCD;;

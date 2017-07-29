@@ -15,8 +15,6 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-using Attributes = GameObject::Attributes;
-
 
 Unit::Unit(GameWorld& world)
 : GameObject(world),
@@ -100,10 +98,8 @@ Unit::UpdateStats()
 {
     int new_dmg = _baseDamage;
     for(auto item : _inventory)
-    {
         if(item->GetType() == Item::Type::SWORD)
             new_dmg += 6;
-    }
     _actualDamage = new_dmg;
 }
 
@@ -117,13 +113,13 @@ Unit::TakeItem(std::shared_ptr<Item> item)
     
     flatbuffers::FlatBufferBuilder builder;
     auto take = GameMessage::CreateSVActionItem(builder,
-                                              this->GetUID(),
-                                              item->GetUID(),
-                                              GameMessage::ActionItemType_TAKE);
+                                                this->GetUID(),
+                                                item->GetUID(),
+                                                GameMessage::ActionItemType_TAKE);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVActionItem,
-                                        take.Union());
+                                          0,
+                                          GameMessage::Messages_SVActionItem,
+                                          take.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
@@ -131,27 +127,27 @@ Unit::TakeItem(std::shared_ptr<Item> item)
 
 
 void
-Unit::Spawn(Point<> log_pos)
+Unit::Spawn(const Point<>& pos)
 {
         // Log spawn event
-    _world._logger.Info() << this->GetName() << " SPWN AT (" << log_pos.x << ";" << log_pos.y << ")";
+    _world._logger.Info() << this->GetName() << " SPWN AT (" << pos.x << ";" << pos.y << ")";
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
-    _pos = log_pos;
+    _pos = pos;
     
     flatbuffers::FlatBufferBuilder builder;
     auto spawn = GameMessage::CreateSVSpawnPlayer(builder,
-                                                this->GetUID(),
-                                                log_pos.x,
-                                                log_pos.y);
+                                                  this->GetUID(),
+                                                  pos.x,
+                                                  pos.y);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVSpawnPlayer,
-                                        spawn.Union());
+                                          0,
+                                          GameMessage::Messages_SVSpawnPlayer,
+                                          spawn.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
@@ -159,21 +155,17 @@ Unit::Spawn(Point<> log_pos)
 
 
 void
-Unit::Respawn(Point<> log_pos)
+Unit::Respawn(const Point<>& pos)
 {
         // Log respawn event
-    _world._logger.Info() << this->GetName() << " RESP AT (" << log_pos.x << ";" << log_pos.y << ")";
+    _world._logger.Info() << this->GetName() << " RESP AT (" << pos.x << ";" << pos.y << ")";
     
     _state = Unit::State::WALKING;
-    _objAttributes = GameObject::Attributes::MOVABLE |
-    GameObject::Attributes::VISIBLE |
-    GameObject::Attributes::DAMAGABLE;
-    _unitAttributes = Unit::Attributes::INPUT |
-    Unit::Attributes::ATTACK |
-    Unit::Attributes::DUELABLE;
+    _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
+    _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
     _health = _maxHealth;
     
-    _pos = log_pos;
+    _pos = pos;
 
     auto respBuff = std::make_shared<RespawnInvulnerability>(5s);
     respBuff->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
@@ -181,13 +173,13 @@ Unit::Respawn(Point<> log_pos)
     
     flatbuffers::FlatBufferBuilder builder;
     auto resp = GameMessage::CreateSVRespawnPlayer(builder,
-                                                 this->GetUID(),
-                                                 log_pos.x,
-                                                 log_pos.y);
+                                                   this->GetUID(),
+                                                   pos.x,
+                                                   pos.y);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVRespawnPlayer,
-                                        resp.Union());
+                                          0,
+                                          GameMessage::Messages_SVRespawnPlayer,
+                                          resp.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
