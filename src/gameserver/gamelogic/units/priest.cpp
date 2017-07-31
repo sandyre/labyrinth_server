@@ -14,8 +14,8 @@
 using namespace std::chrono_literals;
 
 
-Priest::Priest(GameWorld& world)
-: Hero(world)
+Priest::Priest(GameWorld& world, uint32_t uid)
+: Hero(world, uid)
 {
     _heroType = Hero::Type::PRIEST;
     _moveSpeed = 0.1;

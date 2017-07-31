@@ -16,8 +16,8 @@
 using namespace std::chrono_literals;
 
 
-Unit::Unit(GameWorld& world)
-: GameObject(world),
+Unit::Unit(GameWorld& world, uint32_t uid)
+: GameObject(world, uid),
   _unitType(Unit::Type::UNDEFINED),
   _state(Unit::State::UNDEFINED),
   _orientation(Unit::Orientation::DOWN),

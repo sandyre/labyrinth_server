@@ -16,8 +16,8 @@
 using namespace std::chrono_literals;
 
 
-Mage::Mage(GameWorld& world)
-: Hero(world)
+Mage::Mage(GameWorld& world, uint32_t uid)
+: Hero(world, uid)
 {
     _heroType = Hero::Type::MAGE;
     _moveSpeed = 0.3;

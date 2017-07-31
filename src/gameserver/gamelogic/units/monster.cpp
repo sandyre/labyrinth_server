@@ -15,8 +15,8 @@
 using namespace std::chrono_literals;
 
 
-Monster::Monster(GameWorld& world)
-: Unit(world),
+Monster::Monster(GameWorld& world, uint32_t uid)
+: Unit(world, uid),
   _chasingUnit(nullptr)
 {
     _unitType = Unit::Type::MONSTER;

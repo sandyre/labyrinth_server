@@ -9,8 +9,8 @@
 #include "mapblock.hpp"
 
 
-MapBlock::MapBlock(GameWorld& world)
-: GameObject(world)
+MapBlock::MapBlock(GameWorld& world, uint32_t uid)
+: GameObject(world, uid)
 {
     _objType = GameObject::Type::MAPBLOCK;
 }
@@ -23,23 +23,23 @@ MapBlock::GetType() const
 }
 
 
-NoBlock::NoBlock(GameWorld& world)
-: MapBlock(world)
+NoBlock::NoBlock(GameWorld& world, uint32_t uid)
+: MapBlock(world, uid)
 {
     _blockType = MapBlock::Type::NOBLOCK;
     _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 
-WallBlock::WallBlock(GameWorld& world)
-: MapBlock(world)
+WallBlock::WallBlock(GameWorld& world, uint32_t uid)
+: MapBlock(world, uid)
 {
     _blockType = MapBlock::Type::WALL;
 }
 
 
-BorderBlock::BorderBlock(GameWorld& world)
-: MapBlock(world)
+BorderBlock::BorderBlock(GameWorld& world, uint32_t uid)
+: MapBlock(world, uid)
 {
     _blockType = MapBlock::Type::BORDER;
 }

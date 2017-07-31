@@ -16,8 +16,8 @@
 using namespace std::chrono_literals;
 
 
-Warrior::Warrior(GameWorld& world)
-: Hero(world)
+Warrior::Warrior(GameWorld& world, uint32_t uid)
+: Hero(world, uid)
 {
     _heroType = Hero::Type::WARRIOR;
     _moveSpeed = 0.4;

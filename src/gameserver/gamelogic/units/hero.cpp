@@ -9,8 +9,8 @@
 #include "hero.hpp"
 
 
-Hero::Hero(GameWorld& world)
-: Unit(world),
+Hero::Hero(GameWorld& world, uint32_t uid)
+: Unit(world, uid),
   _heroType(Hero::Type::FIRST_HERO)
 {
     _unitType = Unit::Type::HERO;

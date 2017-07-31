@@ -17,16 +17,17 @@
 #include <random>
 
 
-class Rogue : public Hero
+class Rogue
+    : public Hero
 {
 public:
-    Rogue(GameWorld& world);
+    Rogue(GameWorld& world, uint32_t uid);
     
-    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
+    virtual void SpellCast(const GameMessage::CLActionSpell*) override;
     
-    virtual void    TakeItem(std::shared_ptr<Item> item) override;
+    virtual void TakeItem(std::shared_ptr<Item> item) override;
     
-    virtual void    update(std::chrono::microseconds) override;
+    virtual void update(std::chrono::microseconds) override;
 protected:
     std::mt19937 m_oRandGen;
     std::uniform_int_distribution<> m_oRandDistr;

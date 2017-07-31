@@ -18,8 +18,8 @@ using namespace std::chrono_literals;
 using Attributes = GameObject::Attributes;
 
 
-Rogue::Rogue(GameWorld& world)
-: Hero(world)
+Rogue::Rogue(GameWorld& world, uint32_t uid)
+: Hero(world, uid)
 {
     _heroType = Hero::Type::ROGUE;
     _moveSpeed = 0.1;

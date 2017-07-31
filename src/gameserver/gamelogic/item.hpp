@@ -27,24 +27,24 @@ public:
     virtual void update(std::chrono::microseconds) override { }
 
 protected:
-    Item(GameWorld& world);
-    
+    Item(GameWorld& world, uint32_t uid);
+
+protected:
     Item::Type  _itemType;
-    uint32_t    _carrierUID;
 };
 
 
 class Key : public Item
 {
 public:
-    Key(GameWorld& world);
+    Key(GameWorld& world, uint32_t uid);
 };
 
 
 class Sword : public Item
 {
 public:
-    Sword(GameWorld& world);
+    Sword(GameWorld& world, uint32_t uid);
 };
 
 #endif /* item_hpp */

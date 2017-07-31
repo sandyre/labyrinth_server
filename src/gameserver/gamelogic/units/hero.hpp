@@ -38,7 +38,7 @@ public:
     virtual void update(std::chrono::microseconds) override;
 
 protected:
-    Hero(GameWorld& world);
+    Hero(GameWorld& world, uint32_t uid);
     
 protected:
     Hero::Type      _heroType;

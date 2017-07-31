@@ -63,13 +63,13 @@ GameWorld::GameWorld(const GameMapGenerator::Configuration& conf,
         {
         case Hero::Type::WARRIOR:
         {
-            auto warrior = _objectsStorage.Create<Warrior>(player.LocalUid);
+            auto warrior = _objectsStorage.CreateWithUID<Warrior>(player.LocalUid);
             warrior->SetName(player.Name);
             break;
         }
         case Hero::Type::MAGE:
         {
-            auto mage = _objectsStorage.Create<Mage>(player.LocalUid);
+            auto mage = _objectsStorage.CreateWithUID<Mage>(player.LocalUid);
             mage->SetName(player.Name);
             break;
         }

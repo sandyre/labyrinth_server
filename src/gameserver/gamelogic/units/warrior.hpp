@@ -15,12 +15,13 @@
 #include <vector>
 
 
-class Warrior : public Hero
+class Warrior
+    : public Hero
 {
 public:
-    Warrior(GameWorld& world);
+    Warrior(GameWorld& world, uint32_t uid);
     
-    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
+    virtual void SpellCast(const GameMessage::CLActionSpell*) override;
 };
 
 #endif /* warrior_hpp */

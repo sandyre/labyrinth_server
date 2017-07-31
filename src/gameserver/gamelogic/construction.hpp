@@ -14,7 +14,8 @@
 #include <string>
 
 
-class Construction : public GameObject
+class Construction
+    : public GameObject
 {
 public:
     enum Type
@@ -31,30 +32,32 @@ public:
     virtual void update(std::chrono::microseconds) override { }
 
 protected:
-    Construction(GameWorld& world);
+    Construction(GameWorld& world, uint32_t uid);
     
     Construction::Type  _constrType;
 };
 
 
-class Door : public Construction
+class Door
+    : public Construction
 {
 public:
-    Door(GameWorld& world);
+    Door(GameWorld& world, uint32_t uid);
 };
 
 
-class Graveyard : public Construction
+class Graveyard
+    : public Construction
 {
 public:
-    Graveyard(GameWorld& world);
+    Graveyard(GameWorld& world, uint32_t uid);
 };
 
 
 class Swamp : public Construction
 {
 public:
-    Swamp(GameWorld& world);
+    Swamp(GameWorld& world, uint32_t uid);
 };
 
 #endif /* construction_hpp */

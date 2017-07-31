@@ -47,7 +47,7 @@ struct InputSequence
 class Monster : public Unit
 {
 public:
-    Monster(GameWorld& world);
+    Monster(GameWorld& world, uint32_t uid);
     
     virtual void update(std::chrono::microseconds) override;
 

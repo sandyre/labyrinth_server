@@ -139,7 +139,7 @@ public:
     virtual void ApplyEffect(std::shared_ptr<Effect> effect);
 
 protected:
-    Unit(GameWorld& world);
+    Unit(GameWorld& world, uint32_t uid);
 
     virtual void update(std::chrono::microseconds) override;
     virtual void UpdateCDs(std::chrono::microseconds);

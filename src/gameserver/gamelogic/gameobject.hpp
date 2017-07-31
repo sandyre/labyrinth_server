@@ -40,9 +40,9 @@ public:
     };
 
 public:
-    GameObject(GameWorld& world)
+    GameObject(GameWorld& world, uint32_t uid)
     : _objType(GameObject::Type::UNDEFINED),
-      _uid(),
+      _uid(uid),
       _objAttributes(),
       _world(world)
     {
@@ -63,9 +63,6 @@ public:
     
     uint32_t GetUID() const
     { return _uid; }
-
-    void SetUID(uint32_t uid)
-    { _uid = uid; }
     
     Point<> GetPosition() const
     { return _pos; }

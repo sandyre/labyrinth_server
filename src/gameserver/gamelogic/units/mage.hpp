@@ -16,10 +16,11 @@
 #include <vector>
 
 
-class Mage : public Hero
+class Mage
+    : public Hero
 {
 public:
-    Mage(GameWorld& world);
+    Mage(GameWorld& world, uint32_t uid);
 
     virtual void update(std::chrono::microseconds) override;
 

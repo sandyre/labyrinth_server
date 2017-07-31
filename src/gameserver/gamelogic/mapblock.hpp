@@ -30,7 +30,7 @@ public:
     virtual void update(std::chrono::microseconds) override { }
     
 protected:
-    MapBlock(GameWorld& world);
+    MapBlock(GameWorld& world, uint32_t uid);
     
     MapBlock::Type  _blockType;
 };
@@ -39,21 +39,21 @@ protected:
 class NoBlock : public MapBlock
 {
 public:
-    NoBlock(GameWorld& world);
+    NoBlock(GameWorld& world, uint32_t uid);
 };
 
 
 class WallBlock : public MapBlock
 {
 public:
-    WallBlock(GameWorld& world);
+    WallBlock(GameWorld& world, uint32_t uid);
 };
 
 
 class BorderBlock : public MapBlock
 {
 public:
-    BorderBlock(GameWorld& world);
+    BorderBlock(GameWorld& world, uint32_t uid);
 };
 
 

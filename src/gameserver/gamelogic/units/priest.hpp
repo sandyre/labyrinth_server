@@ -14,13 +14,14 @@
 #include <string>
 #include <vector>
 
-class Priest : public Hero
+class Priest
+    : public Hero
 {
 public:
-    Priest(GameWorld& world);
+    Priest(GameWorld& world, uint32_t uid);
     
-    virtual void    SpellCast(const GameMessage::CLActionSpell*) override;
-    virtual void    update(std::chrono::microseconds) override;
+    virtual void SpellCast(const GameMessage::CLActionSpell*) override;
+    virtual void update(std::chrono::microseconds) override;
 
 protected:
     std::chrono::microseconds   _regenInterval;
