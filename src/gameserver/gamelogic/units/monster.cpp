@@ -28,7 +28,7 @@ Monster::Monster(GameWorld& world, uint32_t uid)
     _magResistance = 2;
     
         // spell 1 cd
-    _spellsCDs.push_back(std::make_tuple(false, 3s, 3s));
+    _cdManager.AddSpell(3s);
     
         // spell 1 seq
     InputSequence atk_seq(5);
@@ -87,8 +87,7 @@ Monster::update(std::chrono::microseconds delta)
                     _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
                     
                         // set up CD
-                    std::get<0>(_spellsCDs[0]) = false;
-                    std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
+                    _cdManager.Restart(0);
                     
                     flatbuffers::FlatBufferBuilder builder;
                     auto spell_info = GameMessage::CreateMonsterAttack(builder,

@@ -27,13 +27,13 @@ Warrior::Warrior(GameWorld& world, uint32_t uid)
     _magResistance = 2;
     
         // spell 1 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _cdManager.AddSpell(10s);
     
         // spell 2 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 0s));
+    _cdManager.AddSpell(0s);
     
         // spell 3 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _cdManager.AddSpell(10s);
 }
 
 
@@ -42,11 +42,10 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // warrior dash cast (0 spell)
     if(spell->spell_id() == 0 &&
-       std::get<0>(_spellsCDs[0]) == true) // check CD
+       _cdManager.SpellReady(0)) // check CD
     {
             // set up CD
-        std::get<0>(_spellsCDs[0]) = false;
-        std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
+        _cdManager.Restart(0);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateSVActionSpell(builder,
@@ -66,7 +65,7 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         this->ApplyEffect(warDash);
     }
     else if(spell->spell_id() == 1 &&
-            std::get<0>(_spellsCDs[1]) == true) // warrior attack (2 spell)
+            _cdManager.SpellReady(1)) // warrior attack (2 spell)
     {
         if(_duelTarget == nullptr)
             return;
@@ -75,8 +74,7 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
         
             // set up CD
-        std::get<0>(_spellsCDs[1]) = false;
-        std::get<1>(_spellsCDs[1]) = std::get<2>(_spellsCDs[1]);
+        _cdManager.Restart(1);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameMessage::CreateWarriorAttack(builder,
@@ -107,11 +105,10 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
     }
         // warrior armor up cast (2 spell)
     else if(spell->spell_id() == 2 &&
-            std::get<0>(_spellsCDs[2]) == true) // check CD
+            _cdManager.SpellReady(2)) // check CD
     {
             // set up CD
-        std::get<0>(_spellsCDs[2]) = false;
-        std::get<1>(_spellsCDs[2]) = std::get<2>(_spellsCDs[2]);
+        _cdManager.Restart(2);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateSVActionSpell(builder,

@@ -141,6 +141,7 @@ void GameServer::runTask()
     }
 }
 
+
 void GameServer::Ping()
 {
     static flatbuffers::FlatBufferBuilder builder;
@@ -700,7 +701,7 @@ void GameServer::running_game_stage()
         _world->update(frameTime.Elapsed<std::chrono::microseconds>());
 
         auto& out_events = _world->GetOutgoingEvents();
-        while(out_events.size())
+        while(!out_events.empty())
         {
             SendMulticast(out_events.front());
             out_events.pop();

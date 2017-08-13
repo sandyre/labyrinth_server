@@ -9,13 +9,15 @@
 #ifndef unit_hpp
 #define unit_hpp
 
+#include "../effect.hpp"
 #include "../gameobject.hpp"
 #include "../item.hpp"
 #include "../../GameMessage.h"
 
+#include <chrono>
 #include <string>
 #include <vector>
-
+using namespace std::chrono_literals;
 
 class Mage;
 class Warrior;
@@ -31,6 +33,74 @@ class RespawnInvulnerability;
 class Unit
     : public GameObject
 {
+private:
+    class CooldownManager
+    {
+        using Cooldown = std::pair<std::chrono::microseconds, std::chrono::microseconds>;
+    public:
+        void AddSpell(std::chrono::microseconds cooldown)
+        { _storage.push_back(std::make_tuple(0s, cooldown)); }
+
+        void Restart(size_t spellIndex)
+        { _storage[spellIndex].first = _storage[spellIndex].second; }
+
+        bool SpellReady(size_t spellIndex)
+        { return _storage[spellIndex].first <= 0s; }
+
+        void Update(std::chrono::microseconds delta)
+        {
+            std::for_each(_storage.begin(),
+                          _storage.end(),
+                          [delta](Cooldown& spell)
+                          {
+                              spell.first -= delta;
+                          });
+        }
+
+    private:
+        std::vector<Cooldown>   _storage;
+    };
+
+    class EffectsManager
+    {
+    public:
+        void AddEffect(const std::shared_ptr<Effect>& effect)
+        { _storage.push_back(effect); }
+
+        void RemoveAll()
+        {
+            std::for_each(_storage.begin(),
+                          _storage.end(),
+                          [](const std::shared_ptr<Effect>& effect)
+                          {
+                              effect->stop();
+                          });
+            _storage.clear();
+        }
+
+        void Update(std::chrono::microseconds delta)
+        {
+            std::for_each(_storage.begin(),
+                          _storage.end(),
+                          [delta](const std::shared_ptr<Effect>& effect)
+                          {
+                              effect->update(delta);
+                              if(effect->GetState() == Effect::State::OVER)
+                                  effect->stop();
+                          });
+            _storage.erase(std::remove_if(_storage.begin(),
+                                          _storage.end(),
+                                          [this](std::shared_ptr<Effect>& eff)
+                                          {
+                                              return eff->GetState() == Effect::State::OVER;
+                                          }),
+                           _storage.end());
+
+        }
+    private:
+        std::vector<std::shared_ptr<Effect>>    _storage;
+    };
+    
 public:
     enum class Type
     {
@@ -142,7 +212,6 @@ protected:
     Unit(GameWorld& world, uint32_t uid);
 
     virtual void update(std::chrono::microseconds) override;
-    virtual void UpdateCDs(std::chrono::microseconds);
     void UpdateStats();
     
 protected:
@@ -158,12 +227,12 @@ protected:
     int16_t           _magResistance;
     float             _moveSpeed;
 
-    std::vector<std::tuple<bool, std::chrono::microseconds, std::chrono::microseconds>> _spellsCDs;
-    std::vector<std::shared_ptr<Item>>                                                  _inventory;
+    CooldownManager                         _cdManager;
+    EffectsManager                          _effectsManager;
+    std::vector<std::shared_ptr<Item>>      _inventory;
+
     // Duel-data
     std::shared_ptr<Unit> _duelTarget;
-
-    std::vector<std::shared_ptr<Effect>> _appliedEffects;
 
     // Effects should have access to every field
     friend WarriorDash;

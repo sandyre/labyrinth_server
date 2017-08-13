@@ -24,10 +24,10 @@ Priest::Priest(GameWorld& world, uint32_t uid)
     _armor = 4;
     
         // spell 1 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _cdManager.AddSpell(10s);
     
         // spell 2 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _cdManager.AddSpell(10s);
     
     _regenInterval = 2s;
     _regenTimer = 0s;

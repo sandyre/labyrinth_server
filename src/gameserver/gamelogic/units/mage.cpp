@@ -27,13 +27,13 @@ Mage::Mage(GameWorld& world, uint32_t uid)
     _magResistance = 6;
     
         // spell 1 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 30s));
+    _cdManager.AddSpell(30s);
     
         // spell 2 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 0s));
+    _cdManager.AddSpell(0s);
     
         // spell 3 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 10s));
+    _cdManager.AddSpell(10s);
 }
 
 
@@ -42,11 +42,10 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // teleport cast (0 spell)
     if(spell->spell_id() == 0 &&
-       std::get<0>(_spellsCDs[0]) == true)
+       _cdManager.SpellReady(0))
     {
             // set up CD
-        std::get<0>(_spellsCDs[0]) = false;
-        std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
+        _cdManager.Restart(0);
         
         Point<> new_pos;
         while(this->GetPosition().Distance(new_pos = _world.GetRandomPosition()) > 10.0)
@@ -77,7 +76,7 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
     }
         // attack cast (1 spell)
     else if(spell->spell_id() == 1 &&
-            std::get<0>(_spellsCDs[1]) == true)
+            _cdManager.SpellReady(1))
     {
         if(_duelTarget == nullptr)
             return;
@@ -86,8 +85,7 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
         _world._logger.Info() << this->GetName() << " " << _actualDamage << " MAG DMG TO " << _duelTarget->GetName();
         
             // set up CD
-        std::get<0>(_spellsCDs[1]) = false;
-        std::get<1>(_spellsCDs[1]) = std::get<2>(_spellsCDs[1]);
+        _cdManager.Restart(1);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameMessage::CreateMageAttack(builder,
@@ -118,15 +116,13 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
     }
         // frostbolt casted (2 spell)
     else if(spell->spell_id() == 2 &&
-            std::get<0>(_spellsCDs[2]) == true)
+            _cdManager.SpellReady(2))
     {
         if(_duelTarget == nullptr)
             return;
         
             // set up CD
-        std::get<0>(_spellsCDs[2]) = false;
-        std::get<1>(_spellsCDs[2]) = std::get<2>(_spellsCDs[2]);
-        
+        _cdManager.Restart(2);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateMageFreeze(builder,

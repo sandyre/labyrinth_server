@@ -28,10 +28,10 @@ Rogue::Rogue(GameWorld& world, uint32_t uid)
     _armor = 2;
     
         // spell 1 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 30s));
+    _cdManager.AddSpell(30s);
     
         // spell 2 cd
-    _spellsCDs.push_back(std::make_tuple(true, 0s, 15s));
+    _cdManager.AddSpell(15s);
 }
 
 
@@ -40,11 +40,10 @@ Rogue::SpellCast(const GameMessage::CLActionSpell* spell)
 {
         // invisibility cast (0 spell)
     if(spell->spell_id() == 0 &&
-       std::get<0>(_spellsCDs[0]) == true)
+       _cdManager.SpellReady(0))
     {
             // set up CD
-        std::get<0>(_spellsCDs[0]) = false;
-        std::get<1>(_spellsCDs[0]) = std::get<2>(_spellsCDs[0]);
+        _cdManager.Restart(0);
 
         auto invis = std::make_shared<RogueInvisibility>(5s);
         invis->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
