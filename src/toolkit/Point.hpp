@@ -9,6 +9,7 @@
 #ifndef Point_h
 #define Point_h
 
+#include <ostream>
 #include <cmath>
 
 
@@ -20,25 +21,29 @@ struct Point
       y(Y)
     { }
 
-    T Distance(const Point<T>& b)
+    T Distance(const Point<T>& b) const
     { return std::sqrt((b.x - x) * (b.x - x) + (b.y - y) * (b.y - y)); }
     
-    T Distance(const Point<T>&& b)
+    T Distance(const Point<T>&& b) const
     { return Distance(b); }
 
-    bool operator==(const Point<T>& b)
+    bool operator==(const Point<T>& b) const
     { return x == b.x && y == b.y; }
 
-    bool operator==(const Point<T>&& b)
+    bool operator==(const Point<T>&& b) const
     { return operator==(b); }
 
-    bool operator!=(const Point<T>& b)
+    bool operator!=(const Point<T>& b) const
     { return !operator==(b); }
 
-    bool operator!=(const Point<T>&& b)
+    bool operator!=(const Point<T>&& b) const
     { return !operator==(b); }
 
     T x, y;
 };
+
+template<typename T>
+std::ostream& operator <<(std::ostream& stream,const Point<T>& pt)
+{ return stream << "{ " << pt.x << "; " << pt.y << " }"; }
 
 #endif /* Point_h */
