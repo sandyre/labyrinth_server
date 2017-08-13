@@ -10,14 +10,14 @@
 
 #include "../gameworld.hpp"
 #include "../../GameMessage.h"
+#include "../../../toolkit/RatMaze.hpp"
 
 #include <chrono>
 using namespace std::chrono_literals;
 
 
 Monster::Monster(GameWorld& world, uint32_t uid)
-: Unit(world, uid),
-  _chasingUnit(nullptr)
+: Unit(world, uid)
 {
     _unitType = Unit::Type::MONSTER;
     _name = "Skeleton";
@@ -37,7 +37,7 @@ Monster::Monster(GameWorld& world, uint32_t uid)
     _castTime = 600ms;
     _castATime = 0ms;
     
-    _moveCD = 2s;
+    _moveCD = 1s;
     _moveACD = 0s;
 }
 
@@ -50,81 +50,154 @@ Monster::update(std::chrono::microseconds delta)
     _castATime -= delta;
     if(_castATime < 0ms)
         _castATime = 0ms;
-    
-//        // find target to chase
-//    if(_chasingUnit == nullptr)
-//    {
-//        for(auto obj : m_poGameWorld->m_apoObjects)
-//        {
-//            if(obj->GetObjType() == GameObject::Type::UNIT &&
-//               obj->GetUID() != this->GetUID() &&
-//               Distance(obj->GetLogicalPosition(), this->GetLogicalPosition()) <= 4.0 &&
-//               dynamic_cast<Unit*>(obj)->GetUnitAttributes() & Unit::Attributes::DUELABLE)
-//            {
-//                _chasingUnit = dynamic_cast<Unit*>(obj);
-//                break;
-//            }
-//        }
-//    }
+
+    _moveACD -= delta;
+    if(_moveACD < 0ms)
+        _moveACD = 0ms;
+
+    // find target to chase
+    if(!_chasingUnit)
+    {
+        auto units = _world._objectsStorage.Subset<Unit>();
+        for(auto unit : units)
+        {
+            if(unit->GetUID() != this->GetUID() &&
+               unit->GetType() != Unit::Type::MONSTER &&
+               unit->GetPosition().Distance(this->GetPosition()) <= 7.0)
+            {
+                _chasingUnit = unit;
+                _world._logger.Info() << this->GetName() << " CHASING " << (*_chasingUnit)->GetName();
+            }
+        }
+    }
+
+    if(_chasingUnit) // make a path
+    {
+        if((*_chasingUnit)->GetPosition().Distance(this->GetPosition()) > 8.0) // check that enemy is still in radius
+        {
+            _world._logger.Info() << this->GetName() << " IS NO LONGER CHASING " << (*_chasingUnit)->GetName();
+            _chasingUnit.reset();
+            _pathToUnit.reset();
+        }
+        else // calculate path?
+        {
+            if(!_pathToUnit ||
+               _pathToUnit->back() != (*_chasingUnit)->GetPosition()) // path exists
+            {
+                // it means that object moved since last update. recalculation needed
+                auto mapSize = _world._mapConf.MapSize * _world._mapConf.RoomSize + 2;
+                std::vector<std::vector<uint8_t>> binary_world(mapSize, std::vector<uint8_t>(mapSize, 1));
+
+                // iterate through all objects in the world and mark unpassable cells
+                auto objects = _world._objectsStorage.Subset<GameObject>();
+                for(auto obj : objects)
+                {
+                    if(!(obj->GetAttributes() & GameObject::Attributes::PASSABLE))
+                    {
+                        auto objPos = obj->GetPosition();
+                        binary_world[objPos.x][objPos.y] = 0;
+                    }
+                }
+
+                // make itself AND target cells passable
+                binary_world[this->GetPosition().x][this->GetPosition().y] = 1;
+                binary_world[(*_chasingUnit)->GetPosition().x][(*_chasingUnit)->GetPosition().y] = 1;
+
+                auto path = RatMaze(binary_world, this->GetPosition(), (*_chasingUnit)->GetPosition());
+                if(path) // path found!
+                {
+                    _pathToUnit = path;
+                    _pathToUnit->pop_front();
+                }
+            }
+        }
+    }
+
     if(!(_unitAttributes & Unit::Attributes::INPUT))
         return;
     
     switch (_state)
     {
-        case Unit::State::DUEL:
+    case Unit::State::WALKING:
+    {
+        if(_pathToUnit && _moveACD <= 0ms)
         {
-            if(_castATime == 0ms)
+            Point<> nextPos = _pathToUnit->front();
+
+            if(nextPos.x > _pos.x)
+                Move(Unit::MoveDirection::RIGHT);
+            else if(nextPos.x < _pos.x)
+                Move(Unit::MoveDirection::LEFT);
+            else if(nextPos.y > _pos.y)
+                Move(Unit::MoveDirection::UP);
+            else if(nextPos.y < _pos.y)
+                Move(Unit::MoveDirection::DOWN);
+
+            if(nextPos == _pos)
             {
-                _castSequence[0].sequence.pop_back();
-                _castATime = _castTime;
-                
-                if(_castSequence[0].sequence.empty())
-                {
-                    if(_duelTarget == nullptr)
-                        return;
-                    
-                        // Log damage event
-                    _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
-                    
-                        // set up CD
-                    _cdManager.Restart(0);
-                    
-                    flatbuffers::FlatBufferBuilder builder;
-                    auto spell_info = GameMessage::CreateMonsterAttack(builder,
-                                                                     _duelTarget->GetUID(),
-                                                                     _actualDamage);
-                    auto spell = GameMessage::CreateSpell(builder,
-                                                        GameMessage::Spells_MonsterAttack,
-                                                        spell_info.Union());
-                    auto spell1 = GameMessage::CreateSVActionSpell(builder,
-                                                                 this->GetUID(),
-                                                                 0,
-                                                                 spell);
-                    auto event = GameMessage::CreateMessage(builder,
-                                                            0,
-                                                            GameMessage::Messages_SVActionSpell,
-                                                            spell1.Union());
-                    builder.Finish(event);
-                    
-                    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                                 builder.GetBufferPointer() + builder.GetSize());
-                    
-                        // deal PHYSICAL damage
-                    auto dmgDescr = Unit::DamageDescriptor();
-                    dmgDescr.DealerName = _name;
-                    dmgDescr.Value = _actualDamage;
-                    dmgDescr.Type = Unit::DamageDescriptor::DamageType::PHYSICAL;
-                    _duelTarget->TakeDamage(dmgDescr);
-                    
-                    _castSequence[0].Refresh();
-                }
+                _pathToUnit->pop_front();
+                _moveACD = _moveCD;
             }
-            
-            break;
         }
+        else if(_pathToUnit && _pathToUnit->size() == 1)
+            this->StartDuel(*_chasingUnit);
+        break;
+    }
+
+    case Unit::State::DUEL:
+    {
+        if(_castATime == 0ms)
+        {
+            _castSequence[0].sequence.pop_back();
+            _castATime = _castTime;
             
-        default:
-            break;
+            if(_castSequence[0].sequence.empty())
+            {
+                if(_duelTarget == nullptr)
+                    return;
+                
+                    // Log damage event
+                _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
+                
+                    // set up CD
+                _cdManager.Restart(0);
+                
+                flatbuffers::FlatBufferBuilder builder;
+                auto spell_info = GameMessage::CreateMonsterAttack(builder,
+                                                                 _duelTarget->GetUID(),
+                                                                 _actualDamage);
+                auto spell = GameMessage::CreateSpell(builder,
+                                                    GameMessage::Spells_MonsterAttack,
+                                                    spell_info.Union());
+                auto spell1 = GameMessage::CreateSVActionSpell(builder,
+                                                             this->GetUID(),
+                                                             0,
+                                                             spell);
+                auto event = GameMessage::CreateMessage(builder,
+                                                        0,
+                                                        GameMessage::Messages_SVActionSpell,
+                                                        spell1.Union());
+                builder.Finish(event);
+                
+                _world._outputEvents.emplace(builder.GetBufferPointer(),
+                                             builder.GetBufferPointer() + builder.GetSize());
+                
+                    // deal PHYSICAL damage
+                auto dmgDescr = Unit::DamageDescriptor();
+                dmgDescr.DealerName = _name;
+                dmgDescr.Value = _actualDamage;
+                dmgDescr.Type = Unit::DamageDescriptor::DamageType::PHYSICAL;
+                _duelTarget->TakeDamage(dmgDescr);
+                
+                _castSequence[0].Refresh();
+            }
+        }
+        
+        break;
+    }
+        
+    default:
+        break;
     }
 }
 

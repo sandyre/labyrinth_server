@@ -171,14 +171,14 @@ private:
     class MonsterSpawner
     {
     public:
-        MonsterSpawner(GameWorld& world, std::chrono::microseconds interval = 3s)
+        MonsterSpawner(GameWorld& world, std::chrono::microseconds interval = 10s)
         : _world(world),
           _interval(interval)
         { }
 
         void update(std::chrono::microseconds delta)
         {
-            if(_time.Elapsed<std::chrono::microseconds>() >= _interval)
+            if(_time.Elapsed<std::chrono::microseconds>() >= _interval && !spawned)
             {
                 auto monster = _world._objectsStorage.Create<Monster>();
                 monster->Spawn(_world.GetRandomPosition());
@@ -189,6 +189,7 @@ private:
     private:
         GameWorld&                  _world;
         ElapsedTime                 _time;
+        bool spawned = false;
         std::chrono::microseconds   _interval;
     };
 

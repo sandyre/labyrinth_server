@@ -11,7 +11,9 @@
 
 #include "unit.hpp"
 
-#include <queue>
+#include "../../../toolkit/optional.hpp"
+
+#include <deque>
 
 
 struct InputSequence
@@ -59,9 +61,9 @@ public:
 protected:
     std::chrono::microseconds   _moveCD;;
     std::chrono::microseconds   _moveACD;
-    
-    Unit *                      _chasingUnit;
-    std::queue<Point<>>         _pathToUnit;
+
+    std::experimental::optional<UnitPtr>                _chasingUnit;
+    std::experimental::optional<std::deque<Point<>>>    _pathToUnit;
 
     std::chrono::microseconds   _castTime;
     std::chrono::microseconds   _castATime;
