@@ -9,8 +9,8 @@
 #ifndef Point_h
 #define Point_h
 
-#include <ostream>
 #include <cmath>
+#include <ostream>
 
 
 template<typename T = float>
@@ -38,6 +38,12 @@ struct Point
 
     bool operator!=(const Point<T>&& b) const
     { return !operator==(b); }
+
+    bool operator<(const Point<T>& b) const
+    { return x < b.x || (!(x < b.x) && y < b.y); }
+
+    bool operator<(const Point<T>&& b) const
+    { return operator<(b); }
 
     T x, y;
 };

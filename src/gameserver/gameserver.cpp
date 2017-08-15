@@ -491,6 +491,11 @@ void GameServer::hero_picking_stage()
             _state = GameServer::State::GENERATING_WORLD;
             _logger.Info() << "STATE CHANGE: HERO-PICKING -> WORLD-GENERATION";
 
+                // Log UUID to LocaUID mapping
+            _logger.Info() << "Players UUID <-> LocalUID mapping";
+            for(auto& player : _playersConnections)
+                _logger.Info() << player.GetUUID() << " -> " << player.GetLocalUID();
+
                 // generate world for ourselves
             GameMapGenerator::Configuration mapConf;
             mapConf.Seed = _config.RandomSeed;

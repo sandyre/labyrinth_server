@@ -11,6 +11,7 @@
 
 #include "unit.hpp"
 
+#include "../../../toolkit/named_logger.hpp"
 #include "../../../toolkit/optional.hpp"
 
 #include <deque>
@@ -59,6 +60,8 @@ public:
     virtual void Die(const std::string& killerName) override;
     
 protected:
+    NamedLogger                 _logger;
+    
     std::chrono::microseconds   _moveCD;;
     std::chrono::microseconds   _moveACD;
 
