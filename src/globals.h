@@ -9,45 +9,8 @@
 #ifndef globals_h
 #define globals_h
 
-#include <cmath>
-#include <cstdint>
-
-const int GAMEVERSION_MAJOR = 2;
-const int GAMEVERSION_MINOR = 0;
-const int GAMEVERSION_BUILD = 0;
-
-const int ADMIN_KEY = 131313;
-
-struct Point2
-{
-    Point2() :
-    x(0),
-    y(0)
-    {
-        
-    }
-    
-    Point2(int16_t x_, int16_t y_) :
-    x(x_),
-    y(y_)
-    {
-        
-    }
-    
-    bool operator==(const Point2& b)
-    {
-        return (x == b.x) && (y == b.y);
-    }
-    
-    uint16_t x;
-    uint16_t y;
-};
-
-inline double Distance(const Point2& a, const Point2& b)
-{
-    return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
-}
-
-using PlayerUID = uint32_t;
+#define GAMECORE_MAJOR_VERSION 0
+#define GAMECORE_MINOR_VERSION 1
+#define GAMECORE_BUILD_VERSION 0
 
 #endif /* globals_h */

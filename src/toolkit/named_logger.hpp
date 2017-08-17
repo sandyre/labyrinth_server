@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <mutex>
 #include <string>
 
 namespace Color
@@ -48,9 +49,7 @@ private:
         LoggerStream(const LoggerStream& other)
         : _logger(other._logger),
           _prefix(other._prefix)
-        {
-
-        }
+        { }
 
     public:
         template<typename T>

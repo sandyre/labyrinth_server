@@ -13,6 +13,9 @@
 
 #include <Poco/Timer.h>
 
+#include <memory>
+
+
 class SystemMonitor
 {
 public:
@@ -24,6 +27,8 @@ private:
 private:
     NamedLogger                     _logger;
     std::unique_ptr<Poco::Timer>    _timer;
+
+    size_t                          _lastRSS;
 };
 
 #endif /* system_monitor_hpp */

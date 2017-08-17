@@ -11,6 +11,7 @@
 #include <Poco/Data/MySQL/Connector.h>
 #include <Poco/Observer.h>
 
+
 class DatabaseAccessor::RegisterTask : public Poco::Task
 {
 public:
@@ -33,7 +34,7 @@ public:
         try
         {
             Poco::Data::Statement select(_dbSession);
-            select << "SELECT COUNT(*) FROM players WHERE email=?", into(already_registered), use(_taskInfo.Email), now;
+            select << "SELECT COUNT(*) FROM user WHERE email=?", into(already_registered), use(_taskInfo.Email), now;
         }
         catch(...)
         {
@@ -47,7 +48,7 @@ public:
             try
             {
                 Poco::Data::Statement insert(_dbSession);
-                insert << "INSERT INTO players(email, password) VALUES(?, ?)", use(_taskInfo.Email), use(_taskInfo.Password), now;
+                insert << "INSERT INTO user(email, password) VALUES(?, ?)", use(_taskInfo.Email), use(_taskInfo.Password), now;
             }
             catch(...)
             {
@@ -71,6 +72,7 @@ private:
     DBQuery::RegisterQuery                                   _taskInfo;
 };
 
+
 class DatabaseAccessor::LoginTask : public Poco::Task
 {
 public:
@@ -93,7 +95,7 @@ public:
         try
         {
             Poco::Data::Statement select(_dbSession);
-            select << "SELECT PASSWORD FROM labyrinth.players WHERE email=?", into(storedPass), use(_taskInfo.Email), now;
+            select << "SELECT PASSWORD FROM user WHERE email=?", into(storedPass), use(_taskInfo.Email), now;
         }
         catch(...)
         {
@@ -127,7 +129,7 @@ DatabaseAccessor::DatabaseAccessor()
 : _logger("DatabaseAccessor", NamedLogger::Mode::STDIO),
   _workers("DatabaseAccessorWorkers", 8, 16, 60),
   _taskManager(_workers),
-  _dbSessions("MySQL", "host=127.0.0.1;user=masterserver;db=labyrinth;password=2(3oOS1E;compress=true;auto-reconnect=true", 16)
+  _dbSessions("MySQL", "host=127.0.0.1;user=labyrinth;db=labyrinth;password=labyrinthdb;compress=true;auto-reconnect=true", 16)
 {
     Poco::Data::MySQL::Connector::registerConnector();
 
@@ -137,7 +139,7 @@ DatabaseAccessor::DatabaseAccessor()
         size_t registered_players = 0;
         Poco::Data::Session test_session(_dbSessions.get());
         Poco::Data::Statement select(test_session);
-        select << "SELECT COUNT(*) FROM players", into(registered_players), now;
+        select << "SELECT COUNT(*) FROM user", into(registered_players), now;
     }
 
     _logger.Debug() << "DatabaseAccessor service is up, number of workers: " << _workers.capacity() << ", size of SessionsPool: " << _dbSessions.available();
@@ -148,6 +150,7 @@ DatabaseAccessor::DatabaseAccessor()
                                                                                              &ProgressHandler::onFinished));
 }
 
+
 std::future<DBQuery::RegisterResult>
 DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
 {
@@ -155,17 +158,15 @@ DatabaseAccessor::Query(const DBQuery::RegisterQuery& reg)
 
     auto promise = std::make_unique<std::promise<DBQuery::RegisterResult>>();
     auto future = promise->get_future();
-    try
-    {
+
+    if(_workers.available())
         _taskManager.start(new RegisterTask(_dbSessions.get(), std::move(promise), reg));
-    }
-    catch(const std::exception& e)
-    {
-        promise->set_exception(std::current_exception());
-    }
+    else
+        _logger.Warning() << "No workers, task skipped";
 
     return future;
 }
+
 
 std::future<DBQuery::LoginResult>
 DatabaseAccessor::Query(const DBQuery::LoginQuery& login)
@@ -174,14 +175,11 @@ DatabaseAccessor::Query(const DBQuery::LoginQuery& login)
 
     auto promise = std::make_unique<std::promise<DBQuery::LoginResult>>();
     auto future = promise->get_future();
-    try
-    {
+
+    if(_workers.available())
         _taskManager.start(new LoginTask(_dbSessions.get(), std::move(promise), login));
-    }
-    catch(const std::exception& e)
-    {
-        promise->set_exception(std::current_exception());
-    }
+    else
+        _logger.Warning() << "No workers, task skipped";
 
     return future;
 }
