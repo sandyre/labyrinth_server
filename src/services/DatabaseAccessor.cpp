@@ -62,7 +62,7 @@ public:
         else
             result.Success = false;
 
-        _promise->set_value_at_thread_exit(result);
+        _promise->set_value(result);
         setState(Poco::Task::TaskState::TASK_FINISHED);
     }
 

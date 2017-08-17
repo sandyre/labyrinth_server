@@ -35,7 +35,6 @@ public:
     std::experimental::optional<Packet> Get()
     {
         Packet packet;
-
         if(_socket.available() > _internalBuffer.size())
         {
             _socket.receiveFrom(_internalBuffer.data(),
@@ -51,9 +50,7 @@ public:
                                             _internalBuffer.size(),
                                             packet.Sender);
 
-        flatbuffers::Verifier verifier(_internalBuffer.data(),
-                                       packSize);
-        if(!verifier.VerifyBuffer<T>(nullptr))
+        if(!flatbuffers::Verifier(_internalBuffer.data(), packSize).VerifyBuffer<T>(nullptr))
         {
             _logger.Warning() << "Packet verification failed, probably a DDoS. Sender addr: " << packet.Sender.toString();
 

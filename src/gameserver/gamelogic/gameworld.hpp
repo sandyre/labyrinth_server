@@ -37,6 +37,7 @@ private:
     class ObjectsStorage
     {
         using Storage = std::list<GameObjectPtr>;
+
     public:
         ObjectsStorage(GameWorld& world)
         : _world(world),
@@ -81,7 +82,7 @@ private:
         void DeleteObject(const GameObjectPtr& obj)
         { _storage.remove(obj); }
 
-        template<typename T>
+        template<typename T = GameObject>
         std::vector<std::shared_ptr<T>> Subset()
         {
             std::vector<std::shared_ptr<T>> result;
