@@ -49,118 +49,125 @@ Monster::update(std::chrono::microseconds delta)
     Unit::update(delta);
     
     _castATime -= delta;
-    if(_castATime < 0ms)
+    if (_castATime < 0ms)
         _castATime = 0ms;
 
-    if(!(_unitAttributes & Unit::Attributes::INPUT))
+    if (!(_unitAttributes & Unit::Attributes::INPUT))
         return;
     
     switch (_state)
     {
     case Unit::State::WALKING:
     {
-        // find target to chase
-        if(!_chasingUnit)
+        if (!_chasingUnit)
         {
+            // check nearby area for enemies
+            bool targetFound = false;
+
             auto units = _world._objectsStorage.Subset<Unit>();
-            for(auto unit : units)
+            for (auto& unit : units)
             {
                 if(unit->GetUID() != this->GetUID() &&
                    unit->GetType() != Unit::Type::MONSTER &&
+                   unit->GetState() == Unit::State::WALKING &&
                    unit->GetPosition().Distance(this->GetPosition()) <= 6.0)
                 {
                     _logger.Info() << "Begin chasing " << unit->GetName();
                     _chasingUnit = unit;
+                    targetFound = true;
+                    break;
                 }
             }
+
+            // no enemies - sleep
+            if (!targetFound)
+                break;
         }
 
-        if(_chasingUnit) // make a path
+        // check path
+        if ((*_chasingUnit)->GetPosition().Distance(this->GetPosition()) > 6.0 ||
+            (*_chasingUnit)->GetState() != Unit::State::WALKING)
         {
-            if((*_chasingUnit)->GetPosition().Distance(this->GetPosition()) > 6.0) // check that enemy is still in radius
+            _logger.Info() << "End chasing " << (*_chasingUnit)->GetName();
+            _chasingUnit.reset();
+            _pathToUnit.reset();
+            break;
+        }
+        else if (!_pathToUnit
+                 || (*_chasingUnit)->GetPosition() != _pathToUnit->back()) // check re/-calculation need
+        {
+            // it means that object moved since last update. recalculation needed
+            auto mapSize = _world._mapConf.MapSize * _world._mapConf.RoomSize + 2;
+            std::vector<std::vector<int8_t>> binary_world(mapSize, std::vector<int8_t>(mapSize, 1));
+
+            // iterate through all objects in the world and mark unpassable cells
+            auto objects = _world._objectsStorage.Subset<GameObject>();
+            for(auto obj : objects)
             {
-                _logger.Info() << "End chasing " << (*_chasingUnit)->GetName();
-                _chasingUnit.reset();
-                _pathToUnit.reset();
-            }
-            else // calculate path?
-            {
-                if(!_pathToUnit ||
-                   _pathToUnit->back() != (*_chasingUnit)->GetPosition()) // path exists
+                if(!(obj->GetAttributes() & GameObject::Attributes::PASSABLE))
                 {
-                    // it means that object moved since last update. recalculation needed
-                    auto mapSize = _world._mapConf.MapSize * _world._mapConf.RoomSize + 2;
-                    std::vector<std::vector<int8_t>> binary_world(mapSize, std::vector<int8_t>(mapSize, 1));
-
-                    // iterate through all objects in the world and mark unpassable cells
-                    auto objects = _world._objectsStorage.Subset<GameObject>();
-                    for(auto obj : objects)
-                    {
-                        if(!(obj->GetAttributes() & GameObject::Attributes::PASSABLE))
-                        {
-                            auto objPos = obj->GetPosition();
-                            binary_world[objPos.x][objPos.y] = 0;
-                        }
-                    }
-
-                    // make itself AND target cells passable
-                    binary_world[this->GetPosition().x][this->GetPosition().y] = 1;
-                    binary_world[(*_chasingUnit)->GetPosition().x][(*_chasingUnit)->GetPosition().y] = 1;
-
-                    auto path = AStar(binary_world, this->GetPosition(), (*_chasingUnit)->GetPosition());
-                    if(path) // path found!
-                    {
-                        std::ostringstream path_str;
-                        for(auto& pt : *path)
-                            path_str << pt;
-
-                        _logger.Debug() << "Path found: " << path_str.str();
-                        
-                        _pathToUnit = path;
-                    }
-                    else
-                        _logger.Debug() << "Failed to find path";
+                    auto objPos = obj->GetPosition();
+                    binary_world[objPos.x][objPos.y] = 0;
                 }
             }
-        }
 
-        if(_pathToUnit && _cdManager.SpellReady(0))
-        {
-            Point<> nextPos = _pathToUnit->front();
-            _cdManager.Restart(0);
+            // make itself AND target cells passable
+            binary_world[this->GetPosition().x][this->GetPosition().y] = 1;
+            binary_world[(*_chasingUnit)->GetPosition().x][(*_chasingUnit)->GetPosition().y] = 1;
 
-            if(nextPos.x > _pos.x)
-                Move(Unit::MoveDirection::RIGHT);
-            else if(nextPos.x < _pos.x)
-                Move(Unit::MoveDirection::LEFT);
-            else if(nextPos.y > _pos.y)
-                Move(Unit::MoveDirection::UP);
-            else if(nextPos.y < _pos.y)
-                Move(Unit::MoveDirection::DOWN);
-
-            if (nextPos == _pos)
+            auto path = AStar(binary_world, this->GetPosition(), (*_chasingUnit)->GetPosition());
+            if (path) // path found!
             {
-                _cdManager.Restart(0);
-                _pathToUnit->pop_front();
+                std::ostringstream path_str;
+                for(auto& pt : *path)
+                    path_str << pt;
+
+                _logger.Debug() << "Path found: " << path_str.str();
+
+                _pathToUnit = path;
             }
             else
-                _logger.Debug() << "Failed to move: path is broken (does not match the actual map)";
+                _logger.Debug() << "Failed to find path";
         }
-        else if(_pathToUnit && _pathToUnit->size() == 1 && _pathToUnit->back() == (*_chasingUnit)->GetPosition())
+
+        if ((*_chasingUnit)->GetPosition().Distance(this->GetPosition()) == 1.0
+            && _cdManager.SpellReady(0))
+        {
             this->StartDuel(*_chasingUnit);
+            _chasingUnit.reset();
+            _pathToUnit.reset();
+            break;
+        }
+        else if (_pathToUnit && _cdManager.SpellReady(0))
+        {
+            const Point<> nextPos = _pathToUnit->front();
+
+            if (nextPos.x > _pos.x)
+                Move(Unit::MoveDirection::RIGHT);
+            else if (nextPos.x < _pos.x)
+                Move(Unit::MoveDirection::LEFT);
+            else if (nextPos.y > _pos.y)
+                Move(Unit::MoveDirection::UP);
+            else if (nextPos.y < _pos.y)
+                Move(Unit::MoveDirection::DOWN);
+
+            _cdManager.Restart(0);
+            _pathToUnit->pop_front();
+        }
+
         break;
     }
 
     case Unit::State::DUEL:
     {
-        if(_castATime == 0ms)
+        if (_castATime == 0ms)
         {
             _castSequence[0].sequence.pop_back();
             _castATime = _castTime;
             
-            if(_castSequence[0].sequence.empty())
+            if (_castSequence[0].sequence.empty())
             {
-                if(_duelTarget == nullptr)
+                if (_duelTarget == nullptr)
                     return;
                 
                     // Log damage event

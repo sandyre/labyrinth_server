@@ -284,11 +284,10 @@ Unit::TakeDamage(const DamageDescriptor& dmg)
 void
 Unit::StartDuel(std::shared_ptr<Unit> enemy)
 {
-        // FIXME: each duel sends 2 msges about duel start.
-        // client now can eat it, but server should also be reworked
-    
+    enemy->AcceptDuel(std::dynamic_pointer_cast<Unit>(shared_from_this()));
+
         // Log duel start event
-    _world._logger.Info() << "DUEL START  " << this->GetName() << " and " << enemy->GetName();
+    _world._logger.Info() << "Initiates duel with " << enemy->GetName();
     
     _state = Unit::State::DUEL;
     _unitAttributes &= ~Unit::Attributes::DUELABLE;
@@ -308,6 +307,18 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
     
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
+}
+
+void
+Unit::AcceptDuel(std::shared_ptr<Unit> enemy)
+{
+    // Log duel start event
+    _world._logger.Info() << "Accepts duel from " << enemy->GetName();
+
+    _state = Unit::State::DUEL;
+    _unitAttributes &= ~Unit::Attributes::DUELABLE;
+
+    _duelTarget = enemy;
 }
 
 

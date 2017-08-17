@@ -245,10 +245,7 @@ GameWorld::ApplyInputEvents()
                    second->GetState() == Unit::State::WALKING &&
                    first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
                    first->GetPosition().Distance(second->GetPosition()) <= 1.0)
-                {
                     first->StartDuel(second);
-                    second->StartDuel(first);
-                }
                 break;
             }
             default:
