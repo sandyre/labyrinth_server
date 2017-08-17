@@ -1,0 +1,345 @@
+namespace GameMessage;
+
+enum ConnectionStatus : byte
+{
+ACCEPTED,
+REFUSED
+}
+
+table CLConnection
+{
+player_uid:uint;
+nickname:string;
+}
+
+table CLDisconnect
+{
+player_uid:uint;
+}
+
+enum HeroType : byte
+{
+WARRIOR = 0x00,
+MAGE = 0x01,
+ROGUE = 0x02,
+PRIEST = 0x03
+}
+
+table SVConnectionStatus
+{
+player_uid:uint;
+status:ConnectionStatus;
+}
+
+table SVPlayerConnected
+{
+player_uid:uint;
+nickname:string;
+}
+
+table SVPlayerDisconnected
+{
+player_uid:uint;
+}
+
+table SVHeroPickStage
+{
+}
+
+table CLHeroPick
+{
+player_uid:uint;
+hero_type:HeroType;
+}
+
+table SVHeroPick
+{
+player_uid:uint;
+hero_type:HeroType;
+}
+
+table CLReadyToStart
+{
+player_uid:uint;
+}
+
+table SVReadyToStart
+{
+player_uid:uint;
+}
+
+table SVGenerateMap
+{
+map_w:ushort;
+room_w:ushort;
+seed:uint;
+}
+
+table CLMapGenerated
+{
+player_uid:uint;
+}
+
+table SVGameStart
+{
+}
+
+// INGAME
+table CLActionMove
+{
+target_uid:uint;
+mov_dir:byte;
+}
+
+table SVActionMove
+{
+target_uid:uint;
+mov_dir:byte;
+x:ushort;
+y:ushort;
+}
+
+enum ActionItemType : byte
+{
+TAKE,
+DROP,
+USE
+}
+
+table CLActionItem
+{
+player_uid:uint;
+item_uid:ushort;
+act_type:ActionItemType;
+}
+
+table SVActionItem
+{
+player_uid:uint;
+item_uid:ushort;
+act_type:ActionItemType;
+}
+
+table MageAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
+table MageTeleport
+{
+x:ushort;
+y:ushort;
+}
+
+table MageFreeze
+{
+enemy_id:uint;
+}
+
+table WarriorAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
+table MonsterAttack
+{
+enemy_id:uint;
+damage:ushort;
+}
+
+table WarriorDash
+{
+}
+
+table WarriorArmorUp
+{
+}
+
+union Spells
+{
+MageAttack,
+MageTeleport,
+MageFreeze,
+
+WarriorAttack,
+WarriorDash,
+WarriorArmorUp,
+
+MonsterAttack
+}
+
+table Spell
+{
+spell:Spells;
+}
+
+table CLActionSpell
+{
+player_uid:uint;
+spell_id:ushort;
+spell_info:Spell;
+}
+
+table SVActionSpell
+{
+player_uid:uint;
+spell_id:ushort;
+spell_info:Spell;
+}
+
+enum ActionDuelType : byte
+{
+STARTED,
+ATTACK,
+ESCAPE,
+KILL
+}
+
+table CLActionDuel
+{
+target1_uid:uint;
+target2_uid:uint;
+act_type:ActionDuelType;
+damage:ushort;
+}
+
+table SVActionDuel
+{
+target1_uid:uint;
+target2_uid:uint;
+act_type:ActionDuelType;
+damage:ushort;
+}
+
+table SVActionDeath
+{
+player_uid:uint;
+killer_uid:uint;
+}
+
+table SVSpawnPlayer
+{
+player_uid:uint;
+x:ushort;
+y:ushort;
+hp:ushort;
+max_hp:ushort;
+}
+
+table SVSpawnMonster
+{
+monster_uid:ushort;
+x:ushort;
+y:ushort;
+hp:ushort;
+max_hp:ushort;
+}
+
+table SVRespawnPlayer
+{
+player_uid:uint;
+x:ushort;
+y:ushort;
+hp:ushort;
+max_hp:ushort;
+}
+
+enum ItemType : byte
+{
+KEY,
+SWORD
+}
+
+table SVSpawnItem
+{
+item_uid:ushort;
+item_type:ItemType;
+x:ushort;
+y:ushort;
+}
+
+enum ConstrType : byte
+{
+DOOR,
+GRAVEYARD,
+SWAMP
+}
+
+table SVSpawnConstr
+{
+constr_uid:ushort;
+constr_type:ConstrType;
+x:ushort;
+y:ushort;
+}
+
+table CLRequestWin
+{
+player_uid:uint;
+}
+
+table SVGameEnd
+{
+player_uid:uint;
+}
+
+table CLPing
+{
+player_uid:uint;
+}
+
+table SVPing
+{
+}
+
+union Messages
+{
+CLConnection,
+CLDisconnect,
+SVConnectionStatus,
+SVPlayerConnected,
+SVPlayerDisconnected,
+SVHeroPickStage,
+CLHeroPick,
+SVHeroPick,
+CLReadyToStart,
+SVReadyToStart,
+SVGenerateMap,
+CLMapGenerated,
+SVGameStart,
+
+CLActionMove,
+SVActionMove,
+
+CLActionItem,
+SVActionItem,
+
+CLActionDuel,
+SVActionDuel,
+
+CLActionSpell,
+SVActionSpell,
+
+CLRequestWin,
+
+SVActionDeath,
+SVSpawnPlayer,
+SVRespawnPlayer,
+SVSpawnMonster,
+SVSpawnItem,
+SVSpawnConstr,
+SVGameEnd,
+
+CLPing,
+SVPing
+}
+
+table Message
+{
+sender_uid:string;
+payload:Messages;
+}
+
+root_type Message;

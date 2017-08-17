@@ -128,9 +128,11 @@ size_t getCurrentRSS( )
 }
 }
 
+
 SystemMonitor::SystemMonitor()
 : _logger("SystemMonitor", NamedLogger::Mode::STDIO),
-  _timer(std::make_unique<Poco::Timer>(180000, 180000))
+  _timer(std::make_unique<Poco::Timer>(180000, 180000)),
+  _lastRSS()
 {
     _logger.Debug() << "SystemMonitor is up, report interval: " << _timer->getPeriodicInterval() << "ms";
 
@@ -139,9 +141,19 @@ SystemMonitor::SystemMonitor()
     _timer->start(free_callback);
 }
 
+
 void
 SystemMonitor::PrintStats(Poco::Timer& timer)
 {
     Poco::Thread::current()->setName("SystemMonitorTimer");
-    _logger.Info() << "Current/Peak memory usage: " << (getCurrentRSS()/1024) << "kB / " << (getPeakRSS()/1024) << "kB";
+    auto currentRSS = getCurrentRSS()/1024;
+    if(currentRSS > _lastRSS)
+    {
+        _logger.Info() << "Memory usage: " << currentRSS << "kB. Raised since last report: " << (currentRSS - _lastRSS) << "kB";
+    }
+    else if(currentRSS <= _lastRSS)
+    {
+        _logger.Info() << "Memory usage: " << currentRSS << "kB. Freed since last report: " << (_lastRSS - currentRSS) << "kB";
+    }
+    _lastRSS = currentRSS;
 }

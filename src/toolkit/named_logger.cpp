@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 
+
 NamedLogger::LoggerStream::LoggerStream(const NamedLogger& parent,
                                         Level level)
 : _logger(parent)

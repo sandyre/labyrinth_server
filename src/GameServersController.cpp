@@ -10,6 +10,7 @@
 
 #include <Poco/Observer.h>
 
+
 GameServersController::GameServersController()
 : _logger("GameServersController", NamedLogger::Mode::STDIO),
   _workers("GameServerWorker"),
@@ -25,6 +26,13 @@ GameServersController::GameServersController()
                                                                                       &GameServersController::onStarted));
     _taskManager.addObserver(Observer<GameServersController, TaskFinishedNotification>(*this,
                                                                                        &GameServersController::onFinished));
+}
+
+GameServersController::~GameServersController()
+{
+    _logger.Info() << "Waiting for all workers to end";
+    _workers.collect();
+    _logger.Info() << "Shutdown";
 }
 
     // TODO: should return future<uint16_t>, and callee wait in queue for available server.
@@ -43,7 +51,7 @@ GameServersController::GetServerAddress()
     if(!result && _workers.available())
     {
         GameServer::Configuration config;
-        config.Players    = 1;
+        config.Players = 1;
         config.RandomSeed = 0;
 
         {

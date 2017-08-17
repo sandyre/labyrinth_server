@@ -10,8 +10,6 @@
 #define masterserver_hpp
 
 #include "GameServersController.hpp"
-#include "msnet_generated.h"
-#include "player.hpp"
 #include "services/system_monitor.hpp"
 #include "services/DatabaseAccessor.hpp"
 #include "toolkit/named_logger.hpp"
@@ -33,6 +31,7 @@
 #include <thread>
 #include <vector>
 
+
 class MasterServer : public Poco::Runnable
 {
 private:
@@ -40,50 +39,25 @@ private:
     class LoginTask;
     class FindGameTask;
 
-    using GameServers = std::vector<std::unique_ptr<GameServer>>;
-
-public:
-    struct SystemStatus
-    {
-        static const int NETWORK_SYSTEM_ACTIVE  = 0x02;
-        static const int DATABASE_SYSTEM_ACTIVE = 0x08;
-    };
-
 public:
     MasterServer();
     ~MasterServer();
 
-    void init(uint32_t Port);
-
-    virtual void run();
+    virtual void run() override;
 
 protected:
-    void service_loop();
+    NamedLogger                             _logger;
 
-protected:
-    std::mt19937                    _randGenerator;
-    std::uniform_int_distribution<> _randDistr;
+        // Network
+    Poco::Net::DatagramSocket               _socket;
 
-    std::queue<uint32_t>            _availablePorts;
+        // Processing
+    Poco::ThreadPool                        _taskWorkers;
+    Poco::TaskManager                       _taskManager;
 
-    uint32_t                        _systemStatus;
-
-    // Gameservers
+        // Subsystems
+    std::unique_ptr<SystemMonitor>          _systemMonitor;
     std::unique_ptr<GameServersController>  _gameserversController;
-
-    // Network
-    Poco::Net::DatagramSocket      _socket;
-    flatbuffers::FlatBufferBuilder _flatBuilder;
-    std::array<uint8_t, 512>       _dataBuffer;
-
-    // Logging
-    NamedLogger                          _logger;
-
-    Poco::ThreadPool                     _taskWorkers;
-    Poco::TaskManager                    _taskManager;
-
-    // Services
-    std::unique_ptr<SystemMonitor>       _systemMonitor;
 
     friend RegistrationTask;
     friend LoginTask;
