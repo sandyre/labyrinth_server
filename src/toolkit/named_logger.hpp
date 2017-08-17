@@ -12,8 +12,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <mutex>
 #include <string>
-
 
 namespace Color
 {

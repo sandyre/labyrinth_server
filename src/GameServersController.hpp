@@ -18,6 +18,7 @@
 #include <Poco/ThreadPool.h>
 
 #include <deque>
+#include <mutex>
 
 
 class GameServersController

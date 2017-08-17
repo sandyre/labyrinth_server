@@ -39,7 +39,7 @@ private:
         using Cooldown = std::pair<std::chrono::microseconds, std::chrono::microseconds>;
     public:
         void AddSpell(std::chrono::microseconds cooldown)
-        { _storage.push_back(std::make_tuple(0s, cooldown)); }
+        { _storage.push_back(std::make_pair(0s, cooldown)); }
 
         void Restart(size_t spellIndex)
         { _storage[spellIndex].first = _storage[spellIndex].second; }

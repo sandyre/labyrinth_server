@@ -13,6 +13,8 @@
 
 #include <Poco/Timer.h>
 
+#include <memory>
+
 
 class SystemMonitor
 {

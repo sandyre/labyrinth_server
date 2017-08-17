@@ -129,7 +129,7 @@ DatabaseAccessor::DatabaseAccessor()
 : _logger("DatabaseAccessor", NamedLogger::Mode::STDIO),
   _workers("DatabaseAccessorWorkers", 8, 16, 60),
   _taskManager(_workers),
-  _dbSessions("MySQL", "host=127.0.0.1;user=root;db=labyrinth;password=;compress=true;auto-reconnect=true", 16)
+  _dbSessions("MySQL", "host=127.0.0.1;user=labyrinth;db=labyrinth;password=labyrinthdb;compress=true;auto-reconnect=true", 16)
 {
     Poco::Data::MySQL::Connector::registerConnector();
 

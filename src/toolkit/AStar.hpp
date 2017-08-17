@@ -12,8 +12,8 @@
 #include "Point.hpp"
 #include "optional.hpp"
 
-#include <float.h>
 #include <deque>
+#include <limits>
 #include <set>
 #include <vector>
 
@@ -31,9 +31,9 @@ namespace
     {
         Cell()
         : Parent({ -1, -1 }),
-        F(FLT_MAX),
-        G(FLT_MAX),
-        H(FLT_MAX)
+        F(std::numeric_limits<double>::max()),
+        G(std::numeric_limits<double>::max()),
+        H(std::numeric_limits<double>::max())
         { }
 
         Point<>	Parent;
@@ -94,7 +94,7 @@ namespace
                     hN = calculateHValue(nextPoint, dst);
                     fN = gN + hN;
 
-                    if (cells[nextPoint.x][nextPoint.y].F == FLT_MAX
+                    if (cells[nextPoint.x][nextPoint.y].F == std::numeric_limits<double>::max()
                         || cells[nextPoint.x][nextPoint.y].F > fN)
                     {
                         openList.insert(std::make_pair(fN, nextPoint));
@@ -123,7 +123,7 @@ namespace
                     hN = calculateHValue(nextPoint, dst);
                     fN = gN + hN;
 
-                    if (cells[nextPoint.x][nextPoint.y].F == FLT_MAX
+                    if (cells[nextPoint.x][nextPoint.y].F == std::numeric_limits<double>::max()
                         || cells[nextPoint.x][nextPoint.y].F > fN)
                     {
                         openList.insert(std::make_pair(fN, nextPoint));
@@ -152,7 +152,7 @@ namespace
                     hN = calculateHValue(nextPoint, dst);
                     fN = gN + hN;
 
-                    if (cells[nextPoint.x][nextPoint.y].F == FLT_MAX
+                    if (cells[nextPoint.x][nextPoint.y].F == std::numeric_limits<double>::max() 
                         || cells[nextPoint.x][nextPoint.y].F > fN)
                     {
                         openList.insert(std::make_pair(fN, nextPoint));
@@ -181,7 +181,7 @@ namespace
                     hN = calculateHValue(nextPoint, dst);
                     fN = gN + hN;
                     
-                    if (cells[nextPoint.x][nextPoint.y].F == FLT_MAX
+                    if (cells[nextPoint.x][nextPoint.y].F == std::numeric_limits<double>::max()
                         || cells[nextPoint.x][nextPoint.y].F > fN)
                     {
                         openList.insert(std::make_pair(fN, nextPoint));
