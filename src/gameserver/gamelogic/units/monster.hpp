@@ -47,7 +47,8 @@ struct InputSequence
 };
 
 
-class Monster : public Unit
+class Monster
+    : public Unit
 {
 public:
     Monster(GameWorld& world, uint32_t uid);

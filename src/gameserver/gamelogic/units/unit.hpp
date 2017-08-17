@@ -201,6 +201,7 @@ public:
     virtual void SpellCast(const GameMessage::CLActionSpell*) = 0;
 
     virtual void StartDuel(std::shared_ptr<Unit> enemy);
+    virtual void AcceptDuel(std::shared_ptr<Unit> enemy);
     virtual void EndDuel();
 
     virtual void Die(const std::string& killerName);
