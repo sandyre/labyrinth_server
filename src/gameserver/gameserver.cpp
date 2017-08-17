@@ -256,9 +256,10 @@ void GameServer::lobby_forming_stage()
                                   _playersConnections.cend(),
                                   [&](auto& player)
                                   {
-                                      auto nickname = builder.CreateString(playerConnection.GetName());
+                                      flatbuffers::FlatBufferBuilder builder;
+                                      auto nickname = builder.CreateString(player.GetName());
                                       auto connectionInfo = CreateSVPlayerConnected(builder,
-                                                                                    playerConnection.GetLocalUID(),
+                                                                                    player.GetLocalUID(),
                                                                                     nickname);
                                       auto message = CreateMessage(builder,
                                                                    0,
