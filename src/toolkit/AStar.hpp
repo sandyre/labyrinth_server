@@ -52,6 +52,9 @@ namespace
     std::experimental::optional<std::deque<Point<>>>
     AStarImpl(const Matrix<int8_t>& map, const Point<>& src, const Point<>& dst)
     {
+        if (src == dst)
+            return std::experimental::optional<std::deque<Point<>>>();
+
         std::deque<Point<>> result;
 
         Matrix<int8_t> closedList(map.size(), std::vector<int8_t>(map.size(), 0));
