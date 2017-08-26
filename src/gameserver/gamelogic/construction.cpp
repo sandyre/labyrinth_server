@@ -20,7 +20,6 @@ Door::Door(GameWorld& world, uint32_t uid)
 : Construction(world, uid)
 {
     _constrType = Construction::Type::DOOR;
-    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 
@@ -28,7 +27,6 @@ Graveyard::Graveyard(GameWorld& world, uint32_t uid)
 : Construction(world, uid)
 {
     _constrType = Construction::Type::GRAVEYARD;
-    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 

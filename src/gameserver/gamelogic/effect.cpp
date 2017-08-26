@@ -67,6 +67,7 @@ WarriorArmorUp::WarriorArmorUp(std::chrono::microseconds duration,
     _name = "WarriorArmorUp";
 }
 
+
 void
 WarriorArmorUp::start()
 {
@@ -86,6 +87,7 @@ WarriorArmorUp::update(std::chrono::microseconds delta)
         }
     }
 }
+
 
 void
 WarriorArmorUp::stop()
