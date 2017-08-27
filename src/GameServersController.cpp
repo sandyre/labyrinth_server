@@ -43,8 +43,9 @@ GameServersController::GetServerAddress()
     auto list = _taskManager.taskList();
     for(auto task : list)
     {
-        if(task->state() == Poco::Task::TaskState::TASK_IDLE)
-            return dynamic_cast<GameServer*>(task.get())->GetConfig().Port;
+	GameServer * server = dynamic_cast<GameServer*>(task.get());
+	if (server->GetState() == GameServer::State::LOBBY_FORMING)
+	    return server->GetConfig().Port;
     }
 
         // If no servers available - start new one and return its address
