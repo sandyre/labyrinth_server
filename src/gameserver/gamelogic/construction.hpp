@@ -10,6 +10,7 @@
 #define construction_hpp
 
 #include "gameobject.hpp"
+#include "../../toolkit/elapsed_time.hpp"
 
 #include <string>
 
@@ -22,7 +23,7 @@ public:
     {
         DOOR = 0x00,
         GRAVEYARD = 0x01,
-        SWAMP = 0x02
+        FOUNTAIN = 0x02
     };
 
 public:
@@ -54,10 +55,16 @@ public:
 };
 
 
-class Swamp : public Construction
+class Fountain
+    : public Construction
 {
 public:
-    Swamp(GameWorld& world, uint32_t uid);
+    Fountain(GameWorld& world, uint32_t uid);
+
+    virtual void OnCollision(const std::shared_ptr<GameObject>& object);
+
+private:
+    ElapsedTime     _cooldown;
 };
 
 #endif /* construction_hpp */

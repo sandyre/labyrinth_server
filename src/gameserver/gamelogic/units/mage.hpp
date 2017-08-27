@@ -22,8 +22,6 @@ class Mage
 public:
     Mage(GameWorld& world, uint32_t uid);
 
-    virtual void update(std::chrono::microseconds) override;
-
     virtual void SpellCast(const GameMessage::CLActionSpell*) override;
 };
 

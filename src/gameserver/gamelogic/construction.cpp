@@ -8,6 +8,10 @@
 
 #include "construction.hpp"
 
+#include "units/unit.hpp"
+#include "effect.hpp"
+
+using namespace std::chrono_literals;
 
 Construction::Construction(GameWorld& world, uint32_t uid)
 : GameObject(world, uid)
@@ -30,8 +34,20 @@ Graveyard::Graveyard(GameWorld& world, uint32_t uid)
 }
 
 
-Swamp::Swamp(GameWorld& world, uint32_t uid)
+Fountain::Fountain(GameWorld& world, uint32_t uid)
 : Construction(world, uid)
 {
-    _constrType = Construction::Type::SWAMP;
+    _constrType = Construction::Type::FOUNTAIN;
+}
+
+
+void
+Fountain::OnCollision(const std::shared_ptr<GameObject>& object)
+{
+    if (const auto unit = std::dynamic_pointer_cast<Unit>(object);
+        unit && _cooldown.Elapsed<std::chrono::microseconds>() > 30s)
+    {
+        unit->ApplyEffect(std::make_shared<FountainHeal>(5s));
+        _cooldown.Reset();
+    }
 }

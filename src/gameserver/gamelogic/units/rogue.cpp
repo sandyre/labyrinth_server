@@ -23,8 +23,8 @@ Rogue::Rogue(GameWorld& world, uint32_t uid)
 {
     _heroType = Hero::Type::ROGUE;
     _moveSpeed = 0.1;
-    _maxHealth = _health = 75;
-    _baseDamage = _actualDamage = 8;
+//    _maxHealth = _health = 75;
+//    _baseDamage = _actualDamage = 8;
     _armor = 2;
     
         // spell 1 cd

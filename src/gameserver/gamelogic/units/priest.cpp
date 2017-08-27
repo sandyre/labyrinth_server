@@ -19,9 +19,9 @@ Priest::Priest(GameWorld& world, uint32_t uid)
 {
     _heroType = Hero::Type::PRIEST;
     _moveSpeed = 0.1;
-    _maxHealth = _health = 60;
-    _baseDamage = _actualDamage = 10;
-    _armor = 4;
+    _health = SimpleProperty<>(60, 0, 60);
+    _damage = SimpleProperty<>(10, 0, 100);
+    _armor = SimpleProperty<>(4, 0, 100);
     
         // spell 1 cd
     _cdManager.AddSpell(10s);
@@ -50,14 +50,14 @@ Priest::update(std::chrono::microseconds delta)
         // passive regen works only in duel mode
     if(_state == Unit::State::DUEL)
     {
-        _regenTimer -= delta;
-        if(_regenTimer < 0s &&
-           _health <= _maxHealth)
-        {
-            _health += _regenAmount;
-            if(_health > _maxHealth)
-                _health = _maxHealth;
-            _regenTimer = _regenInterval;
-        }
+//        _regenTimer -= delta;
+//        if(_regenTimer < 0s &&
+//           _health <= _maxHealth)
+//        {
+//            _health += _regenAmount;
+//            if(_health > _maxHealth)
+//                _health = _maxHealth;
+//            _regenTimer = _regenInterval;
+//        }
     }
 }

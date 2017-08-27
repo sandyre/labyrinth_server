@@ -237,3 +237,36 @@ RespawnInvulnerability::stop()
     _targetUnit->_unitAttributes |= Unit::Attributes::DUELABLE;
     _targetUnit->_objAttributes |= ~(GameObject::Attributes::PASSABLE);
 }
+
+
+FountainHeal::FountainHeal(std::chrono::microseconds duration)
+{
+    _timer = duration;
+    _name = "FountainHeal";
+}
+
+
+void
+FountainHeal::start()
+{
+    _targetUnit->_health += (_targetUnit->_health.Max() - _targetUnit->_health) / 2;
+}
+
+
+void
+FountainHeal::update(std::chrono::microseconds delta)
+{
+    if (_state == Effect::State::ACTIVE)
+    {
+        _timer -= delta;
+        if (_timer < 0s)
+            _state = Effect::State::OVER;
+    }
+}
+
+
+void
+FountainHeal::stop()
+{
+    _targetUnit->_health += (_targetUnit->_health.Max() - _targetUnit->_health);
+}

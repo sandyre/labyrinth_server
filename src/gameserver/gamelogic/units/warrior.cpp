@@ -21,10 +21,10 @@ Warrior::Warrior(GameWorld& world, uint32_t uid)
 {
     _heroType = Hero::Type::WARRIOR;
     _moveSpeed = 0.4;
-    _maxHealth = _health = 80;
-    _baseDamage = _actualDamage = 10;
-    _armor = 6;
-    _magResistance = 2;
+    _health = SimpleProperty<>(80, 0, 80);
+    _damage = SimpleProperty<>(10, 0, 100);
+    _armor = SimpleProperty<>(6, 0, 100);
+    _resistance = SimpleProperty<>(2, 0, 100);
     
         // spell 1 cd
     _cdManager.AddSpell(10s);
@@ -71,22 +71,22 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
             return;
         
             // Log damage event
-        _world._logger.Info() << this->GetName() << " " << _actualDamage << " PHYS DMG TO " << _duelTarget->GetName();
+        _logger.Info() << " Attack " << _duelTarget->GetName() << " for " << _damage;
         
             // set up CD
         _cdManager.Restart(1);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameMessage::CreateWarriorAttack(builder,
-                                                      _duelTarget->GetUID(),
-                                                      _actualDamage);
+                                                           _duelTarget->GetUID(),
+                                                           _damage);
         auto spell = GameMessage::CreateSpell(builder,
-                                            GameMessage::Spells_WarriorAttack,
-                                            spell_info.Union());
+                                              GameMessage::Spells_WarriorAttack,
+                                              spell_info.Union());
         auto spell1 = GameMessage::CreateSVActionSpell(builder,
-                                                     this->GetUID(),
-                                                     1,
-                                                     spell);
+                                                       this->GetUID(),
+                                                       1,
+                                                       spell);
         auto event = GameMessage::CreateMessage(builder,
                                               0,
                                               GameMessage::Messages_SVActionSpell,
@@ -99,7 +99,7 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
             // deal PHYSICAL damage
         DamageDescriptor dmgDescr;
         dmgDescr.DealerName = _name;
-        dmgDescr.Value = _actualDamage;
+        dmgDescr.Value = _damage;
         dmgDescr.Type = DamageDescriptor::DamageType::PHYSICAL;
         _duelTarget->TakeDamage(dmgDescr);
     }
@@ -112,12 +112,12 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateSVActionSpell(builder,
-                                                     this->GetUID(),
-                                                     2);
+                                                       this->GetUID(),
+                                                       2);
         auto event = GameMessage::CreateMessage(builder,
-                                              0,
-                                              GameMessage::Messages_SVActionSpell,
-                                              spell1.Union());
+                                                0,
+                                                GameMessage::Messages_SVActionSpell,
+                                                spell1.Union());
         builder.Finish(event);
         
         _world._outputEvents.emplace(builder.GetBufferPointer(),

@@ -61,8 +61,6 @@ public:
     virtual void Die(const std::string& killerName) override;
     
 protected:
-    NamedLogger                 _logger;
-    
     std::chrono::microseconds   _moveCD;;
     std::chrono::microseconds   _moveACD;
 

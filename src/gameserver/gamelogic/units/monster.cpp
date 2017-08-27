@@ -17,16 +17,15 @@ using namespace std::chrono_literals;
 
 
 Monster::Monster(GameWorld& world, uint32_t uid)
-: Unit(world, uid),
-  _logger("Skeleton" + std::to_string(uid), NamedLogger::Mode::STDIO)
+: Unit(world, uid)
 {
     _unitType = Unit::Type::MONSTER;
     _name = "Skeleton";
-    
-    _baseDamage = _actualDamage = 10;
-    _maxHealth = _health = 50;
-    _armor = 2;
-    _magResistance = 2;
+
+    _health = SimpleProperty<>(50, 0, 50);
+    _damage = SimpleProperty<>(10, 0, 100);
+    _armor = SimpleProperty<>(2, 0, 100);
+    _resistance = SimpleProperty<>(2, 0, 100);
 
         // spell 0 - movement
     _cdManager.AddSpell(1s);
@@ -171,22 +170,22 @@ Monster::update(std::chrono::microseconds delta)
                     return;
                 
                     // Log damage event
-                _logger.Info() << "Attacked " << _duelTarget->GetName() << " for " << _actualDamage << " physical damage";
+                _logger.Info() << "Attack " << _duelTarget->GetName() << " for " << _damage << " physical damage";
                 
                     // set up CD
                 _cdManager.Restart(0);
                 
                 flatbuffers::FlatBufferBuilder builder;
                 auto spell_info = GameMessage::CreateMonsterAttack(builder,
-                                                                 _duelTarget->GetUID(),
-                                                                 _actualDamage);
+                                                                   _duelTarget->GetUID(),
+                                                                   _damage);
                 auto spell = GameMessage::CreateSpell(builder,
-                                                    GameMessage::Spells_MonsterAttack,
-                                                    spell_info.Union());
+                                                      GameMessage::Spells_MonsterAttack,
+                                                      spell_info.Union());
                 auto spell1 = GameMessage::CreateSVActionSpell(builder,
-                                                             this->GetUID(),
-                                                             0,
-                                                             spell);
+                                                               this->GetUID(),
+                                                               0,
+                                                               spell);
                 auto event = GameMessage::CreateMessage(builder,
                                                         0,
                                                         GameMessage::Messages_SVActionSpell,
@@ -199,7 +198,7 @@ Monster::update(std::chrono::microseconds delta)
                     // deal PHYSICAL damage
                 auto dmgDescr = Unit::DamageDescriptor();
                 dmgDescr.DealerName = _name;
-                dmgDescr.Value = _actualDamage;
+                dmgDescr.Value = _damage;
                 dmgDescr.Type = Unit::DamageDescriptor::DamageType::PHYSICAL;
                 _duelTarget->TakeDamage(dmgDescr);
                 
@@ -224,7 +223,7 @@ Monster::Spawn(const Point<>& pos)
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
-    _health = _maxHealth;
+    _health = _health.Max();
     _pos = pos;
     
     flatbuffers::FlatBufferBuilder builder;

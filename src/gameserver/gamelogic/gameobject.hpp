@@ -72,6 +72,9 @@ public:
 
     virtual void update(std::chrono::microseconds) = 0;
 
+    virtual void OnCollision(const std::shared_ptr<GameObject>& object)
+    { }
+
     virtual void Spawn(const Point<>& pos)
     { _pos = pos; }
     

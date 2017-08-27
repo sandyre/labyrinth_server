@@ -13,6 +13,8 @@
 #include "../gameobject.hpp"
 #include "../item.hpp"
 #include "../../GameMessage.h"
+#include "../../../toolkit/named_logger.hpp"
+#include "../../../toolkit/SimpleProperty.hpp"
 
 #include <chrono>
 #include <string>
@@ -28,6 +30,7 @@ class RogueInvisibility;
 class MageFreeze;
 class DuelInvulnerability;
 class RespawnInvulnerability;
+class FountainHeal;
 
 
 class Unit
@@ -173,20 +176,17 @@ public:
     void SetName(const std::string& name)
     { _name = name; }
 
-    int16_t GetDamage() const
-    { return _actualDamage; }
+    SimpleProperty<> GetDamage() const
+    { return _damage; }
 
-    int16_t GetHealth() const
+    SimpleProperty<> GetHealth() const
     { return _health; }
 
-    int16_t GetMaxHealth() const
-    { return _maxHealth; }
-
-    int16_t GetArmor() const
+    SimpleProperty<> GetArmor() const
     { return _armor; }
 
-    int16_t GetResistance() const
-    { return _magResistance; }
+    SimpleProperty<> GetResistance() const
+    { return _resistance; }
 
     std::vector<std::shared_ptr<Item>>& GetInventory()
     { return _inventory; }
@@ -213,20 +213,20 @@ protected:
     Unit(GameWorld& world, uint32_t uid);
 
     virtual void update(std::chrono::microseconds) override;
-    void UpdateStats();
-    
+
 protected:
+    NamedLogger       _logger;
     Unit::Type        _unitType;
     Unit::State       _state;
     Unit::Orientation _orientation;
     std::string       _name;
     uint32_t          _unitAttributes;
-    int16_t           _baseDamage;
-    int16_t           _actualDamage;
-    int16_t           _health, _maxHealth;
-    int16_t           _armor;
-    int16_t           _magResistance;
-    float             _moveSpeed;
+    
+    SimpleProperty<>        _health;
+    SimpleProperty<>        _armor;
+    SimpleProperty<>        _resistance;
+    SimpleProperty<>        _damage;
+    SimpleProperty<float>   _moveSpeed;
 
     CooldownManager                         _cdManager;
     EffectsManager                          _effectsManager;
@@ -242,6 +242,7 @@ protected:
     friend MageFreeze;
     friend DuelInvulnerability;
     friend RespawnInvulnerability;
+    friend FountainHeal;
 
     friend Mage;
     friend Warrior;

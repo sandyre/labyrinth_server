@@ -18,25 +18,21 @@ using namespace std::chrono_literals;
 
 Unit::Unit(GameWorld& world, uint32_t uid)
 : GameObject(world, uid),
+  _logger(("Unit" + std::to_string(uid)), NamedLogger::Mode::STDIO),
   _unitType(Unit::Type::UNDEFINED),
   _state(Unit::State::UNDEFINED),
   _orientation(Unit::Orientation::DOWN),
   _name("Unit"),
-  _baseDamage(10),
-  _actualDamage(10),
-  _health(50),
-  _maxHealth(50),
-  _armor(2),
-  _magResistance(2),
-  _moveSpeed(0.5),
+  _damage(10, 0, 100),
+  _health(50, 0, 50),
+  _armor(2, 0, 100),
+  _resistance(2, 0, 100),
+  _moveSpeed(0.5, 0.0, 1.0),
   _duelTarget(nullptr)
 {
     _objType = GameObject::Type::UNIT;
-    _objAttributes |= GameObject::Attributes::DAMAGABLE;
-    _objAttributes |= GameObject::Attributes::MOVABLE;
-    _unitAttributes = Unit::Attributes::INPUT |
-    Unit::Attributes::ATTACK |
-    Unit::Attributes::DUELABLE;
+    _objAttributes |= GameObject::Attributes::DAMAGABLE | GameObject::Attributes::MOVABLE;
+    _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
 }
 
 
@@ -44,7 +40,7 @@ void
 Unit::ApplyEffect(std::shared_ptr<Effect> effect)
 {
         // Log item drop event
-    _world._logger.Info() << effect->GetName() << " effect is applied to " << this->GetName();
+    _logger.Info() << effect->GetName() << " effect is applied";
     _effectsManager.AddEffect(effect);
 }
 
@@ -52,20 +48,8 @@ Unit::ApplyEffect(std::shared_ptr<Effect> effect)
 void
 Unit::update(std::chrono::microseconds delta)
 {
-    UpdateStats();
     _effectsManager.Update(delta);
     _cdManager.Update(delta);
-}
-
-
-void
-Unit::UpdateStats()
-{
-    int new_dmg = _baseDamage;
-    for(auto item : _inventory)
-        if(item->GetType() == Item::Type::SWORD)
-            new_dmg += 6;
-    _actualDamage = new_dmg;
 }
 
 
@@ -73,7 +57,7 @@ void
 Unit::TakeItem(std::shared_ptr<Item> item)
 {
         // Log item drop event
-    _world._logger.Info() << this->GetName() << " TOOK ITEM " << item->GetName();
+    _logger.Info() << "Took item " << item->GetName();
     _inventory.push_back(item);
     
     flatbuffers::FlatBufferBuilder builder;
@@ -95,12 +79,12 @@ void
 Unit::Spawn(const Point<>& pos)
 {
         // Log spawn event
-    _world._logger.Info() << this->GetName() << " SPWN AT (" << pos.x << ";" << pos.y << ")";
+    _logger.Info() << "Spawned at " << pos;
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
-    _health = _maxHealth;
+    _health = _health.Max();
     
     _pos = pos;
     
@@ -123,12 +107,12 @@ void
 Unit::Respawn(const Point<>& pos)
 {
         // Log respawn event
-    _world._logger.Info() << this->GetName() << " RESP AT (" << pos.x << ";" << pos.y << ")";
+    _logger.Info() << "Respawned at " << pos;
     
     _state = Unit::State::WALKING;
     _objAttributes = GameObject::Attributes::MOVABLE | GameObject::Attributes::VISIBLE | GameObject::Attributes::DAMAGABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
-    _health = _maxHealth;
+    _health = _health.Max();
     
     _pos = pos;
 
@@ -163,12 +147,12 @@ Unit::DropItem(int32_t uid)
 
     if(item == _inventory.end())
     {
-        _world._logger.Error() << "Failed to drop item with uid" << uid << ". Unit does not handle it.";
+        _logger.Error() << "Failed to drop item with uid = " << uid << " (reason: does not have it)";
         return nullptr;
     }
     
         // Log item drop event
-    _world._logger.Info() << _name << " DROPPED ITEM " << (*item)->GetName();
+    _logger.Info() << "Drop item " << (*item)->GetName();
     (*item)->SetPosition(_pos);
     _world._objectsStorage.PushObject(*item);
 
@@ -182,14 +166,14 @@ void
 Unit::Die(const std::string& killerName)
 {
         // Log death event
-    _world._logger.Info() << this->GetName() << " KILLED BY " << killerName << " DIED AT (" << _pos.x << ";" << _pos.y << ")";
+    _logger.Info() << "Killed by " << killerName << " at " << _pos;
     
         // drop items
     auto items = _inventory;
     for(auto item : items)
         this->DropItem(item->GetUID());
 
-    if(_duelTarget)
+    if (_duelTarget)
     {
         _duelTarget->EndDuel();
         EndDuel();
@@ -238,8 +222,7 @@ Unit::Move(MoveDirection dir)
     }
 
         // Log move event
-    _world._logger.Info() << this->GetName() << " MOVE (" << _pos.x
-    << ";" << _pos.y << ") -> (" << new_coord.x << ";" << new_coord.y << ")";
+    _logger.Debug() << "Move to " << new_coord;
 
     _pos = new_coord;
     
@@ -267,17 +250,15 @@ Unit::TakeDamage(const DamageDescriptor& dmg)
     if(dmg.Type == DamageDescriptor::DamageType::PHYSICAL)
         damage_taken -= _armor;
     else if(dmg.Type == DamageDescriptor::DamageType::MAGICAL)
-        damage_taken -= _magResistance;
+        damage_taken -= _resistance;
     
     _health -= damage_taken;
     
         // Log damage take event
-    _world._logger.Info() << this->GetName() << " TOOK " << damage_taken << " FROM " << dmg.DealerName << " HP " << _health + damage_taken << "->" << _health;
+    _logger.Info() << "HP: " << _health + damage_taken << " -> " << _health << " (reason: attack for" << damage_taken << " from " << dmg.DealerName << ")";
     
-    if(_health <= 0)
-    {
+    if(_health == _health.Min())
         Die(dmg.DealerName);
-    }
 }
 
 
@@ -287,7 +268,7 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
     enemy->AcceptDuel(std::dynamic_pointer_cast<Unit>(shared_from_this()));
 
         // Log duel start event
-    _world._logger.Info() << "Initiates duel with " << enemy->GetName();
+    _logger.Info() << "Initiates duel with " << enemy->GetName();
     
     _state = Unit::State::DUEL;
     _unitAttributes &= ~Unit::Attributes::DUELABLE;
@@ -296,13 +277,13 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
     
     flatbuffers::FlatBufferBuilder builder;
     auto duel = GameMessage::CreateSVActionDuel(builder,
-                                              this->GetUID(),
-                                              enemy->GetUID(),
-                                              GameMessage::ActionDuelType_STARTED);
+                                                this->GetUID(),
+                                                enemy->GetUID(),
+                                                GameMessage::ActionDuelType_STARTED);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVActionDuel,
-                                        duel.Union());
+                                          0,
+                                          GameMessage::Messages_SVActionDuel,
+                                          duel.Union());
     builder.Finish(msg);
     
     _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -313,7 +294,7 @@ void
 Unit::AcceptDuel(std::shared_ptr<Unit> enemy)
 {
     // Log duel start event
-    _world._logger.Info() << "Accepts duel from " << enemy->GetName();
+    _logger.Info() << "Accept duel from " << enemy->GetName();
 
     _state = Unit::State::DUEL;
     _unitAttributes &= ~Unit::Attributes::DUELABLE;
@@ -326,7 +307,7 @@ void
 Unit::EndDuel()
 {
         // Log duel-end event
-    _world._logger.Info() << this->GetName() << " DUEL END W " << _duelTarget->GetName();
+    _logger.Info() << "Duel with " << _duelTarget->GetName() << " ended";
     
     _state = Unit::State::WALKING;
     _unitAttributes |= Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;

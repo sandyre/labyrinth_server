@@ -120,4 +120,15 @@ public:
     virtual void stop() override;
 };
 
+
+class FountainHeal : public Effect
+{
+public:
+    FountainHeal(std::chrono::microseconds duration);
+
+    virtual void start() override;
+    virtual void update(std::chrono::microseconds) override;
+    virtual void stop() override;
+};
+
 #endif /* effect_hpp */
