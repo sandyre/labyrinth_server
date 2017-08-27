@@ -34,7 +34,7 @@ WarriorDash::WarriorDash(std::chrono::microseconds duration,
 void
 WarriorDash::start()
 {
-    _targetUnit->_moveSpeed -= _bonusSpeed;
+    _targetUnit.lock()->_moveSpeed -= _bonusSpeed;
 }
 
 
@@ -55,7 +55,7 @@ WarriorDash::update(std::chrono::microseconds delta)
 void
 WarriorDash::stop()
 {
-    _targetUnit->_moveSpeed += _bonusSpeed;
+    _targetUnit.lock()->_moveSpeed += _bonusSpeed;
 }
 
 
@@ -71,7 +71,7 @@ WarriorArmorUp::WarriorArmorUp(std::chrono::microseconds duration,
 void
 WarriorArmorUp::start()
 {
-    _targetUnit->_armor += _bonusArmor;
+    _targetUnit.lock()->_armor += _bonusArmor;
 }
 
 
@@ -92,7 +92,7 @@ WarriorArmorUp::update(std::chrono::microseconds delta)
 void
 WarriorArmorUp::stop()
 {
-    _targetUnit->_armor -= _bonusArmor;
+    _targetUnit.lock()->_armor -= _bonusArmor;
 }
 
 
@@ -105,8 +105,8 @@ RogueInvisibility::RogueInvisibility(std::chrono::microseconds duration)
 void
 RogueInvisibility::start()
 {
-    _targetUnit->_objAttributes &= ~(GameObject::Attributes::VISIBLE);
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
+    _targetUnit.lock()->_objAttributes &= ~(GameObject::Attributes::VISIBLE);
+    _targetUnit.lock()->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
 }
 
 
@@ -127,8 +127,8 @@ RogueInvisibility::update(std::chrono::microseconds delta)
 void
 RogueInvisibility::stop()
 {
-    _targetUnit->_objAttributes |= (GameObject::Attributes::VISIBLE);
-    _targetUnit->_unitAttributes |= (Unit::Attributes::DUELABLE);
+    _targetUnit.lock()->_objAttributes |= (GameObject::Attributes::VISIBLE);
+    _targetUnit.lock()->_unitAttributes |= (Unit::Attributes::DUELABLE);
 }
 
 
@@ -142,7 +142,7 @@ MageFreeze::MageFreeze(std::chrono::microseconds duration)
 void
 MageFreeze::start()
 {
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::INPUT);
+    _targetUnit.lock()->_unitAttributes &= ~(Unit::Attributes::INPUT);
 }
 
 
@@ -163,7 +163,7 @@ MageFreeze::update(std::chrono::microseconds delta)
 void
 MageFreeze::stop()
 {
-    _targetUnit->_unitAttributes |= Unit::Attributes::INPUT;
+    _targetUnit.lock()->_unitAttributes |= Unit::Attributes::INPUT;
 }
 
 
@@ -177,7 +177,7 @@ DuelInvulnerability::DuelInvulnerability(std::chrono::microseconds duration)
 void
 DuelInvulnerability::start()
 {
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
+    _targetUnit.lock()->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
 }
 
 
@@ -198,7 +198,7 @@ DuelInvulnerability::update(std::chrono::microseconds delta)
 void
 DuelInvulnerability::stop()
 {
-    _targetUnit->_unitAttributes |= Unit::Attributes::DUELABLE;
+    _targetUnit.lock()->_unitAttributes |= Unit::Attributes::DUELABLE;
 }
 
 
@@ -212,8 +212,8 @@ RespawnInvulnerability::RespawnInvulnerability(std::chrono::microseconds duratio
 void
 RespawnInvulnerability::start()
 {
-    _targetUnit->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
-    _targetUnit->_objAttributes &= ~(GameObject::Attributes::PASSABLE);
+    _targetUnit.lock()->_unitAttributes &= ~(Unit::Attributes::DUELABLE);
+    _targetUnit.lock()->_objAttributes &= ~(GameObject::Attributes::PASSABLE);
 }
 
 
@@ -234,8 +234,8 @@ RespawnInvulnerability::update(std::chrono::microseconds delta)
 void
 RespawnInvulnerability::stop()
 {
-    _targetUnit->_unitAttributes |= Unit::Attributes::DUELABLE;
-    _targetUnit->_objAttributes |= ~(GameObject::Attributes::PASSABLE);
+    _targetUnit.lock()->_unitAttributes |= Unit::Attributes::DUELABLE;
+    _targetUnit.lock()->_objAttributes |= ~(GameObject::Attributes::PASSABLE);
 }
 
 
@@ -249,7 +249,7 @@ FountainHeal::FountainHeal(std::chrono::microseconds duration)
 void
 FountainHeal::start()
 {
-    _targetUnit->_health += (_targetUnit->_health.Max() - _targetUnit->_health) / 2;
+    _targetUnit.lock()->_health += (_targetUnit.lock()->_health.Max() - _targetUnit.lock()->_health) / 2;
 }
 
 
@@ -268,5 +268,5 @@ FountainHeal::update(std::chrono::microseconds delta)
 void
 FountainHeal::stop()
 {
-    _targetUnit->_health += (_targetUnit->_health.Max() - _targetUnit->_health);
+    _targetUnit.lock()->_health += (_targetUnit.lock()->_health.Max() - _targetUnit.lock()->_health);
 }

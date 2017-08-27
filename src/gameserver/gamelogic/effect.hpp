@@ -46,7 +46,7 @@ public:
 protected:
     State                       _state;
     std::chrono::microseconds   _timer;
-    std::shared_ptr<Unit>       _targetUnit;
+    std::weak_ptr<Unit>         _targetUnit;
     std::string                 _name;
 };
 
