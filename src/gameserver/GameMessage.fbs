@@ -264,7 +264,7 @@ enum ConstrType : byte
 {
 DOOR,
 GRAVEYARD,
-SWAMP
+FOUNTAIN
 }
 
 table SVSpawnConstr

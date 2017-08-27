@@ -67,20 +67,29 @@ public:
     Point<> GetPosition() const
     { return _pos; }
 
-    void SetPosition(Point<> pos)
+    void SetPosition(const Point<>& pos)
     { _pos = pos; }
 
     virtual void update(std::chrono::microseconds) = 0;
 
-    virtual void OnCollision(const std::shared_ptr<GameObject>& object)
-    { }
+    /*
+     * Low-level Move. Only changes coordinates (no checks) and calles OnCollisions.
+     */
+    virtual void Move(const Point<>& pos);
 
     virtual void Spawn(const Point<>& pos)
     { _pos = pos; }
     
     virtual void Destroy()
     { } // server side has nothing to do with destroy. for consistency with client API
-    
+
+
+    /*
+     * Called by GameObject::Move. Do not call it yourself.
+     */
+    virtual void OnCollision(const std::shared_ptr<GameObject>& object)
+    { }
+
 protected:
     GameWorld&          _world;
     GameObject::Type    _objType;

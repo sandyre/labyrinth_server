@@ -7,3 +7,22 @@
 //
 
 #include "gameobject.hpp"
+
+#include "gameworld.hpp"
+
+
+void
+GameObject::Move(const Point<>& pos)
+{
+    _pos = pos;
+
+    auto objects = _world._objectsStorage.Subset<GameObject>();
+    for (auto& obj : objects)
+    {
+        if (obj->GetPosition() == _pos)
+        {
+            this->OnCollision(obj);
+            obj->OnCollision(shared_from_this());
+        }
+    }
+}

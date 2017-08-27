@@ -214,7 +214,7 @@ Unit::Move(MoveDirection dir)
         --new_coord.y;
     
         // firstly - check if it can go there (no unpassable objects)
-    for(auto iter = _world._objectsStorage.Begin(); iter != _world._objectsStorage.End(); ++iter)
+    for (auto iter = _world._objectsStorage.Begin(); iter != _world._objectsStorage.End(); ++iter)
     {
         if((*iter)->GetPosition() == new_coord &&
            !((*iter)->GetAttributes() & GameObject::Attributes::PASSABLE))
@@ -224,18 +224,18 @@ Unit::Move(MoveDirection dir)
         // Log move event
     _logger.Debug() << "Move to " << new_coord;
 
-    _pos = new_coord;
+    GameObject::Move(new_coord);
     
     flatbuffers::FlatBufferBuilder builder;
     auto move = GameMessage::CreateSVActionMove(builder,
-                                              this->GetUID(),
-                                              (char)dir,
-                                              new_coord.x,
-                                              new_coord.y);
+                                                this->GetUID(),
+                                                (char)dir,
+                                                new_coord.x,
+                                                new_coord.y);
     auto msg = GameMessage::CreateMessage(builder,
-                                        0,
-                                        GameMessage::Messages_SVActionMove,
-                                        move.Union());
+                                          0,
+                                          GameMessage::Messages_SVActionMove,
+                                          move.Union());
     builder.Finish(msg);
     _world._outputEvents.emplace(builder.GetBufferPointer(),
                                  builder.GetBufferPointer() + builder.GetSize());
@@ -255,7 +255,7 @@ Unit::TakeDamage(const DamageDescriptor& dmg)
     _health -= damage_taken;
     
         // Log damage take event
-    _logger.Info() << "HP: " << _health + damage_taken << " -> " << _health << " (reason: attack for" << damage_taken << " from " << dmg.DealerName << ")";
+    _logger.Info() << "HP: " << _health + damage_taken << " -> " << _health << " (reason: attack for " << damage_taken << " from " << dmg.DealerName << ")";
     
     if(_health == _health.Min())
         Die(dmg.DealerName);

@@ -86,8 +86,8 @@ private:
         std::vector<std::shared_ptr<T>> Subset()
         {
             std::vector<std::shared_ptr<T>> result;
-            for(auto& obj : _storage)
-                if(auto cast = std::dynamic_pointer_cast<T>(obj))
+            for (auto& obj : _storage)
+                if (auto cast = std::dynamic_pointer_cast<T>(obj))
                     result.push_back(cast);
             return result;
         }
@@ -101,10 +101,8 @@ private:
                                      {
                                          return obj->GetUID() == uid;
                                      });
-            if(iter != _storage.end())
-                return std::dynamic_pointer_cast<T>(*iter);
 
-            return nullptr;
+            return iter != _storage.end() ? std::dynamic_pointer_cast<T>(*iter) : nullptr;
         }
 
         /*
@@ -179,7 +177,7 @@ private:
 
         void update(std::chrono::microseconds delta)
         {
-            if(_time.Elapsed<std::chrono::microseconds>() >= _interval)
+            if (_time.Elapsed<std::chrono::microseconds>() >= _interval)
             {
                 auto monster = _world._objectsStorage.Create<Monster>();
                 monster->Spawn(_world.GetRandomPosition());
@@ -239,11 +237,12 @@ private:
     MonsterSpawner                      _monsterSpawner;
 
     // contains outgoing events
-    std::queue<std::vector<uint8_t>> _inputMessages;
-    std::queue<std::vector<uint8_t>> _outputEvents;
+    std::queue<std::vector<uint8_t>>    _inputMessages;
+    std::queue<std::vector<uint8_t>>    _outputEvents;
 
     RandomGenerator<std::mt19937, std::uniform_int_distribution<>> _randGen;
 
+    friend GameObject;
     friend Unit;
     friend Monster;
     friend Hero;

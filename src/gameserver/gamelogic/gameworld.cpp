@@ -96,7 +96,7 @@ GameWorld::InitialSpawn()
         key->Spawn(GetRandomPosition());
         
             // Log key spawn event
-        _logger.Info() << "Key spawned at (" << key->GetPosition().x << "," << key->GetPosition().y << ")";
+        _logger.Info() << "Key spawned at " << key->GetPosition();
 
         flatbuffers::FlatBufferBuilder builder;
         auto key_spawn = CreateSVSpawnItem(builder,
@@ -119,7 +119,7 @@ GameWorld::InitialSpawn()
         door->Spawn(GetRandomPosition());
         
             // Log key spawn event
-        _logger.Info() << "Door spawned at (" << door->GetPosition().x << "," << door->GetPosition().y << ")";
+        _logger.Info() << "Door spawned at " << door->GetPosition();
 
         flatbuffers::FlatBufferBuilder builder;
         auto door_spawn = CreateSVSpawnConstr(builder,
@@ -142,7 +142,7 @@ GameWorld::InitialSpawn()
         grave->Spawn(GetRandomPosition());
 
             // Log key spawn event
-        _logger.Info() << "Graveyard spawned at (" << grave->GetPosition().x << "," << grave->GetPosition().y << ")";
+        _logger.Info() << "Graveyard spawned at " << grave->GetPosition();
 
         flatbuffers::FlatBufferBuilder builder;
         auto grave_spawn = CreateSVSpawnConstr(builder,
@@ -154,6 +154,29 @@ GameWorld::InitialSpawn()
                                  0,
                                  Messages_SVSpawnConstr,
                                  grave_spawn.Union());
+        builder.Finish(msg);
+        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
+                              builder.GetBufferPointer() + builder.GetSize());
+    }
+
+        // spawn graveyard
+    {
+        auto fountain = _objectsStorage.Create<Fountain>();
+        fountain->Spawn(GetRandomPosition());
+
+        // Log key spawn event
+        _logger.Info() << "Fountain spawned at " << fountain->GetPosition();
+
+        flatbuffers::FlatBufferBuilder builder;
+        auto fount_spawn = CreateSVSpawnConstr(builder,
+                                               fountain->GetUID(),
+                                               ConstrType_FOUNTAIN,
+                                               fountain->GetPosition().x,
+                                               fountain->GetPosition().y);
+        auto msg = CreateMessage(builder,
+                                 0,
+                                 Messages_SVSpawnConstr,
+                                 fount_spawn.Union());
         builder.Finish(msg);
         _outputEvents.emplace(builder.GetCurrentBufferPointer(),
                               builder.GetBufferPointer() + builder.GetSize());
@@ -241,9 +264,7 @@ GameWorld::ApplyInputEvents()
                 auto first = _objectsStorage.FindObject<Unit>(cl_duel->target1_uid());
                 auto second = _objectsStorage.FindObject<Unit>(cl_duel->target2_uid());
                 
-                if(first->GetState() == Unit::State::WALKING &&
-                   second->GetState() == Unit::State::WALKING &&
-                   first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
+                if(first->GetUnitAttributes() & second->GetUnitAttributes() & Unit::Attributes::DUELABLE &&
                    first->GetPosition().Distance(second->GetPosition()) <= 1.0)
                     first->StartDuel(second);
                 break;

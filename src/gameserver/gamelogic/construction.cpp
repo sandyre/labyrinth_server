@@ -38,6 +38,7 @@ Fountain::Fountain(GameWorld& world, uint32_t uid)
 : Construction(world, uid)
 {
     _constrType = Construction::Type::FOUNTAIN;
+    _objAttributes |= GameObject::Attributes::PASSABLE;
 }
 
 

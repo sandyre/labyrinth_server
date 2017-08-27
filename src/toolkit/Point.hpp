@@ -48,6 +48,7 @@ struct Point
     T x, y;
 };
 
+
 template<typename T>
 std::ostream& operator <<(std::ostream& stream,const Point<T>& pt)
 { return stream << "{ " << pt.x << "; " << pt.y << " }"; }

@@ -49,12 +49,12 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateSVActionSpell(builder,
-                                                     this->GetUID(),
-                                                     0);
+                                                       this->GetUID(),
+                                                       0);
         auto event = GameMessage::CreateMessage(builder,
-                                              0,
-                                              GameMessage::Messages_SVActionSpell,
-                                              spell1.Union());
+                                                0,
+                                                GameMessage::Messages_SVActionSpell,
+                                                spell1.Union());
         builder.Finish(event);
         
         _world._outputEvents.emplace(builder.GetBufferPointer(),
@@ -71,7 +71,7 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
             return;
         
             // Log damage event
-        _logger.Info() << " Attack " << _duelTarget->GetName() << " for " << _damage;
+        _logger.Info() << "Attack " << _duelTarget->GetName() << " for " << _damage;
         
             // set up CD
         _cdManager.Restart(1);
@@ -88,9 +88,9 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
                                                        1,
                                                        spell);
         auto event = GameMessage::CreateMessage(builder,
-                                              0,
-                                              GameMessage::Messages_SVActionSpell,
-                                              spell1.Union());
+                                                0,
+                                                GameMessage::Messages_SVActionSpell,
+                                                spell1.Union());
         builder.Finish(event);
         
         _world._outputEvents.emplace(builder.GetBufferPointer(),
