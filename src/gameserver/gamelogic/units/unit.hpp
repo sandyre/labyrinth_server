@@ -215,12 +215,11 @@ protected:
     virtual void update(std::chrono::microseconds) override;
 
 protected:
-    NamedLogger       _logger;
-    Unit::Type        _unitType;
-    Unit::State       _state;
-    Unit::Orientation _orientation;
-    std::string       _name;
-    uint32_t          _unitAttributes;
+    NamedLogger             _logger;
+    Unit::Type              _unitType;
+    Unit::State             _state;
+    Unit::Orientation       _orientation;
+    uint32_t                _unitAttributes;
     
     SimpleProperty<>        _health;
     SimpleProperty<>        _armor;
@@ -233,7 +232,7 @@ protected:
     std::vector<std::shared_ptr<Item>>      _inventory;
 
     // Duel-data
-    std::shared_ptr<Unit> _duelTarget;
+    std::weak_ptr<Unit>                     _duelTarget;
 
     // Effects should have access to every field
     friend WarriorDash;

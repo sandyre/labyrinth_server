@@ -75,21 +75,18 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
         SetPosition(new_pos);
     }
         // attack cast (1 spell)
-    else if(spell->spell_id() == 1 &&
-            _cdManager.SpellReady(1))
+    else if(const auto enemy = _duelTarget.lock();
+            enemy && spell->spell_id() == 1 && _cdManager.SpellReady(1))
     {
-        if(_duelTarget == nullptr)
-            return;
-        
             // Log damage event
-        _logger.Info() << " Attack " << _duelTarget->GetName() << " for " << _damage;
+        _logger.Info() << "Attack " << enemy->GetName() << " for " << _damage;
         
             // set up CD
         _cdManager.Restart(1);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameMessage::CreateMageAttack(builder,
-                                                        _duelTarget->GetUID(),
+                                                        enemy->GetUID(),
                                                         _damage);
         auto spell = GameMessage::CreateSpell(builder,
                                               GameMessage::Spells_MageAttack,
@@ -112,21 +109,21 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
         dmgDescr.DealerName = _name;
         dmgDescr.Value = _damage;
         dmgDescr.Type = Unit::DamageDescriptor::DamageType::MAGICAL;
-        _duelTarget->TakeDamage(dmgDescr);
+        enemy->TakeDamage(dmgDescr);
     }
         // frostbolt casted (2 spell)
-    else if(spell->spell_id() == 2 &&
-            _cdManager.SpellReady(2))
+    else if(const auto enemy = _duelTarget.lock();
+            enemy && spell->spell_id() == 2 && _cdManager.SpellReady(2))
     {
-        if(_duelTarget == nullptr)
-            return;
-        
+            // Log frostbolt casted
+        _logger.Info() << "Casted frostbolt on " << enemy->GetName();
+
             // set up CD
         _cdManager.Restart(2);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell1 = GameMessage::CreateMageFreeze(builder,
-                                                    _duelTarget->GetUID());
+                                                    enemy->GetUID());
         auto spell = GameMessage::CreateSpell(builder,
                                               GameMessage::Spells_MageFreeze,
                                               spell1.Union());
@@ -145,7 +142,7 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
         
             // apply freeze effect
         auto mageFreeze = std::make_shared<MageFreeze>(3s);
-        mageFreeze->SetTargetUnit(_duelTarget);
-        _duelTarget->ApplyEffect(mageFreeze);
+        mageFreeze->SetTargetUnit(enemy);
+        enemy->ApplyEffect(mageFreeze);
     }
 }

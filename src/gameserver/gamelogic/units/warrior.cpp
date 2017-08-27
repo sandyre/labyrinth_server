@@ -64,21 +64,18 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         warDash->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
         this->ApplyEffect(warDash);
     }
-    else if(spell->spell_id() == 1 &&
-            _cdManager.SpellReady(1)) // warrior attack (2 spell)
+    else if(const auto enemy = _duelTarget.lock();
+            enemy && spell->spell_id() == 1 && _cdManager.SpellReady(1)) // warrior attack (2 spell)
     {
-        if(_duelTarget == nullptr)
-            return;
-        
             // Log damage event
-        _logger.Info() << "Attack " << _duelTarget->GetName() << " for " << _damage;
+        _logger.Info() << "Attack " << enemy->GetName() << " for " << _damage;
         
             // set up CD
         _cdManager.Restart(1);
         
         flatbuffers::FlatBufferBuilder builder;
         auto spell_info = GameMessage::CreateWarriorAttack(builder,
-                                                           _duelTarget->GetUID(),
+                                                           enemy->GetUID(),
                                                            _damage);
         auto spell = GameMessage::CreateSpell(builder,
                                               GameMessage::Spells_WarriorAttack,
@@ -101,11 +98,11 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
         dmgDescr.DealerName = _name;
         dmgDescr.Value = _damage;
         dmgDescr.Type = DamageDescriptor::DamageType::PHYSICAL;
-        _duelTarget->TakeDamage(dmgDescr);
+        enemy->TakeDamage(dmgDescr);
     }
         // warrior armor up cast (2 spell)
-    else if(spell->spell_id() == 2 &&
-            _cdManager.SpellReady(2)) // check CD
+    else if(const auto enemy = _duelTarget.lock();
+            enemy && spell->spell_id() == 2 && _cdManager.SpellReady(2)) // check CD
     {
             // set up CD
         _cdManager.Restart(2);

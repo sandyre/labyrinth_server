@@ -22,14 +22,13 @@ Unit::Unit(GameWorld& world, uint32_t uid)
   _unitType(Unit::Type::UNDEFINED),
   _state(Unit::State::UNDEFINED),
   _orientation(Unit::Orientation::DOWN),
-  _name("Unit"),
   _damage(10, 0, 100),
   _health(50, 0, 50),
   _armor(2, 0, 100),
   _resistance(2, 0, 100),
-  _moveSpeed(0.5, 0.0, 1.0),
-  _duelTarget(nullptr)
+  _moveSpeed(0.5, 0.0, 1.0)
 {
+    _name = "Unit";
     _objType = GameObject::Type::UNIT;
     _objAttributes |= GameObject::Attributes::DAMAGABLE | GameObject::Attributes::MOVABLE;
     _unitAttributes = Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;
@@ -173,9 +172,9 @@ Unit::Die(const std::string& killerName)
     for(auto item : items)
         this->DropItem(item->GetUID());
 
-    if (_duelTarget)
+    if (const auto enemy = _duelTarget.lock())
     {
-        _duelTarget->EndDuel();
+        enemy->EndDuel();
         EndDuel();
     }
     
@@ -307,7 +306,7 @@ void
 Unit::EndDuel()
 {
         // Log duel-end event
-    _logger.Info() << "Duel with " << _duelTarget->GetName() << " ended";
+    _logger.Info() << "Duel with " << _duelTarget.lock()->GetName() << " ended";
     
     _state = Unit::State::WALKING;
     _unitAttributes |= Unit::Attributes::INPUT | Unit::Attributes::ATTACK | Unit::Attributes::DUELABLE;

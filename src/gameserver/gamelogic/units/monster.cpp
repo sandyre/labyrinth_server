@@ -164,20 +164,18 @@ Monster::update(std::chrono::microseconds delta)
             _castSequence[0].sequence.pop_back();
             _castATime = _castTime;
             
-            if (_castSequence[0].sequence.empty())
+            if (const auto enemy = _duelTarget.lock();
+                enemy && _castSequence[0].sequence.empty())
             {
-                if (_duelTarget == nullptr)
-                    return;
-                
                     // Log damage event
-                _logger.Info() << "Attack " << _duelTarget->GetName() << " for " << _damage << " physical damage";
+                _logger.Info() << "Attack " << enemy->GetName() << " for " << _damage << " physical damage";
                 
                     // set up CD
                 _cdManager.Restart(0);
                 
                 flatbuffers::FlatBufferBuilder builder;
                 auto spell_info = GameMessage::CreateMonsterAttack(builder,
-                                                                   _duelTarget->GetUID(),
+                                                                   enemy->GetUID(),
                                                                    _damage);
                 auto spell = GameMessage::CreateSpell(builder,
                                                       GameMessage::Spells_MonsterAttack,
@@ -200,7 +198,7 @@ Monster::update(std::chrono::microseconds delta)
                 dmgDescr.DealerName = _name;
                 dmgDescr.Value = _damage;
                 dmgDescr.Type = Unit::DamageDescriptor::DamageType::PHYSICAL;
-                _duelTarget->TakeDamage(dmgDescr);
+                enemy->TakeDamage(dmgDescr);
                 
                 _castSequence[0].Refresh();
             }
@@ -252,9 +250,10 @@ Monster::Die(const std::string& killerName)
     for(auto item : items)
         this->DropItem(item->GetUID());
 
-    if(_duelTarget)
+
+    if(const auto enemy = _duelTarget.lock())
     {
-        _duelTarget->EndDuel();
+        enemy->EndDuel();
         EndDuel();
     }
     
