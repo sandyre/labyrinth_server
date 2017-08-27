@@ -36,8 +36,8 @@ public:
     {
         _value = value;
 
-        if (_value >= _minValue &&
-            _value <= _maxValue)
+        if (_value < _minValue
+            || _value > _maxValue)
             _value = _minValue;
 
         return *this;
