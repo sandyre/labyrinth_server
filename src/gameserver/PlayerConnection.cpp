@@ -38,8 +38,11 @@ void PlayerConnection::onSocketReadable(const AutoPtr<ReadableNotification>& pNf
         _logger.Warning() << "Connection closed by client";
 
         _reactor.removeEventHandler(_socket, NObserver<PlayerConnection, ReadableNotification>(*this, &PlayerConnection::onSocketReadable));
+        _reactor.removeEventHandler(_socket, NObserver<PlayerConnection, WritableNotification>(*this, &PlayerConnection::onSocketWritable));
 
         _socket.close();
+
+        _onDisconnect();
     }
     else if (_socket.available() >= 256)
     {
@@ -58,11 +61,6 @@ void PlayerConnection::onSocketWritable(const AutoPtr<WritableNotification>& pNf
     if (!_sendBuffer.empty())
     {
         const auto& message = _sendBuffer.front();
-
-        if (message->size() > MaxMessageSize)
-            _logger.Warning() << "Constructed message size is MORE than MaxMessageSize, fix needed";
-
-        message->resize(MaxMessageSize);
 
         try
         {
@@ -84,6 +82,14 @@ void PlayerConnection::onSocketWritable(const AutoPtr<WritableNotification>& pNf
 void PlayerConnection::SendMessage(const MessageBufferPtr& message)
 {
     std::lock_guard<std::mutex> l(_mutex);
+
+    if (message->size() > MaxMessageSize)
+    {
+        _logger.Warning() << "Constructed message size is MORE than MaxMessageSize, fix needed";
+        return;
+    }
+
+    message->resize(256);
     _sendBuffer.push_back(message);
 
     if (!_reactor.hasEventHandler(_socket, NObserver<PlayerConnection, WritableNotification>(*this, &PlayerConnection::onSocketWritable)))
@@ -99,3 +105,7 @@ boost::signals2::connection PlayerConnection::OnMessageConnector(const OnMessage
 
     return connection;
 }
+
+
+boost::signals2::connection PlayerConnection::OnDisconnectConnector(const OnDisconnectSignal::slot_type& slot)
+{ return _onDisconnect.connect(slot); }

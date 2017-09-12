@@ -56,6 +56,7 @@ public:
 private:
     virtual void run() override;
 
+    void DisconnectHandler();
     void MessageHandler(const MessageBufferPtr& message);
 
 private:

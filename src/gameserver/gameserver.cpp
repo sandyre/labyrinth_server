@@ -88,7 +88,6 @@ GameServer::GameServer(const Configuration& config)
     _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed
             << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
 
-
     try
     {
         _connectionsManager = std::make_shared<ConnectionsManager>(config.Port);
@@ -581,11 +580,9 @@ void GameServer::world_generation_stage()
 
 void GameServer::running_game_stage()
 {
-    ElapsedTime frameTime;
-
     while(_world->GetState() != GameWorld::State::FINISHED)
     {
-        frameTime.Reset();
+        ElapsedTime frameTime;
 
         // sleep for some time, then get all packets and pass it to the gameworld, update
         std::this_thread::sleep_for(_msPerUpdate);

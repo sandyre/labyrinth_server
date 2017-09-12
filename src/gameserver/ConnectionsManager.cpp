@@ -51,6 +51,7 @@ void ConnectionsManager::run()
             try
             {
                 auto playerConnection = std::make_shared<PlayerConnection>(*this, connection);
+                playerConnection->OnDisconnectConnector(std::bind(&ConnectionsManager::DisconnectHandler, this));
                 auto signal_connection = playerConnection->OnMessageConnector(std::bind(&ConnectionsManager::MessageHandler, this, std::placeholders::_1));
 
                 _connections.emplace_back(signal_connection, playerConnection);
@@ -67,4 +68,12 @@ void ConnectionsManager::MessageHandler(const MessageBufferPtr& message)
     _logger.Debug() << "Forwarding message";
 
     _onMessage(message);
+}
+
+
+void ConnectionsManager::DisconnectHandler()
+{
+    _logger.Debug() << "Player disconnected, shutdown reactor";
+
+    _reactor.stop();
 }

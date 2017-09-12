@@ -39,9 +39,10 @@ class ConnectionsManager;
 
 class PlayerConnection
 {
-    const size_t MaxMessageSize = 512;
+    const size_t MaxMessageSize = 1024;
 
     using OnMessageSignal = boost::signals2::signal<void(const MessageBufferPtr&)>;
+    using OnDisconnectSignal = boost::signals2::signal<void()>;
     
 public:
     struct Descriptor
@@ -52,22 +53,17 @@ public:
 public:
     PlayerConnection(ConnectionsManager& manager, Poco::Net::StreamSocket socket);
 
+    Descriptor GetDescriptor() const { return _descriptor; }
+
+    void SendMessage(const MessageBufferPtr& message);
+
+    boost::signals2::connection OnDisconnectConnector(const OnDisconnectSignal::slot_type& slot);
+    boost::signals2::connection OnMessageConnector(const OnMessageSignal::slot_type& slot);
+
+private:
     void onSocketReadable(const AutoPtr<ReadableNotification>& pNf);
 
     void onSocketWritable(const AutoPtr<WritableNotification>& pNf);
-
-    void ResetSocket(Poco::Net::StreamSocket socket)
-    { _socket = socket; }
-
-    Descriptor GetDescriptor() const
-    { return _descriptor; }
-
-    Poco::Net::Socket GetSocket() const
-    { return _socket; }
-
-    boost::signals2::connection OnMessageConnector(const OnMessageSignal::slot_type& slot);
-
-    void SendMessage(const MessageBufferPtr& message);
 
 private:
     NamedLogger                 _logger;
@@ -75,9 +71,10 @@ private:
     Poco::Net::StreamSocket     _socket;
     Poco::Net::SocketReactor&   _reactor;
 
-    std::mutex                      _mutex;
-    MessageStorage                  _sendBuffer;
+    std::mutex                  _mutex;
+    MessageStorage              _sendBuffer;
 
+    OnDisconnectSignal          _onDisconnect;
     OnMessageSignal             _onMessage;
 };
 using PlayerConnectionPtr = std::shared_ptr<PlayerConnection>;
