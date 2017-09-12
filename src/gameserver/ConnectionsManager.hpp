@@ -9,7 +9,7 @@
 #ifndef ConnectionsManager_hpp
 #define ConnectionsManager_hpp
 
-#include "MessageStorage.hpp"
+#include "Message.hpp"
 #include "PlayerConnection.hpp"
 #include "../toolkit/named_logger.hpp"
 
@@ -24,28 +24,39 @@
 #include <atomic>
 #include <deque>
 #include <memory>
+#include <mutex>
 #include <vector>
 
-using Message = std::vector<uint8_t>;
-using MessagePtr = std::shared_ptr<Message>;
-using MessageRecord = std::pair<PlayerConnection::Descriptor, const MessagePtr&>;
 
 class ConnectionsManager
     : public Poco::Runnable
 {
-    using Connection = Poco::Net::StreamSocket;
+    friend PlayerConnection;
+
+    using Socket = Poco::Net::StreamSocket;
+    using Connection = std::pair<boost::signals2::connection, PlayerConnectionPtr>;
+    using Connections = std::deque<Connection>;
+
+    using OnMessageSignal = boost::signals2::signal<void(const MessageBufferPtr&)>;
 
 public:
     ConnectionsManager(uint16_t listeningPort, size_t maxConnections = 4);
     ~ConnectionsManager();
 
-    boost::signals2::signal<void(const MessagePtr&)>& OnMessage()
-    { return _onMessage; }
+    boost::signals2::connection OnMessageConnector(const OnMessageSignal::slot_type& slot)
+    { return _onMessage.connect(slot); }
+
+    void Multicast(const MessageBufferPtr& message)
+    {
+        std::lock_guard<std::mutex> l(_mutex);
+        for (const auto& connection : _connections)
+            connection.second->SendMessage(message);
+    }
 
 private:
     virtual void run() override;
 
-    void MessageHandler(const MessagePtr& message);
+    void MessageHandler(const MessageBufferPtr& message);
 
 private:
     NamedLogger                     _logger;
@@ -58,10 +69,11 @@ private:
     Poco::Net::SocketReactor        _reactor;
     Poco::Thread                    _reactorWorker;
 
-    std::deque<PlayerConnectionPtr> _connections;
+    std::mutex                      _mutex;
+    Connections                     _connections;
 
-    boost::signals2::signal<void(Connection)>        _onConnectionAccepted;
-    boost::signals2::signal<void(const MessagePtr&)> _onMessage;
+    OnMessageSignal                 _onMessage;
 };
+using ConnectionsManagerPtr = std::shared_ptr<ConnectionsManager>;
 
 #endif /* ConnectionsManager_hpp */

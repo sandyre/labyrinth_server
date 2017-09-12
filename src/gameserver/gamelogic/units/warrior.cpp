@@ -57,8 +57,8 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 spell1.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                         builder.GetBufferPointer() + builder.GetSize()));
 
         auto warDash = std::make_shared<WarriorDash>(3s, 5.5);
         warDash->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));
@@ -90,8 +90,8 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 spell1.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                         builder.GetBufferPointer() + builder.GetSize()));
         
             // deal PHYSICAL damage
         DamageDescriptor dmgDescr;
@@ -117,8 +117,8 @@ Warrior::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 spell1.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                         builder.GetBufferPointer() + builder.GetSize()));
 
         auto armorUp = std::make_shared<WarriorArmorUp>(5s, 4);
         armorUp->SetTargetUnit(std::static_pointer_cast<Unit>(shared_from_this()));

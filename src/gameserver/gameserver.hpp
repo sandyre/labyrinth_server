@@ -10,6 +10,7 @@
 #define gameserver_hpp
 
 #include "gamelogic/gameworld.hpp"
+#include "ConnectionsManager.hpp"
 #include "../toolkit/named_logger.hpp"
 #include "../toolkit/Random.hpp"
 
@@ -19,14 +20,17 @@
 
 #include <chrono>
 #include <cstring>
+#include <deque>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
 
 
-class GameServer : public Poco::Task
+class GameServer
+    : public Poco::Task
 {
 private:
     class PlayerConnection;
@@ -69,25 +73,29 @@ private:
     void world_generation_stage();
     void running_game_stage();
 
-    void Ping();
-
-    void SendSingle(flatbuffers::FlatBufferBuilder& builder,
-                    Poco::Net::SocketAddress& address);
-    void SendMulticast(const std::vector<uint8_t>& buffer);
-    void SendMulticast(flatbuffers::FlatBufferBuilder& builder);
-
     inline bool PlayerExists(const std::string&);
     inline std::vector<PlayerConnection>::iterator FindPlayerByUID(const std::string&);
+
+    void MessageHandler(const MessageBufferPtr& message)
+    {
+        std::lock_guard<std::mutex> l(_mutex);
+        _messages.push_back(message);
+    }
 
 private:
     GameServer::State               _state;
     GameServer::Configuration       _config;
     std::string                     _serverName;
-    Poco::Net::DatagramSocket       _socket;
     std::chrono::milliseconds       _msPerUpdate;
 
     std::unique_ptr<GameWorld>      _world;
     std::vector<PlayerConnection>   _playersConnections;
+
+    std::mutex                      _mutex;
+    MessageStorage                  _messages;
+
+    boost::signals2::connection     _connectionManagerConnection;
+    ConnectionsManagerPtr           _connectionsManager;
 
     NamedLogger                     _logger;
 };

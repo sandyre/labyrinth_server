@@ -109,8 +109,8 @@ GameWorld::InitialSpawn()
                                  Messages_SVSpawnItem,
                                  key_spawn.Union());
         builder.Finish(msg);
-        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                              builder.GetBufferPointer() + builder.GetSize());
+        _outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                  builder.GetBufferPointer() + builder.GetSize()));
     }
     
         // spawn door
@@ -132,8 +132,8 @@ GameWorld::InitialSpawn()
                                  Messages_SVSpawnConstr,
                                  door_spawn.Union());
         builder.Finish(msg);
-        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                              builder.GetBufferPointer() + builder.GetSize());
+        _outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                  builder.GetBufferPointer() + builder.GetSize()));
     }
     
         // spawn graveyard
@@ -155,8 +155,8 @@ GameWorld::InitialSpawn()
                                  Messages_SVSpawnConstr,
                                  grave_spawn.Union());
         builder.Finish(msg);
-        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                              builder.GetBufferPointer() + builder.GetSize());
+        _outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                  builder.GetBufferPointer() + builder.GetSize()));
     }
 
         // spawn graveyard
@@ -178,26 +178,28 @@ GameWorld::InitialSpawn()
                                  Messages_SVSpawnConstr,
                                  fount_spawn.Union());
         builder.Finish(msg);
-        _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                              builder.GetBufferPointer() + builder.GetSize());
+        _outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                  builder.GetBufferPointer() + builder.GetSize()));
     }
 
     _logger.Info() << "Initial spawn done, total number of GameObjects: " << _objectsStorage.Size();
 }
 
 void
-GameWorld::ApplyInputEvents()
+GameWorld::ProcessMessages(MessageStorage& messages)
 {
-    while(!_inputMessages.empty())
+    while(!messages.empty())
     {
-        auto& event = _inputMessages.front();
-        auto gs_event = GameMessage::GetMessage(event.data());
+        auto msgBuffer = messages.front();
+        messages.pop_front();
 
-        switch(gs_event->payload_type())
+        auto message = GameMessage::GetMessage(msgBuffer->data());
+
+        switch(message->payload_type())
         {
         case GameMessage::Messages_CLActionMove:
         {
-            auto cl_mov = static_cast<const GameMessage::CLActionMove*>(gs_event->payload());
+            auto cl_mov = static_cast<const GameMessage::CLActionMove*>(message->payload());
 
             if(auto unit = _objectsStorage.FindObject<Unit>(cl_mov->target_uid()))
                 unit->Move((Unit::MoveDirection)cl_mov->mov_dir());
@@ -209,7 +211,7 @@ GameWorld::ApplyInputEvents()
 
         case GameMessage::Messages_CLActionItem:
         {
-            auto cl_item = static_cast<const GameMessage::CLActionItem*>(gs_event->payload());
+            auto cl_item = static_cast<const GameMessage::CLActionItem*>(message->payload());
 
             switch(cl_item->act_type())
             {
@@ -255,7 +257,7 @@ GameWorld::ApplyInputEvents()
 
         case GameMessage::Messages_CLActionDuel:
         {
-            auto cl_duel = static_cast<const GameMessage::CLActionDuel*>(gs_event->payload());
+            auto cl_duel = static_cast<const GameMessage::CLActionDuel*>(message->payload());
 
             switch(cl_duel->act_type())
             {
@@ -278,7 +280,7 @@ GameWorld::ApplyInputEvents()
         
         case GameMessage::Messages_CLActionSpell:
         {
-            auto cl_spell = static_cast<const GameMessage::CLActionSpell*>(gs_event->payload());
+            auto cl_spell = static_cast<const GameMessage::CLActionSpell*>(message->payload());
 
             if(auto unit = _objectsStorage.FindObject<Unit>(cl_spell->player_uid()))
                 unit->SpellCast(cl_spell);
@@ -292,16 +294,14 @@ GameWorld::ApplyInputEvents()
             _logger.Warning() << "Received undefined packet type";
             break;
         }
-        
-        _inputMessages.pop();
     }
 }
 
 
 void
-GameWorld::update(std::chrono::microseconds delta)
+GameWorld::update(MessageStorage& messages, std::chrono::microseconds delta)
 {
-    ApplyInputEvents();
+    ProcessMessages(messages);
     std::for_each(_objectsStorage.Begin(),
                   _objectsStorage.End(),
                   [delta](const GameObjectPtr& obj)
@@ -335,8 +335,8 @@ GameWorld::update(std::chrono::microseconds delta)
                                      Messages_SVGameEnd,
                                      game_end.Union());
             builder.Finish(msg);
-            _outputEvents.emplace(builder.GetCurrentBufferPointer(),
-                                  builder.GetBufferPointer() + builder.GetSize());
+            _outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                      builder.GetBufferPointer() + builder.GetSize()));
 
             _logger.Info() << "Player with name '" << unit->GetName() << "' won! Escaped from LABYRINTH!";
 

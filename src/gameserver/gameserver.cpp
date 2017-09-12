@@ -18,7 +18,6 @@
 #include <iostream>
 #include <random>
 
-using namespace GameMessage;
 using namespace std::chrono;
 
 using IPAddress = Poco::Net::SocketAddress;
@@ -38,12 +37,10 @@ public:
 public:
     PlayerConnection(const std::string& uuid,
                      uint32_t localUuid,
-                     const std::string& name,
-                     const IPAddress& ip)
+                     const std::string& name)
     : _uuid(uuid),
       _localUUID(localUuid),
       _name(name),
-      _ip(ip),
       _timepoint(Clock::now())
     { }
 
@@ -64,15 +61,6 @@ public:
     const std::string& GetName() const
     { return _name; }
 
-    void SetAddress(const IPAddress& ip)
-    {
-        if(_ip != ip)
-            _ip = ip;
-    }
-
-    const IPAddress& GetAddress() const
-    { return _ip; }
-
     void SetLastPacketTimepoint(const Clock::time_point& timepoint)
     { _timepoint = timepoint; }
 
@@ -83,7 +71,6 @@ private:
     std::string         _uuid;
     uint32_t            _localUUID;
     std::string         _name;
-    IPAddress           _ip;
     Clock::time_point   _timepoint;
 };
 
@@ -101,11 +88,13 @@ GameServer::GameServer(const Configuration& config)
     _logger.Info() << "Launch configuration {random_seed = " << _config.RandomSeed
             << ", lobby_size = " << _config.Players << ", refresh_rate = " << _msPerUpdate.count() << "ms}";
 
+
     try
     {
-        Poco::Net::SocketAddress addr(Poco::Net::IPAddress(),
-                                      _config.Port);
-        _socket.bind(addr);
+        _connectionsManager = std::make_shared<ConnectionsManager>(config.Port);
+
+        // subscribe for all TCP messages
+        _connectionManagerConnection = _connectionsManager->OnMessageConnector(std::bind(&GameServer::MessageHandler, this, std::placeholders::_1));
     }
     catch(const std::exception& e)
     {
@@ -142,87 +131,35 @@ void GameServer::runTask()
 }
 
 
-void GameServer::Ping()
-{
-    static flatbuffers::FlatBufferBuilder builder;
-    auto ping = CreateSVPing(builder);
-    auto msg = CreateMessage(builder,
-                             0,
-                             Messages_SVPing,
-                             ping.Union());
-    builder.Finish(msg);
-
-    SendMulticast(builder);
-}
-
-
-void GameServer::SendSingle(flatbuffers::FlatBufferBuilder& builder,
-                            Poco::Net::SocketAddress& address)
-{
-    _socket.sendTo(builder.GetBufferPointer(),
-                   builder.GetSize(),
-                   address);
-    builder.Clear();
-}
-
-
-void GameServer::SendMulticast(flatbuffers::FlatBufferBuilder& builder)
-{
-    std::for_each(_playersConnections.cbegin(),
-                  _playersConnections.cend(),
-                  [&builder, this](const PlayerConnection& player)
-                  {
-                      _socket.sendTo(builder.GetBufferPointer(),
-                                     builder.GetSize(),
-                                     player.GetAddress());
-                  });
-    builder.Clear();
-}
-
-
-void GameServer::SendMulticast(const std::vector<uint8_t>& buffer)
-{
-    std::for_each(_playersConnections.cbegin(),
-                  _playersConnections.cend(),
-                  [&buffer, this](const PlayerConnection& player)
-                  {
-                      _socket.sendTo(buffer.data(),
-                                     buffer.size(),
-                                     player.GetAddress());
-                  });
-}
-
-
 void GameServer::lobby_forming_stage()
 {
     RandomGenerator<std::mt19937, std::uniform_real_distribution<>> randGen(5000, 30000, 5); // FIXME: random seed?
-    ElapsedTime pingTime;
 
     while(_state == State::LOBBY_FORMING)
     {
         std::this_thread::sleep_for(_msPerUpdate);
 
-        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        MessageStorage messages;
         {
-            pingTime.Reset();
-            Ping();
+            std::lock_guard<std::mutex> l(_mutex);
+            messages.swap(_messages);
         }
 
-        while(_socket.available())
+        for (const auto& messageBuf : messages)
         {
-            SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameMessage::Message>();
-            if(!packet)
-                continue;
+            if(!flatbuffers::Verifier(messageBuf->data(), messageBuf->size()).VerifyBuffer<GameMessage::Message>(nullptr))
+            {
+                _logger.Warning() << "Packet verification failed, skip";
+                return;
+            }
             
-            auto message = GetMessage(packet->Data.data());
-            auto senderIp = packet->Sender;
+            auto message = GameMessage::GetMessage(messageBuf->data());
 
             switch(message->payload_type())
             {
             case GameMessage::Messages_CLConnection:
             {
-                auto con_info = static_cast<const CLConnection *>(message->payload());
+                auto con_info = static_cast<const GameMessage::CLConnection *>(message->payload());
 
                 if(PlayerExists(message->sender_uid()->c_str()))
                 {
@@ -233,23 +170,23 @@ void GameServer::lobby_forming_stage()
                     // FIXME: should make Builder for PlayerConnection to validate input
                 PlayerConnection playerConnection(message->sender_uid()->c_str(),
                                                   randGen.NextInt(),
-                                                  std::string(con_info->nickname()->c_str()),
-                                                  senderIp);
+                                                  std::string(con_info->nickname()->c_str()));
                 _playersConnections.push_back(playerConnection);
 
                     // Notify player that he is accepted
                 {
                     flatbuffers::FlatBufferBuilder builder;
-                    auto acceptance = CreateSVConnectionStatus(builder,
-                                                               playerConnection.GetLocalUID(),
-                                                               ConnectionStatus_ACCEPTED);
-                    auto message = CreateMessage(builder,
-                                                 0,
-                                                 Messages_SVConnectionStatus,
-                                                 acceptance.Union());
+                    auto acceptance = GameMessage::CreateSVConnectionStatus(builder,
+                                                                            playerConnection.GetLocalUID(),
+                                                                            GameMessage::ConnectionStatus_ACCEPTED);
+                    auto message = GameMessage::CreateMessage(builder,
+                                                              0,
+                                                              GameMessage::Messages_SVConnectionStatus,
+                                                              acceptance.Union());
                     builder.Finish(message);
 
-                    SendSingle(builder, senderIp);
+                    _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                                   builder.GetBufferPointer() + builder.GetSize()));
 
                         // And send him info about all players in a lobby
                     std::for_each(_playersConnections.cbegin(),
@@ -258,16 +195,17 @@ void GameServer::lobby_forming_stage()
                                   {
                                       flatbuffers::FlatBufferBuilder builder;
                                       auto nickname = builder.CreateString(player.GetName());
-                                      auto connectionInfo = CreateSVPlayerConnected(builder,
-                                                                                    player.GetLocalUID(),
-                                                                                    nickname);
+                                      auto connectionInfo = GameMessage::CreateSVPlayerConnected(builder,
+                                                                                                 player.GetLocalUID(),
+                                                                                                 nickname);
                                       auto message = CreateMessage(builder,
                                                                    0,
-                                                                   Messages_SVPlayerConnected,
+                                                                   GameMessage::Messages_SVPlayerConnected,
                                                                    connectionInfo.Union());
                                       builder.Finish(message);
 
-                                      SendSingle(builder, senderIp);
+                                      _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                                                     builder.GetBufferPointer() + builder.GetSize()));
                                   });
                 }
 
@@ -276,30 +214,22 @@ void GameServer::lobby_forming_stage()
                 {
                     flatbuffers::FlatBufferBuilder builder;
                     auto nickname = builder.CreateString(playerConnection.GetName());
-                    auto connectionInfo = CreateSVPlayerConnected(builder,
+                    auto connectionInfo = GameMessage::CreateSVPlayerConnected(builder,
                                                                   playerConnection.GetLocalUID(),
                                                                   nickname);
                     auto message = CreateMessage(builder,
                                                  0,
-                                                 Messages_SVPlayerConnected,
+                                                 GameMessage::Messages_SVPlayerConnected,
                                                  connectionInfo.Union());
                     builder.Finish(message);
 
-                    SendMulticast(builder);
+                    _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                                   builder.GetBufferPointer() + builder.GetSize()));
                 }
 
                 break;
             }
 
-            case GameMessage::Messages_CLPing:
-            {
-                auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
-
-                if(playerConnection != _playersConnections.end())
-                    playerConnection->SetLastPacketTimepoint(Clock::now());
-
-                break;
-            }
             default:
                 _logger.Warning() << "Unexpected event received in lobby_forming";
                 break;
@@ -317,14 +247,16 @@ void GameServer::lobby_forming_stage()
                                                          _logger.Info() << "Player" << playerConnection.GetUUID() << " has been removed from server (connection timeout).";
 
                                                          flatbuffers::FlatBufferBuilder builder;
-                                                         auto disconnect = CreateSVPlayerDisconnected(builder,
-                                                                                                      playerConnection.GetLocalUID());
-                                                         auto message = CreateMessage(builder,
-                                                                                      0,
-                                                                                      Messages_SVPlayerDisconnected,
-                                                                                      disconnect.Union());
+                                                         auto disconnect = GameMessage::CreateSVPlayerDisconnected(builder,
+                                                                                                                   playerConnection.GetLocalUID());
+                                                         auto message = GameMessage::CreateMessage(builder,
+                                                                                                   0,
+                                                                                                   GameMessage::Messages_SVPlayerDisconnected,
+                                                                                                   disconnect.Union());
                                                          builder.Finish(message);
-                                                         SendMulticast(builder);
+
+                                                         _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                                                                        builder.GetBufferPointer() + builder.GetSize()));
 
                                                          return true;
                                                      }
@@ -339,14 +271,15 @@ void GameServer::lobby_forming_stage()
             _logger.Info() << "STATE CHANGE: LOBBY-FORMING -> HERO-PICKING";
 
             flatbuffers::FlatBufferBuilder builder;
-            auto pickStage = CreateSVHeroPickStage(builder);
-            auto message = CreateMessage(builder,
-                                         0,
-                                         Messages_SVHeroPickStage,
-                                         pickStage.Union());
+            auto pickStage = GameMessage::CreateSVHeroPickStage(builder);
+            auto message = GameMessage::CreateMessage(builder,
+                                                      0,
+                                                      GameMessage::Messages_SVHeroPickStage,
+                                                      pickStage.Union());
             builder.Finish(message);
 
-            SendMulticast(builder);
+            _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                           builder.GetBufferPointer() + builder.GetSize()));
         }
     }
 }
@@ -368,26 +301,25 @@ void GameServer::hero_picking_stage()
                       players.push_back(std::make_pair(info, false));
                   });
 
-    ElapsedTime pingTime;
-
     while(_state == State::HERO_PICK)
     {
         std::this_thread::sleep_for(_msPerUpdate);
 
-        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        MessageStorage messages;
         {
-            pingTime.Reset();
-            Ping();
+            std::lock_guard<std::mutex> l(_mutex);
+            messages.swap(_messages);
         }
 
-        while(_socket.available())
+        for (const auto& messageBuf : messages)
         {
-            SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameMessage::Message>();
-            if(!packet)
-                continue;
+            if(!flatbuffers::Verifier(messageBuf->data(), messageBuf->size()).VerifyBuffer<GameMessage::Message>(nullptr))
+            {
+                _logger.Warning() << "Packet verification failed, skip";
+                return;
+            }
 
-            auto message = GetMessage(packet->Data.data());
+            auto message = GameMessage::GetMessage(messageBuf->data());
             auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
 
             if(playerConnection == _playersConnections.end())
@@ -400,9 +332,9 @@ void GameServer::hero_picking_stage()
 
             switch(message->payload_type())
             {
-            case Messages_CLHeroPick:
+            case GameMessage::Messages_CLHeroPick:
             {
-                auto pick = static_cast<const CLHeroPick*>(message->payload());
+                auto pick = static_cast<const GameMessage::CLHeroPick*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -420,23 +352,24 @@ void GameServer::hero_picking_stage()
                 _logger.Info() << "Player" << playerInfo->first.LocalUid << " picked " << playerInfo->first.Hero;
 
                 flatbuffers::FlatBufferBuilder builder;
-                auto sv_pick = CreateSVHeroPick(builder,
-                                                playerInfo->first.LocalUid,
-                                                pick->hero_type());
-                auto message = CreateMessage(builder,
-                                             0,
-                                             Messages_SVHeroPick,
-                                             sv_pick.Union());
+                auto sv_pick = GameMessage::CreateSVHeroPick(builder,
+                                                             playerInfo->first.LocalUid,
+                                                             pick->hero_type());
+                auto message = GameMessage::CreateMessage(builder,
+                                                          0,
+                                                          GameMessage::Messages_SVHeroPick,
+                                                          sv_pick.Union());
                 builder.Finish(message);
 
-                SendMulticast(builder);
+                _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                               builder.GetBufferPointer() + builder.GetSize()));
 
                 break;
             }
 
-            case Messages_CLReadyToStart:
+            case GameMessage::Messages_CLReadyToStart:
             {
-                auto ready = static_cast<const CLReadyToStart*>(message->payload());
+                auto ready = static_cast<const GameMessage::CLReadyToStart*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -460,7 +393,7 @@ void GameServer::hero_picking_stage()
                 break;
             }
 
-            case Messages_CLPing:
+            case GameMessage::Messages_CLPing:
                 break;
 
             default:
@@ -516,17 +449,18 @@ void GameServer::hero_picking_stage()
                                                  playersInfo);
 
             flatbuffers::FlatBufferBuilder builder;
-            auto generateMap = CreateSVGenerateMap(builder,
-                                                   mapConf.MapSize,
-                                                   mapConf.RoomSize,
-                                                   mapConf.Seed);
-            auto message = CreateMessage(builder,
-                                         0,
-                                         Messages_SVGenerateMap,
-                                         generateMap.Union());
+            auto generateMap = GameMessage::CreateSVGenerateMap(builder,
+                                                                mapConf.MapSize,
+                                                                mapConf.RoomSize,
+                                                                mapConf.Seed);
+            auto message = GameMessage::CreateMessage(builder,
+                                                      0,
+                                                      GameMessage::Messages_SVGenerateMap,
+                                                      generateMap.Union());
             builder.Finish(message);
 
-            SendMulticast(builder);
+            _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                           builder.GetBufferPointer() + builder.GetSize()));
         }
     }
 }
@@ -548,26 +482,25 @@ void GameServer::world_generation_stage()
                       players.push_back(std::make_pair(info, false));
                   });
 
-    ElapsedTime pingTime;
-
     while(_state == State::GENERATING_WORLD)
     {
         std::this_thread::sleep_for(_msPerUpdate);
 
-        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        MessageStorage messages;
         {
-            pingTime.Reset();
-            Ping();
+            std::lock_guard<std::mutex> l(_mutex);
+            messages.swap(_messages);
         }
 
-        while(_socket.available())
+        for (const auto& messageBuf : messages)
         {
-            SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameMessage::Message>();
-            if(!packet)
+            if(!flatbuffers::Verifier(messageBuf->data(), messageBuf->size()).VerifyBuffer<GameMessage::Message>(nullptr))
+            {
+                _logger.Warning() << "Packet verification failed, skip";
                 continue;
+            }
 
-            auto message = GetMessage(packet->Data.data());
+            auto message = GameMessage::GetMessage(messageBuf->data());
             auto playerConnection = FindPlayerByUID(message->sender_uid()->c_str());
 
             if(playerConnection == _playersConnections.end())
@@ -580,9 +513,9 @@ void GameServer::world_generation_stage()
 
             switch(message->payload_type())
             {
-            case Messages_CLMapGenerated:
+            case GameMessage::Messages_CLMapGenerated:
             {
-                auto generated = static_cast<const CLMapGenerated*>(message->payload());
+                auto generated = static_cast<const GameMessage::CLMapGenerated*>(message->payload());
 
                 auto playerInfo = std::find_if(players.begin(),
                                                players.end(),
@@ -601,9 +534,6 @@ void GameServer::world_generation_stage()
 
                 break;
             }
-
-            case Messages_CLPing:
-                break;
 
             default:
                 _logger.Warning() << "Received unexpected event type in HERO-PICKING loop";
@@ -635,14 +565,15 @@ void GameServer::world_generation_stage()
             _state = State::RUNNING_GAME;
 
             flatbuffers::FlatBufferBuilder builder;
-            auto start = CreateSVGameStart(builder);
+            auto start = GameMessage::CreateSVGameStart(builder);
             auto message = CreateMessage(builder,
                                          0,
-                                         Messages_SVGameStart,
+                                         GameMessage::Messages_SVGameStart,
                                          start.Union());
             builder.Finish(message);
 
-            SendMulticast(builder);
+            _connectionsManager->Multicast(std::make_shared<MessageBuffer>(builder.GetBufferPointer(),
+                                                                           builder.GetBufferPointer() + builder.GetSize()));
         }
     }
 }
@@ -650,7 +581,7 @@ void GameServer::world_generation_stage()
 
 void GameServer::running_game_stage()
 {
-    ElapsedTime frameTime, pingTime;
+    ElapsedTime frameTime;
 
     while(_world->GetState() != GameWorld::State::FINISHED)
     {
@@ -659,59 +590,17 @@ void GameServer::running_game_stage()
         // sleep for some time, then get all packets and pass it to the gameworld, update
         std::this_thread::sleep_for(_msPerUpdate);
 
-        if(pingTime.Elapsed<std::chrono::microseconds>() > PING_INTERVAL)
+        MessageStorage messages;
         {
-            pingTime.Reset();
-            Ping();
+            std::lock_guard<std::mutex> l(_mutex);
+            messages.swap(_messages);
         }
 
-        if(!_socket.available())
-        {
-            auto anyoneActive = std::any_of(_playersConnections.cbegin(),
-                                            _playersConnections.cend(),
-                                            [](const PlayerConnection& playerConnection)
-                                            {
-                                                return playerConnection.GetConnectionStatus() == PlayerConnection::ConnectionStatus::ACTIVE;
-                                            });
+        _world->update(messages, frameTime.Elapsed<std::chrono::microseconds>());
 
-            if(!anyoneActive)
-                throw std::runtime_error("No active connections with players, shutting down server (connections timeout)");
-        }
-
-        while(_socket.available())
-        {
-            SafePacketGetter packetGetter(_socket);
-            auto packet = packetGetter.Get<GameMessage::Message>();
-            if(!packet)
-                continue;
-
-            auto message = GetMessage(packet->Data.data());
-
-            auto player = FindPlayerByUID(message->sender_uid()->c_str());
-            if(player == _playersConnections.end())
-            {
-                _logger.Warning() << "Received packet from unexisting player";
-                continue;
-            }
-
-            player->SetLastPacketTimepoint(Clock::now());
-            player->SetAddress(packet->Sender);
-
-                // filter CLPing events
-            if(message->payload_type() == Messages_CLPing)
-                continue;
-
-            _world->PushMessage({packet->Data.begin(), packet->Data.end()});
-        }
-
-        _world->update(frameTime.Elapsed<std::chrono::microseconds>());
-
-        auto& out_events = _world->GetOutgoingEvents();
-        while(!out_events.empty())
-        {
-            SendMulticast(out_events.front());
-            out_events.pop();
-        }
+        messages.swap(_world->GetOutgoingMessages());
+        for (const auto& message : messages)
+            _connectionsManager->Multicast(message);
     }
 }
 

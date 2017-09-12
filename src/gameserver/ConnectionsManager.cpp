@@ -22,6 +22,7 @@ ConnectionsManager::ConnectionsManager(uint16_t listeningPort, size_t maxConnect
     _worker.setName("ConnectionsManager");
     _worker.start(*this);
 
+    _reactor.setTimeout(Poco::Timespan(0, 25));
     _reactorWorker.setName("ConnectionsReactor");
     _reactorWorker.start(_reactor);
 }
@@ -39,23 +40,29 @@ void ConnectionsManager::run()
 {
     while (_alive)
     {
-        if (_socket.poll(Poco::Timespan(0, 500), Poco::Net::Socket::SELECT_READ)
+        if (_socket.poll(Poco::Timespan(0, 25000), Poco::Net::Socket::SELECT_READ)
             && _connections.size() < _maxConnections)
         {
-            Connection connection = _socket.acceptConnection();
+            Socket connection = _socket.acceptConnection();
 
             _logger.Info() << "Requested connection from " << connection.peerAddress().toString();
             
             // TODO: do validation
-            auto playerConnection = std::make_shared<PlayerConnection>(connection, _reactor);
-            playerConnection->OnMessage().connect(std::bind(&ConnectionsManager::MessageHandler, this, std::placeholders::_1));
-            _connections.push_back(playerConnection);
+            try
+            {
+                auto playerConnection = std::make_shared<PlayerConnection>(*this, connection);
+                auto signal_connection = playerConnection->OnMessageConnector(std::bind(&ConnectionsManager::MessageHandler, this, std::placeholders::_1));
+
+                _connections.emplace_back(signal_connection, playerConnection);
+            }
+            catch (const std::exception& ex)
+            { _logger.Error() << "Error occured in new connection establishment: " << ex.what(); }
         }
     }
 }
 
 
-void ConnectionsManager::MessageHandler(const MessagePtr& message)
+void ConnectionsManager::MessageHandler(const MessageBufferPtr& message)
 {
     _logger.Debug() << "Forwarding message";
 

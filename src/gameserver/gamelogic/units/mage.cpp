@@ -69,8 +69,8 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 spell1.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                         builder.GetBufferPointer() + builder.GetSize()));
         
         SetPosition(new_pos);
     }
@@ -101,8 +101,8 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 spell1.Union());
         builder.Finish(event);
 
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                  builder.GetBufferPointer() + builder.GetSize()));
         
             // deal MAGIC damage
         DamageDescriptor dmgDescr;
@@ -137,8 +137,8 @@ Mage::SpellCast(const GameMessage::CLActionSpell* spell)
                                                 cl_spell.Union());
         builder.Finish(event);
         
-        _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                     builder.GetBufferPointer() + builder.GetSize());
+        _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                         builder.GetBufferPointer() + builder.GetSize()));
         
             // apply freeze effect
         auto mageFreeze = std::make_shared<MageFreeze>(3s);

@@ -190,8 +190,8 @@ Monster::update(std::chrono::microseconds delta)
                                                         spell1.Union());
                 builder.Finish(event);
                 
-                _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                             builder.GetBufferPointer() + builder.GetSize());
+                _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                                 builder.GetBufferPointer() + builder.GetSize()));
                 
                     // deal PHYSICAL damage
                 auto dmgDescr = Unit::DamageDescriptor();
@@ -234,8 +234,9 @@ Monster::Spawn(const Point<>& pos)
                                           GameMessage::Messages_SVSpawnMonster,
                                           spawn.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
 }
 
 
@@ -266,8 +267,8 @@ Monster::Die(const std::string& killerName)
                                           GameMessage::Messages_SVActionDeath,
                                           move.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
     
     _state = Unit::State::DEAD;
     _objAttributes = GameObject::Attributes::PASSABLE;

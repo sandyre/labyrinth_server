@@ -69,8 +69,8 @@ Unit::TakeItem(std::shared_ptr<Item> item)
                                           GameMessage::Messages_SVActionItem,
                                           take.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
 }
 
 
@@ -97,8 +97,8 @@ Unit::Spawn(const Point<>& pos)
                                           GameMessage::Messages_SVSpawnPlayer,
                                           spawn.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
 }
 
 
@@ -129,9 +129,8 @@ Unit::Respawn(const Point<>& pos)
                                           GameMessage::Messages_SVRespawnPlayer,
                                           resp.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
-}
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));}
 
 
 std::shared_ptr<Item>
@@ -187,8 +186,8 @@ Unit::Die(const std::string& killerName)
                                         GameMessage::Messages_SVActionDeath,
                                         move.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
     
     _state = Unit::State::DEAD;
     _objAttributes = GameObject::Attributes::PASSABLE;
@@ -236,8 +235,8 @@ Unit::Move(MoveDirection dir)
                                           GameMessage::Messages_SVActionMove,
                                           move.Union());
     builder.Finish(msg);
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
 }
 
 
@@ -285,8 +284,8 @@ Unit::StartDuel(std::shared_ptr<Unit> enemy)
                                           duel.Union());
     builder.Finish(msg);
     
-    _world._outputEvents.emplace(builder.GetBufferPointer(),
-                                 builder.GetBufferPointer() + builder.GetSize());
+    _world._outputMessages.push_back(std::make_shared<MessageBuffer>(builder.GetCurrentBufferPointer(),
+                                                                     builder.GetBufferPointer() + builder.GetSize()));
 }
 
 void

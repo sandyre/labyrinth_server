@@ -12,6 +12,7 @@
 #include "construction.hpp"
 #include "gamemap.hpp"
 #include "gameobject.hpp"
+#include "../Message.hpp"
 #include "units/hero.hpp"
 #include "units/mage.hpp"
 #include "units/monster.hpp"
@@ -213,15 +214,13 @@ public:
     GameWorld::State GetState() const
     { return _state; }
 
-    virtual void update(std::chrono::microseconds);
+    virtual void update(MessageStorage& messages, std::chrono::microseconds delta);
 
-    std::queue<std::vector<uint8_t>>& GetOutgoingEvents()
-    { return _outputEvents; }
-    
-    void PushMessage(const std::vector<uint8_t>& message)
-    { _inputMessages.push(message); }
+    MessageStorage& GetOutgoingMessages()
+    { return _outputMessages; }
 
 protected:
+    void ProcessMessages(MessageStorage& messages);
     void ApplyInputEvents();
 
     Point<> GetRandomPosition();
@@ -237,8 +236,7 @@ private:
     MonsterSpawner                      _monsterSpawner;
 
     // contains outgoing events
-    std::queue<std::vector<uint8_t>>    _inputMessages;
-    std::queue<std::vector<uint8_t>>    _outputEvents;
+    MessageStorage                      _outputMessages;
 
     RandomGenerator<std::mt19937, std::uniform_int_distribution<>> _randGen;
 

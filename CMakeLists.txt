@@ -21,6 +21,8 @@ set(SOURCES
 	src/masterserver.cpp
 
 	src/gameserver/gameserver.cpp
+    src/gameserver/ConnectionsManager.cpp
+    src/gameserver/PlayerConnection.cpp
 	src/gameserver/gamelogic/construction.cpp
 	src/gameserver/gamelogic/effect.cpp
 	src/gameserver/gamelogic/gamemap.cpp
