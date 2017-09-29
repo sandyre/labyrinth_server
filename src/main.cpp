@@ -8,6 +8,8 @@
 
 #include "masterserver.hpp"
 
+#include <iostream>
+
 int main(int argc, const char * argv[])
 {
     std::unique_ptr<MasterServer> server;
@@ -15,8 +17,9 @@ int main(int argc, const char * argv[])
     {
         server = std::make_unique<MasterServer>();
     }
-    catch(...)
+    catch (const std::exception& ex)
     {
+        std::cout << "Server failed at top level with exception: " << ex.what() << std::endl;
         return 1;
     }
 
